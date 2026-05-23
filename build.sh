@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit
+set -x
 
 pip install -r requirements.txt
 
