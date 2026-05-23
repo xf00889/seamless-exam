@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Component Examples - Seamless{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Reusable Components Examples</h1>
+        <p class="text-gray-600">This page demonstrates all available reusable template components.</p>
+    </div>
+
+    <!-- Alert Examples -->
+    <section>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Alert Component</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Success Alert</h3>
+                {% include 'components/alert.html' with type='success' message='Operation completed successfully!' dismissible=True %}
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Error Alert</h3>
+                {% include 'components/alert.html' with type='error' message='An error occurred. Please try again.' %}
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Warning Alert</h3>
+                {% include 'components/alert.html' with type='warning' message='Your session will expire in 5 minutes.' dismissible=True %}
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Info Alert</h3>
+                {% include 'components/alert.html' with type='info' message='Please complete all required fields before submitting.' %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Form Field Examples -->
+    <section>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Input Field Component</h2>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <form method="post" action="#">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Text Input</h3>
+                        {% include 'components/input_field.html' with name='title' label='Exam Title' placeholder='Enter exam title' required=True %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Email Input</h3>
+                        {% include 'components/input_field.html' with name='email' label='Email Address' type='email' placeholder='user@example.com' %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Number Input</h3>
+                        {% include 'components/input_field.html' with name='duration' label='Duration (minutes)' type='number' min=1 max=180 value=60 required=True %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Textarea</h3>
+                        {% include 'components/input_field.html' with name='description' label='Description' type='textarea' rows=4 placeholder='Enter exam description' %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Select Dropdown</h3>
+                        {% include 'components/input_field.html' with name='status' label='Status' type='select' options=status_options %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Checkbox</h3>
+                        {% include 'components/input_field.html' with name='is_active' label='Activate exam immediately' type='checkbox' %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Field with Error</h3>
+                        {% include 'components/input_field.html' with name='invalid_field' label='Invalid Field' error='This field is required' %}
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Field with Help Text</h3>
+                        {% include 'components/input_field.html' with name='password' label='Password' type='password' help_text='Must be at least 8 characters long' %}
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Submit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Pagination Example -->
+    <section>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Pagination Component</h2>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <p class="text-gray-600 mb-4">Example pagination (requires page_obj from view):</p>
+            <p class="text-sm text-gray-500 italic">Pagination component requires a Django paginator page object to render.</p>
+        </div>
+    </section>
+
+    <!-- Component Usage Guide -->
+    <section>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Usage Guide</h2>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="prose max-w-none">
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Including Components</h3>
+                <p class="text-gray-600 mb-4">All components are located in <code class="bg-gray-100 px-2 py-1 rounded">templates/components/</code> and can be included using:</p>
+                
+                <pre class="bg-gray-50 p-4 rounded-md overflow-x-auto"><code>{% verbatim %}{% include 'components/component_name.html' with param1='value1' param2='value2' %}{% endverbatim %}</code></pre>
+                
+                <h3 class="text-lg font-medium text-gray-900 mt-6 mb-2">Available Components</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                    <li><strong>navbar.html</strong> - Navigation bar with user info and logout</li>
+                    <li><strong>footer.html</strong> - Page footer with copyright</li>
+                    <li><strong>alert.html</strong> - Alert messages (success, error, warning, info)</li>
+                    <li><strong>messages.html</strong> - Django messages framework integration</li>
+                    <li><strong>pagination.html</strong> - Pagination controls for lists</li>
+                    <li><strong>form_field.html</strong> - Django form field renderer</li>
+                    <li><strong>input_field.html</strong> - Standalone input field renderer</li>
+                </ul>
+                
+                <h3 class="text-lg font-medium text-gray-900 mt-6 mb-2">Requirements Compliance</h3>
+                <p class="text-gray-600">All components comply with:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                    <li><strong>Requirement 17.1</strong> - All CSS loaded from external Tailwind files</li>
+                    <li><strong>Requirement 17.3</strong> - No inline CSS styles in templates</li>
+                    <li><strong>Requirement 17.2</strong> - All JavaScript in external files</li>
+                    <li><strong>Requirement 17.4</strong> - No inline JavaScript in templates</li>
+                </ul>
+                
+                <p class="text-gray-600 mt-4">
+                    For detailed documentation, see 
+                    <code class="bg-gray-100 px-2 py-1 rounded">templates/components/README.md</code>
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Example: status options would be passed from view context
+    // In your view: context['status_options'] = [{'value': 'active', 'label': 'Active'}, ...]
+</script>
+{% endblock %}
+

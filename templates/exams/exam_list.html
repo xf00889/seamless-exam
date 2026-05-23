@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Exams - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/modals.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<!-- Page Header -->
+<div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 mr-3">
+                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-1">My Exams</h1>
+                <p class="text-gray-600">Create, manage, and organize your examinations</p>
+            </div>
+        </div>
+        <a href="{% url 'exam_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Create New Exam
+        </a>
+    </div>
+</div>
+
+{% if exams %}
+<div class="bg-white shadow overflow-hidden rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Title
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Questions
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for exam in exams %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ exam.title }}</div>
+                    {% if exam.subject %}
+                    <div class="text-xs text-blue-600 font-medium">{{ exam.subject }}</div>
+                    {% endif %}
+                    {% if exam.description %}
+                    <div class="text-sm text-gray-500">{{ exam.description|truncatewords:10 }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ exam.duration_minutes }} min
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ exam.questions.count }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if exam.is_active %}
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Active
+                    </span>
+                    {% else %}
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Inactive
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ exam.created_at|date:"M d, Y" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end items-center gap-3">
+                        <!-- View Takers -->
+                        <a href="{% url 'exam_takers' exam.id %}" 
+                           class="text-purple-600 hover:text-purple-900 transition-colors"
+                           title="View Takers">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </a>
+                        
+                        <!-- Edit -->
+                        <a href="{% url 'exam_edit' exam.id %}" 
+                           class="text-blue-600 hover:text-blue-900 transition-colors"
+                           title="Edit Exam">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </a>
+                        
+                        <!-- Activate/Deactivate -->
+                        <div class="relative group">
+                            {% if exam.is_active %}
+                            <!-- Close Exam - Direct submit -->
+                            <form method="post" action="{% url 'exam_activate' exam.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="text-orange-600 hover:text-orange-900 transition-colors"
+                                        title="Close Exam - Hide from students">
+                                    <!-- Close Icon -->
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                </button>
+                            </form>
+                            {% else %}
+                            <!-- Reopen Exam - Open modal -->
+                            <button type="button" 
+                                    onclick="openReopenModal({{ exam.id }}, '{{ exam.title|escapejs }}')"
+                                    class="text-green-600 hover:text-green-900 transition-colors"
+                                    title="Reopen Exam - Make available to students who haven't taken it">
+                                <!-- Reopen Icon -->
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            {% endif %}
+                            <!-- Helper Tooltip -->
+                            <div class="absolute right-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                {% if exam.is_active %}
+                                <p class="font-semibold mb-1">Close Exam</p>
+                                <p>This will hide the exam from students. Students who haven't completed it won't be able to access it.</p>
+                                {% else %}
+                                <p class="font-semibold mb-1">Reopen Exam</p>
+                                <p>This will make the exam available to students who haven't taken it yet. Students who already completed it cannot retake it.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Delete -->
+                        <button type="button" 
+                                onclick="openDeleteModal({{ exam.id }}, '{{ exam.title|escapejs }}')"
+                                class="text-red-600 hover:text-red-900 transition-colors"
+                                title="Delete Exam">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination Component -->
+{% include 'components/pagination.html' with page_obj=page_obj %}
+
+{% else %}
+<div class="bg-white shadow rounded-lg p-6 text-center">
+    <p class="text-gray-500 mb-4">You haven't created any exams yet.</p>
+    <a href="{% url 'exam_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md inline-block">
+        Create Your First Exam
+    </a>
+</div>
+{% endif %}
+
+<!-- Reopen Exam Modal -->
+<div id="reopenModal" class="hidden modal-overlay">
+    <div class="modal-container-wide">
+        <div class="modal-content-flex">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h3 class="modal-title">Reopen Exam</h3>
+                <button onclick="closeReopenModal()" class="modal-close-btn">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Exam Title -->
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">Select which students can access:</p>
+                <p class="modal-exam-title" id="reopenExamTitle"></p>
+            </div>
+            
+            <!-- Select All Option -->
+            <div class="modal-select-all">
+                <label>
+                    <input type="checkbox" id="selectAllStudents" onchange="toggleSelectAll()">
+                    <span>Select All Students</span>
+                </label>
+            </div>
+            
+            <!-- Students List -->
+            <div class="modal-students-container">
+                <div id="studentsLoading" class="modal-loading">
+                    <div class="modal-loading-spinner"></div>
+                    <p class="modal-loading-text">Loading students...</p>
+                </div>
+                <div id="studentsList" class="hidden modal-students-list">
+                    <!-- Student checkboxes will be inserted here -->
+                </div>
+                <div id="studentsError" class="hidden modal-error-state">
+                    <p class="modal-error-text">Failed to load students. Please try again.</p>
+                </div>
+                <div id="studentsEmpty" class="hidden modal-empty-state">
+                    <p class="modal-empty-text">No students found in assigned classes.</p>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="modal-actions modal-actions-border">
+                <button onclick="closeReopenModal()"
+                        class="modal-btn modal-btn-cancel">
+                    Cancel
+                </button>
+                <button onclick="confirmReopen()"
+                        id="confirmReopenBtn"
+                        disabled
+                        class="modal-btn modal-btn-confirm">
+                    Reopen Exam
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden modal-overlay">
+    <div class="modal-container">
+        <div class="modal-content">
+            <!-- Warning Icon -->
+            <div class="modal-warning-icon">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="modal-body">
+                <h3 class="modal-title">Delete Examination</h3>
+                <div class="modal-body-padded">
+                    <p class="modal-description">
+                        You are about to delete <strong id="examTitle" class="text-gray-900"></strong>
+                    </p>
+                    <p class="modal-warning-text">
+                        ⚠️ This action cannot be undone. All questions, student attempts, and grades will be permanently deleted.
+                    </p>
+                    <p class="modal-instruction">
+                        Please enter your password to confirm:
+                    </p>
+                    
+                    <!-- Password Input -->
+                    <form id="deleteForm" method="post" action="">
+                        {% csrf_token %}
+                        <input type="password" 
+                               id="deletePassword" 
+                               name="password"
+                               class="modal-password-input"
+                               placeholder="Enter your password"
+                               required
+                               autocomplete="current-password">
+                        <div id="passwordError" class="hidden modal-error"></div>
+                    </form>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="modal-actions">
+                    <button onclick="closeDeleteModal()"
+                            class="modal-btn modal-btn-cancel">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDelete()"
+                            class="modal-btn modal-btn-delete">
+                        Delete Exam
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pages/exam-list.js' %}"></script>
+
+<!-- Modal Configuration Data -->
+{{ modal_config|json_script:"modal-config-data" }}
+
+<script>
+// Pass modal configuration to JavaScript using JSON data
+document.addEventListener('DOMContentLoaded', function() {
+    // Load modal configuration and apply to modal manager
+    JsonDataLoader.applyConfiguration('modal-config-data', window.ModalManager);
+});
+</script>
+{% endblock %}
+

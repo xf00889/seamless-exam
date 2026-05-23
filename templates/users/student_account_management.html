@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Account Management - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex items-center mb-2">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-100 mr-3">
+                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Student Account Management</h1>
+        </div>
+        <p class="text-gray-600 ml-13">Create and manage student accounts</p>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">Total Students</h2>
+                <p class="text-4xl font-bold text-blue-600">{{ total_students }}</p>
+            </div>
+            <div class="flex-shrink-0">
+                <svg class="h-16 w-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Student Account Form -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Create New Student Account</h2>
+        <p class="text-sm text-gray-600 mb-6">
+            Password will be auto-generated: <strong>First 4 digits of ID + First 4 letters of Last Name (uppercase)</strong>
+        </p>
+        
+        <form method="post" id="create-student-form" class="space-y-4" data-validate data-ajax>
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="id_school_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Student ID Number <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.school_id }}
+                    <p class="mt-1 text-xs text-gray-500">Example: 2024-0001</p>
+                </div>
+                
+                <div>
+                    <label for="id_first_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        First Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.first_name }}
+                </div>
+                
+                <div>
+                    <label for="id_last_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.last_name }}
+                </div>
+                
+                <div>
+                    <label for="id_class_assigned" class="block text-sm font-medium text-gray-700 mb-2">
+                        Assign to Class (Optional)
+                    </label>
+                    {{ form.class_assigned }}
+                </div>
+            </div>
+            
+            <!-- Password Preview -->
+            <div id="password-preview" class="hidden password-display">
+                <p class="text-sm font-medium text-gray-700 mb-2">Generated Password Preview:</p>
+                <p class="password-value" id="preview-password">----XXXX</p>
+                <p class="text-xs text-gray-600 mt-2">This password will be assigned to the student account</p>
+            </div>
+            
+            <div class="flex items-center justify-between pt-4">
+                <button type="button" id="preview-btn" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                    Preview Password
+                </button>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    Create Student Account
+                </button>
+            </div>
+        </form>
+        
+        <!-- Success Message Display -->
+        <div id="success-message" class="hidden success-message">
+            <div class="success-message-header">
+                <svg class="success-message-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="success-message-content">
+                    <h3 class="success-message-title">Student Account Created Successfully!</h3>
+                    <div class="success-message-details">
+                        <p><strong>Student ID:</strong> <span id="created-id"></span></p>
+                        <p><strong>Name:</strong> <span id="created-name"></span></p>
+                        <p><strong>Generated Password:</strong> <span class="success-message-password" id="created-password"></span></p>
+                        <p><strong>Class:</strong> <span id="created-class"></span></p>
+                    </div>
+                    <p class="success-message-warning">
+                        ⚠️ Please save this password and provide it to the student. It cannot be retrieved later.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student List -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-800">All Students</h2>
+                
+                <!-- Search Form -->
+                <form method="get" class="flex items-center space-x-2">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search_query }}"
+                           placeholder="Search by ID or name..."
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
+                        Search
+                    </button>
+                    {% if search_query %}
+                    <a href="{% url 'student_account_management' %}" class="text-sm text-blue-600 hover:text-blue-800">
+                        Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        {% if students %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for student in students %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ student.school_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ student.get_full_name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if student.class_assigned %}
+                                    {{ student.class_assigned }}
+                                {% else %}
+                                    <span class="text-gray-400 italic">Not assigned</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">{{ student.created_at|date:"M d, Y" }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% include 'components/pagination.html' with page_obj=students %}
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <p class="mt-4 text-gray-500">
+                {% if search_query %}
+                    No students found matching "{{ search_query }}"
+                {% else %}
+                    No students found. Create your first student account above.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/components/base.js' %}"></script>
+<script src="{% static 'js/utils/csrf-helper.js' %}"></script>
+<script src="{% static 'js/components/form-validator.js' %}"></script>
+<script src="{% static 'js/pages/student-account-management.js' %}"></script>
+
+<!-- Form Configuration Data -->
+{{ form_config|json_script:"form-config-data" }}
+
+<script>
+// Pass form configuration to JavaScript using JSON data
+document.addEventListener('DOMContentLoaded', function() {
+    // Load form configuration and apply to validators
+    JsonDataLoader.applyConfiguration('form-config-data', window.FormValidator, 'setGlobalConfig');
+});
+</script>
+{% endblock %}

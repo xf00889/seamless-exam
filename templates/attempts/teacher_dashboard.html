@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Teacher Dashboard - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/charts.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-0">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex items-center mb-2">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-100 mr-3">
+                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Teacher Dashboard</h1>
+        </div>
+        <p class="text-gray-600 ml-13">View and analyze all student exam attempts</p>
+    </div>
+
+    <!-- Quick Links Section -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="{% url 'exam_list' %}" class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                <svg class="h-8 w-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">Manage Exams</div>
+                    <div class="text-xs text-gray-500">Create & edit exams</div>
+                </div>
+            </a>
+            
+            <a href="{% url 'class_list' %}" class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                <svg class="h-8 w-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">Manage Classes</div>
+                    <div class="text-xs text-gray-500">{{ classes|length }} class{{ classes|length|pluralize:"es" }}</div>
+                </div>
+            </a>
+            
+            <a href="{% url 'teacher_grading_list' %}" class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                <svg class="h-8 w-8 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">Grade Exams</div>
+                    <div class="text-xs text-gray-500">Review submissions</div>
+                </div>
+            </a>
+            
+            <a href="{% url 'bulk_student_assign' %}" class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+                <svg class="h-8 w-8 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">Assign Students</div>
+                    <div class="text-xs text-gray-500">Bulk assignment</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <!-- Total Students Card -->
+        <div class="stat-card bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Students</span>
+                        <button type="button" class="tooltip-trigger inline-flex items-center justify-center w-4 h-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full" 
+                                aria-label="More information about Total Students"
+                                data-tooltip="Total number of students enrolled across all your classes">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-blue-600">{{ total_students }}</div>
+                </div>
+                <div class="flex-shrink-0 ml-4">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-blue-100">
+                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Exams Card -->
+        <div class="stat-card bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Exams</span>
+                        <button type="button" class="tooltip-trigger inline-flex items-center justify-center w-4 h-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded-full" 
+                                aria-label="More information about Total Exams"
+                                data-tooltip="Total number of exams you have created and assigned to students">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-purple-600">{{ total_exams }}</div>
+                </div>
+                <div class="flex-shrink-0 ml-4">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-purple-100">
+                        <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Passers Card -->
+        <div class="stat-card bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Passers</span>
+                        <button type="button" class="tooltip-trigger inline-flex items-center justify-center w-4 h-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 rounded-full" 
+                                aria-label="More information about Total Passers"
+                                data-tooltip="Number of students who scored 60% or higher on their exams">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-green-600">{{ total_passers }}</div>
+                </div>
+                <div class="flex-shrink-0 ml-4">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-green-100">
+                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Failures Card -->
+        <div class="stat-card bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Failures</span>
+                        <button type="button" class="tooltip-trigger inline-flex items-center justify-center w-4 h-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 rounded-full" 
+                                aria-label="More information about Total Failures"
+                                data-tooltip="Number of students who scored below 60% on their exams">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-red-600">{{ total_failers }}</div>
+                </div>
+                <div class="flex-shrink-0 ml-4">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-red-100">
+                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <!-- Pass/Fail by Exam Chart -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Pass/Fail by Exam</h2>
+                <p class="mt-1 text-sm text-gray-500">Student performance across all exams (60% passing threshold)</p>
+            </div>
+            <div class="p-4 sm:p-6">
+                {% if exam_performance %}
+                <div class="chart-container chart-container-md">
+                    <canvas id="examPerformanceChart"></canvas>
+                </div>
+                {% else %}
+                {% include 'components/empty_state.html' with icon_type="chart" title="No exam data available" description="Complete exams with student submissions to see performance charts." %}
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Overall Pass/Fail Distribution -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Overall Pass/Fail Distribution</h2>
+                <p class="mt-1 text-sm text-gray-500">Total student performance across all attempts</p>
+            </div>
+            <div class="p-4 sm:p-6">
+                {% if exam_performance %}
+                <div class="chart-container chart-container-md">
+                    <canvas id="overallDistributionChart"></canvas>
+                </div>
+                {% else %}
+                {% include 'components/empty_state.html' with icon_type="chart" title="No distribution data" description="Student attempts are needed to display the overall pass/fail distribution." %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Passing Rate by Subject per Section Chart -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6 sm:mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Passing Rate by Subject per Section</h2>
+            <p class="mt-1 text-sm text-gray-500">Percentage of students passing (≥60%) each subject in each class section</p>
+        </div>
+        <div class="p-4 sm:p-6">
+            {% if passing_rate_data.subjects %}
+            <div class="chart-container chart-container-lg">
+                <canvas id="passingRateBySubjectChart"></canvas>
+            </div>
+            {% else %}
+            {% include 'components/empty_state.html' with icon_type="chart" title="No subject data available" description="Exams need to have subjects assigned and students need to complete them to see passing rates by subject." %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Class Statistics Section -->
+    {% if class_statistics %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Class Statistics</h2>
+        <p class="text-gray-600 mb-4">Performance metrics grouped by class</p>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strand</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for class_id, stats in class_statistics.items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ stats.class_name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stats.grade_level }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stats.strand }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stats.section }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stats.student_count }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stats.total_attempts }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ stats.average|floatformat:2 }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Filter Attempts</h2>
+        <form method="get" action="{% url 'teacher_dashboard' %}" id="filter-form" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label for="exam-filter" class="block text-sm font-medium text-gray-700 mb-2">Exam</label>
+                <select name="exam" id="exam-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Exams</option>
+                    {% for exam in exams %}
+                    <option value="{{ exam.id }}" {% if exam_filter == exam.id|stringformat:"s" %}selected{% endif %}>
+                        {{ exam.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="student-filter" class="block text-sm font-medium text-gray-700 mb-2">Student</label>
+                <select name="student" id="student-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Students</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}" {% if student_filter == student.id|stringformat:"s" %}selected{% endif %}>
+                        {{ student.get_full_name }} ({{ student.school_id }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="class-filter" class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                <select name="class" id="class-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if class_filter == class.id|stringformat:"s" %}selected{% endif %}>
+                        {{ class.grade_level }} - {{ class.strand }} ({{ class.section }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" id="status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="submitted" {% if status_filter == "submitted" %}selected{% endif %}>Submitted</option>
+                    <option value="graded" {% if status_filter == "graded" %}selected{% endif %}>Graded</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+        {% if exam_filter or student_filter or status_filter or class_filter %}
+        <div class="mt-4">
+            <a href="{% url 'teacher_dashboard' %}" class="text-sm text-blue-600 hover:text-blue-800">
+                Clear all filters
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Attempts Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Student Attempts ({{ total_attempts }})</h2>
+        </div>
+        
+        {% if attempts_data %}
+        <!-- Wrapper for horizontal scrolling on mobile -->
+        <div class="attempts-table-wrapper">
+            <!-- Container for sticky headers and vertical scrolling -->
+            <div class="attempts-table-container">
+                <table class="attempts-table min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">School ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for data in attempts_data %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ data.student.get_full_name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ data.student.school_id }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="exam-title-cell text-sm text-gray-900" title="{{ data.exam.title }}">{{ data.exam.title }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ data.attempt.total_score }} / {{ data.total_possible }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium">
+                                    <span class="{% if data.percentage >= 75 %}text-green-600{% elif data.percentage >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                        {{ data.percentage }}%
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if data.attempt.status == 'graded' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ data.attempt.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">
+                                    {% if data.attempt.submitted_at %}
+                                        {{ data.attempt.submitted_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium action-links">
+                                <a href="{% url 'teacher_attempt_detail' data.attempt.id %}" class="text-blue-600 hover:text-blue-900 mr-3">
+                                    View Details
+                                </a>
+                                {% if data.attempt.status == 'submitted' %}
+                                <a href="{% url 'teacher_grading' data.attempt.id %}" class="text-green-600 hover:text-green-900">
+                                    Grade
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination Component (Requirement 3.4) -->
+        {% include 'components/pagination.html' with page_obj=page_obj %}
+        
+        {% else %}
+        <!-- Empty State: No attempts or no filter results -->
+        {% if exam_filter or student_filter or status_filter or class_filter %}
+            <!-- No Filter Results -->
+            {% url 'teacher_dashboard' as clear_filters_url %}
+            {% include 'components/empty_state.html' with icon_type="search" title="No results found" description="Try adjusting your filters or clearing them to see all attempts." action_url=clear_filters_url action_text="Clear All Filters" %}
+        {% else %}
+            <!-- No Attempts at All -->
+            {% url 'exam_list' as exam_list_url %}
+            {% include 'components/empty_state.html' with icon_type="exam" title="No exam attempts yet" description="Students haven't submitted any exams yet. Create and assign exams to get started." action_url=exam_list_url action_text="Create Your First Exam" %}
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library (Offline) -->
+<script src="{% static 'js/chart.min.js' %}"></script>
+
+<!-- Tooltip Manager -->
+<script src="{% static 'js/components/tooltip-manager.js' %}"></script>
+
+<!-- Dashboard Charts Module -->
+<script src="{% static 'js/pages/dashboard-charts.js' %}"></script>
+
+<!-- Dashboard Data Loader Utility -->
+<script src="{% static 'js/utils/dashboard-data-loader.js' %}"></script>
+
+<script src="{% static 'js/dashboard-filters.js' %}"></script>
+<script src="{% static 'js/pages/class-management.js' %}"></script>
+
+<!-- Chart Data from Django Context -->
+{{ exam_performance_json|json_script:"exam-performance-data" }}
+{{ passing_rate_json|json_script:"passing-rate-data" }}
+{{ dashboard_config|json_script:"dashboard-config-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize teacher dashboard charts with enhanced error handling and validation
+    const success = DashboardDataLoader.initDashboardWithEnhancedErrorHandling('teacher', {
+        // Pass Django context data for proper initialization
+        totalStudents: {{ total_students|default:0 }},
+        totalExams: {{ total_exams|default:0 }},
+        totalPassers: {{ total_passers|default:0 }},
+        totalFailers: {{ total_failers|default:0 }}
+    }, {
+        // Template context for debugging
+        templateName: 'teacher_dashboard.html',
+        hasExamPerformanceData: {% if exam_performance %}true{% else %}false{% endif %},
+        hasPassingRateData: {% if passing_rate_data.subjects %}true{% else %}false{% endif %},
+        hasClassStatistics: {% if class_statistics %}true{% else %}false{% endif %}
+    });
+    
+    if (success) {
+        console.log('Teacher dashboard initialization completed successfully');
+    } else {
+        console.warn('Teacher dashboard initialization failed - fallback UI should be displayed');
+    }
+});
+</script>
+{% endblock %}
+

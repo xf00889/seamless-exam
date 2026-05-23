@@ -1,0 +1,8 @@
+{% if messages %}
+<!-- Pass Django messages to JavaScript -->
+{% load static %}
+{% load json_filters %}
+{{ messages|messages_to_json|json_script:"django-messages-data" }}
+<div data-static-url="{% static '' %}"></div>
+<script src="{% static 'js/components/django-message-loader.js' %}"></script>
+{% endif %}

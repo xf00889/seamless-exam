@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Seamless | School Examination Management System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="landing">
+    <nav class="landing-nav">
+        <div class="nav-brand">
+            <img src="{% static 'img/brand.png' %}" alt="School Logo" class="nav-logo">
+            <div class="brand-text">
+                <span class="nav-title">Seamless</span>
+                <span class="nav-subtitle">School Examination System</span>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <a href="{% url 'student_login' %}" class="nav-link">Student Portal</a>
+            <a href="{% url 'teacher_login' %}" class="btn-nav">Teacher Login</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Comprehensive Examination Management for Schools</h1>
+            <p class="hero-subtitle">A professional platform designed to streamline exam creation, administration, and grading. Empowering educators with reliable tools for academic assessment.</p>
+            <div class="hero-buttons">
+                <a href="{% url 'teacher_login' %}" class="btn btn-primary">
+                    <span>Access Teacher Portal</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <a href="{% url 'student_login' %}" class="btn btn-outline">Student Login</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="slider-container">
+                <div class="slider-track">
+                    <div class="visual-card card-primary active">
+                        <div class="card-icon-wrapper">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Exam Creation</h3>
+                        <p class="card-desc">Build comprehensive assessments with multiple question types and flexible formatting</p>
+                    </div>
+                    <div class="visual-card card-secondary">
+                        <div class="card-icon-wrapper">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Grading System</h3>
+                        <p class="card-desc">Efficient evaluation with automated scoring and detailed analytics</p>
+                    </div>
+                    <div class="visual-card card-accent">
+                        <div class="card-icon-wrapper">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10"/>
+                                <line x1="12" y1="20" x2="12" y2="4"/>
+                                <line x1="6" y1="20" x2="6" y2="14"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Performance Tracking</h3>
+                        <p class="card-desc">Monitor student progress with comprehensive reporting tools</p>
+                    </div>
+                </div>
+                <div class="slider-dots">
+                    <button class="slider-dot active" data-slide="0" aria-label="Go to slide 1"></button>
+                    <button class="slider-dot" data-slide="1" aria-label="Go to slide 2"></button>
+                    <button class="slider-dot" data-slide="2" aria-label="Go to slide 3"></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflow">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">How It Works</span>
+                <h2 class="section-title">Simple Four-Step Process</h2>
+                <p class="section-subtitle">From exam creation to result analysis, our streamlined workflow makes assessment management effortless</p>
+            </div>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-number">01</div>
+                    <div class="step-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </div>
+                    <h3 class="step-title">Create Exam</h3>
+                    <p class="step-desc">Teachers design comprehensive assessments with multiple question types, time limits, and scoring criteria through an intuitive interface.</p>
+                </div>
+                <div class="workflow-arrow">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">02</div>
+                    <div class="step-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h3 class="step-title">Assign to Students</h3>
+                    <p class="step-desc">Publish exams to specific classes or individual students with scheduled availability windows and access controls.</p>
+                </div>
+                <div class="workflow-arrow">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">03</div>
+                    <div class="step-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h3 class="step-title">Students Take Exam</h3>
+                    <p class="step-desc">Students access exams securely, complete assessments in a focused environment, and submit responses with confirmation.</p>
+                </div>
+                <div class="workflow-arrow">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-number">04</div>
+                    <div class="step-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                    </div>
+                    <h3 class="step-title">Grade & Analyze</h3>
+                    <p class="step-desc">Review submissions, apply scoring criteria, provide feedback, and generate detailed performance reports for informed decision-making.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Begin Your Examination Management Journey</h2>
+                <p class="cta-subtitle">Access the platform through your designated portal and experience streamlined assessment administration</p>
+                <div class="cta-buttons">
+                    <a href="{% url 'teacher_login' %}" class="btn btn-primary btn-large">
+                        <span>Teacher Portal</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                    <a href="{% url 'student_login' %}" class="btn btn-secondary btn-large">
+                        <span>Student Login</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="{% static 'img/brand.png' %}" alt="School Logo" class="footer-logo">
+                    <div class="footer-brand-text">
+                        <span class="footer-title">Seamless</span>
+                        <span class="footer-subtitle">School Examination System</span>
+                    </div>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2026 Seamless. Designed for educational institutions.</p>
+                    <p class="footer-note">Offline-capable examination management platform</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script>
+// Hero slider functionality
+(function() {
+    const track = document.querySelector('.slider-track');
+    const dots = document.querySelectorAll('.slider-dot');
+    const cards = document.querySelectorAll('.visual-card');
+    let currentSlide = 0;
+    let autoplayInterval;
+
+    function goToSlide(index) {
+        currentSlide = index;
+        
+        // Update cards
+        cards.forEach((card, i) => {
+            card.classList.toggle('active', i === index);
+        });
+        
+        // Update dots
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+        
+        // Move track
+        track.style.transform = `translateX(-${index * 100}%)`;
+    }
+
+    function nextSlide() {
+        const next = (currentSlide + 1) % cards.length;
+        goToSlide(next);
+    }
+
+    function startAutoplay() {
+        autoplayInterval = setInterval(nextSlide, 4000);
+    }
+
+    function stopAutoplay() {
+        clearInterval(autoplayInterval);
+    }
+
+    // Dot click handlers
+    dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            const slideIndex = parseInt(dot.dataset.slide);
+            goToSlide(slideIndex);
+            stopAutoplay();
+            startAutoplay();
+        });
+    });
+
+    // Touch/swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    track.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        stopAutoplay();
+    });
+
+    track.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+        startAutoplay();
+    });
+
+    function handleSwipe() {
+        if (touchEndX < touchStartX - 50) {
+            // Swipe left
+            const next = (currentSlide + 1) % cards.length;
+            goToSlide(next);
+        }
+        if (touchEndX > touchStartX + 50) {
+            // Swipe right
+            const prev = (currentSlide - 1 + cards.length) % cards.length;
+            goToSlide(prev);
+        }
+    }
+
+    // Pause on hover
+    track.addEventListener('mouseenter', stopAutoplay);
+    track.addEventListener('mouseleave', startAutoplay);
+
+    // Start autoplay
+    startAutoplay();
+})();
+</script>
+{% endblock %}

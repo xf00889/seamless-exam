@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/charts.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="max-w-7xl mx-auto" role="main" aria-labelledby="dashboard-heading">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-cyan-500 border-t border-r border-b border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-cyan-100 mr-2 sm:mr-3">
+                    <svg class="h-4 w-4 sm:h-6 sm:w-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="dashboard-heading" class="text-xl sm:text-3xl font-bold text-gray-900 mb-0.5 sm:mb-1">My Dashboard</h1>
+                    <p class="text-xs sm:text-base text-gray-600 hidden sm:block">Track your performance and progress</p>
+                </div>
+            </div>
+            <a href="{% url 'student_profile' %}" 
+               class="inline-flex items-center justify-center sm:justify-start bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-md text-sm sm:text-base font-medium transition-colors"
+               aria-label="Go to profile page">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="hidden sm:inline">View Profile</span>
+                <span class="sm:hidden">Profile</span>
+            </a>
+        </div>
+    </div>
+
+    {% if has_data %}
+    <!-- Performance Metrics Cards (4-column grid) -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8" aria-label="Performance metrics">
+        <!-- Total Exams Card -->
+        <article class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200" aria-labelledby="total-exams-label">
+            <div class="p-3 sm:p-4 lg:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                    <div class="w-full">
+                        <p id="total-exams-label" class="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">Total Exams</p>
+                        <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900" aria-label="{{ metrics.total_exams }} total exams taken">{{ metrics.total_exams }}</p>
+                    </div>
+                    <div class="flex-shrink-0 hidden sm:block" aria-hidden="true">
+                        <svg class="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Average Score Card -->
+        <article class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200" aria-labelledby="average-score-label">
+            <div class="p-3 sm:p-4 lg:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                    <div class="w-full">
+                        <p id="average-score-label" class="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">Avg Score</p>
+                        <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-green-600" aria-label="Average score {{ metrics.average_score|floatformat:1 }} percent">{{ metrics.average_score|floatformat:1 }}%</p>
+                    </div>
+                    <div class="flex-shrink-0 hidden sm:block" aria-hidden="true">
+                        <svg class="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Highest Score Card -->
+        <article class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200" aria-labelledby="highest-score-label">
+            <div class="p-3 sm:p-4 lg:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                    <div class="w-full">
+                        <p id="highest-score-label" class="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">Highest</p>
+                        <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-purple-600" aria-label="Highest score {{ metrics.highest_score|floatformat:1 }} percent">{{ metrics.highest_score|floatformat:1 }}%</p>
+                    </div>
+                    <div class="flex-shrink-0 hidden sm:block" aria-hidden="true">
+                        <svg class="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Pass Rate Card -->
+        <article class="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200" aria-labelledby="pass-rate-label">
+            <div class="p-3 sm:p-4 lg:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                    <div class="w-full">
+                        <p id="pass-rate-label" class="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">Pass Rate</p>
+                        <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-amber-600" aria-label="Pass rate {{ metrics.pass_rate|floatformat:1 }} percent">{{ metrics.pass_rate|floatformat:1 }}%</p>
+                    </div>
+                    <div class="flex-shrink-0 hidden sm:block" aria-hidden="true">
+                        <svg class="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Progress Chart Section -->
+    <section class="bg-white shadow-md rounded-lg overflow-hidden mb-4 sm:mb-6 lg:mb-8" aria-labelledby="score-trend-heading">
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h2 id="score-trend-heading" class="text-base sm:text-lg font-semibold text-gray-900">Score Trend Over Time</h2>
+            <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500">Your performance across all exams</p>
+        </div>
+        <div class="p-3 sm:p-4 lg:p-6">
+            {% if score_trend %}
+            <div class="chart-container chart-container-sm" role="img" aria-label="Line chart showing score trends over time">
+                <canvas id="scoreTrendChart" aria-label="Score trend chart" class="chart-canvas"></canvas>
+            </div>
+            {% else %}
+            <div class="chart-empty-state chart-empty-state-lg">
+                <p class="chart-empty-text chart-empty-text-lg">Not enough data to display chart</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Two Column Layout: Performance by Type and Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+        <!-- Performance by Type Chart -->
+        <section class="bg-white shadow-md rounded-lg overflow-hidden" aria-labelledby="type-performance-heading">
+            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                <h2 id="type-performance-heading" class="text-base sm:text-lg font-semibold text-gray-900">Performance by Type</h2>
+                <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500">Average scores by category</p>
+            </div>
+            <div class="p-3 sm:p-4 lg:p-6">
+                {% if type_performance %}
+                <div class="chart-container chart-container-sm" role="img" aria-label="Bar chart showing performance by question type">
+                    <canvas id="typePerformanceChart" aria-label="Question type performance chart" class="chart-canvas"></canvas>
+                </div>
+                {% else %}
+                <div class="chart-empty-state chart-empty-state-lg">
+                    <p class="chart-empty-text chart-empty-text-lg">No question type data available</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Recent Activity List -->
+        <section class="bg-white shadow-md rounded-lg overflow-hidden" aria-labelledby="recent-activity-heading">
+            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h2 id="recent-activity-heading" class="text-base sm:text-lg font-semibold text-gray-900">Recent Activity</h2>
+                    <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 hidden sm:block">Your latest exam attempts</p>
+                </div>
+                <a href="{% url 'student_history' %}" 
+                   class="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 sm:px-3 py-1"
+                   aria-label="View all exam history">
+                    <span class="hidden sm:inline">View All &rarr;</span>
+                    <span class="sm:hidden">All &rarr;</span>
+                </a>
+            </div>
+            <div class="p-3 sm:p-4 lg:p-6">
+                {% if recent_activity %}
+                <div class="space-y-3 sm:space-y-4">
+                    {% for activity in recent_activity %}
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 gap-3">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                                {{ activity.exam_title }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                {{ activity.date|date:"M d, Y" }} at {{ activity.date|time:"g:i A" }}
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-between sm:justify-end sm:ml-4 sm:space-x-3">
+                            {% if activity.status == 'graded' %}
+                            <div class="text-left sm:text-right">
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ activity.percentage|floatformat:1 }}%
+                                </p>
+                                {% if activity.percentage >= 60 %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    Passed
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    Failed
+                                </span>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'student_results' activity.attempt_id %}" 
+                               class="text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-2 touch-target"
+                               aria-label="View results for {{ activity.exam_title }}">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Pending
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Start taking exams to see your activity here.
+                    </p>
+                    <div class="mt-6">
+                        <a href="{% url 'student_exam_list' %}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Browse Available Exams
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty State: No Data Available -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Welcome to Your Dashboard!</h3>
+            <p class="mt-2 text-sm text-gray-500">
+                You haven't taken any exams yet. Start taking exams to see your performance metrics and progress charts.
+            </p>
+            <div class="mt-8">
+                <a href="{% url 'student_exam_list' %}" 
+                   class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Take Your First Exam
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library (Offline) -->
+<script src="{% static 'js/chart.min.js' %}"></script>
+
+<!-- Data Loading Utilities -->
+<script src="{% static 'js/utils/dashboard-data-loader.js' %}"></script>
+
+<!-- Dashboard Charts Module -->
+<script src="{% static 'js/pages/dashboard-charts.js' %}"></script>
+
+<!-- Chart Data from Django Context -->
+{{ score_trend|json_script:"score-trend-data" }}
+{{ type_performance|json_script:"type-performance-data" }}
+
+<script>
+// Initialize charts when DOM is ready with enhanced error handling and validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize student dashboard charts with enhanced error handling
+    const success = DashboardDataLoader.initDashboardWithEnhancedErrorHandling('student', {
+        // Pass Django context data for proper initialization
+        studentId: {{ user.id|default:0 }},
+        hasAttempts: {% if attempts_data %}true{% else %}false{% endif %}
+    }, {
+        // Template context for debugging
+        templateName: 'student_dashboard.html',
+        hasScoreTrendData: {% if score_trend_data %}true{% else %}false{% endif %},
+        hasTypePerformanceData: {% if type_performance_data %}true{% else %}false{% endif %},
+        totalAttempts: {{ attempts_data|length|default:0 }}
+    });
+    
+    if (success) {
+        console.log('Student dashboard initialization completed successfully');
+    } else {
+        console.warn('Student dashboard initialization failed - fallback UI should be displayed');
+    }
+});
+</script>
+{% endblock %}
+

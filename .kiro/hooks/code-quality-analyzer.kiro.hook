@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analyzer",
+  "description": "Analyzes modified source code files for potential improvements including code smells, design patterns, and best practices. Provides suggestions for improving readability, maintainability, and performance while preserving functionality.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified code in the following file for potential improvements:\n\nFile: {file_path}\nChanges: {file_content}\n\nPlease review the code and provide specific suggestions for:\n\n1. **Code Smells & Anti-patterns**: Identify any problematic patterns, duplicated code, overly complex functions, or violations of SOLID principles\n\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure and maintainability\n\n3. **Best Practices**: Recommend language-specific best practices, naming conventions, and coding standards\n\n4. **Performance Optimizations**: Identify potential performance bottlenecks and suggest optimizations\n\n5. **Readability & Maintainability**: Suggest improvements for code clarity, documentation, and long-term maintainability\n\nFocus on actionable suggestions that maintain the existing functionality while improving code quality. Prioritize the most impactful improvements first."
+  }
+}

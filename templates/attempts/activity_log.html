@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Log - {{ student.get_full_name }} - Seamless{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="bg-white rounded-lg shadow-sm border-l-4 border-l-orange-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-orange-100 mr-3">
+                <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-1">Activity Log</h1>
+                <p class="text-gray-600">{{ student.get_full_name }} - {{ exam.title }}</p>
+            </div>
+        </div>
+        <a href="{% url 'teacher_grading_list' %}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Grading
+        </a>
+    </div>
+</div>
+
+<!-- Quick Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <a href="{% url 'teacher_grading' attempt.id %}" 
+       class="inline-flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors shadow-sm"
+       aria-label="View grading details">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        View Grading Details
+    </a>
+    
+    <a href="{% url 'teacher_attempt_detail' attempt.id %}" 
+       class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors shadow-sm"
+       aria-label="View full attempt details">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        View Full Attempt Details
+    </a>
+</div>
+
+<!-- Flagged Status Banner (if flagged) -->
+{% if summary.is_flagged %}
+<div class="bg-red-50 border-l-4 border-red-500 p-6 mb-6 rounded-lg shadow-sm">
+    <div class="flex items-start">
+        <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <div class="ml-3 flex-1">
+            <h3 class="text-lg font-semibold text-red-800 mb-1">
+                🚩 Flagged for Potential Cheating
+            </h3>
+            <p class="text-red-700">
+                <strong>Reason:</strong> {{ summary.flag_reason }}
+            </p>
+            {% if summary.auto_submitted %}
+            <p class="text-red-700 mt-1">
+                This exam was automatically submitted by the system due to excessive tab switching violations.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Summary Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <!-- Total Violations -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600 mb-1">Total Violations</p>
+                <p class="text-3xl font-bold {% if summary.total_violations >= 3 %}text-red-600{% elif summary.total_violations > 0 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                    {{ summary.total_violations }}
+                </p>
+            </div>
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg {% if summary.total_violations >= 3 %}bg-red-100{% elif summary.total_violations > 0 %}bg-yellow-100{% else %}bg-green-100{% endif %}">
+                <svg class="h-6 w-6 {% if summary.total_violations >= 3 %}text-red-600{% elif summary.total_violations > 0 %}text-yellow-600{% else %}text-green-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Time Away -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600 mb-1">Total Time Away</p>
+                <p class="text-3xl font-bold text-gray-900">
+                    {{ summary.total_time_away_formatted }}
+                </p>
+            </div>
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
+                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Duration -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600 mb-1">Exam Duration</p>
+                <p class="text-3xl font-bold text-gray-900">
+                    {{ summary.exam_duration_formatted }}
+                </p>
+            </div>
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100">
+                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600 mb-1">Submission Status</p>
+                <p class="text-lg font-bold {% if summary.auto_submitted %}text-red-600{% else %}text-green-600{% endif %}">
+                    {% if summary.auto_submitted %}
+                        Auto-Submitted
+                    {% else %}
+                        Normal
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg {% if summary.auto_submitted %}bg-red-100{% else %}bg-green-100{% endif %}">
+                <svg class="h-6 w-6 {% if summary.auto_submitted %}text-red-600{% else %}text-green-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {% if summary.auto_submitted %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    {% else %}
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    {% endif %}
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeline -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+        <svg class="h-6 w-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Activity Timeline
+    </h2>
+
+    {% if timeline %}
+    <div class="relative">
+        <!-- Vertical line connecting events -->
+        <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+        
+        <div class="space-y-6">
+            {% for event in timeline %}
+            <div class="relative flex items-start">
+                <!-- Icon with border -->
+                <div class="relative z-10 flex-shrink-0 mr-4">
+                    {% if event.event_type == 'start' %}
+                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-green-100 border-4 border-white shadow-sm">
+                        <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    {% elif event.event_type == 'violation' %}
+                    <div class="flex items-center justify-center h-10 w-10 rounded-full {% if event.is_critical %}bg-red-100{% else %}bg-yellow-100{% endif %} border-4 border-white shadow-sm">
+                        <svg class="h-5 w-5 {% if event.is_critical %}text-red-600{% else %}text-yellow-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    {% elif event.event_type == 'return' %}
+                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 border-4 border-white shadow-sm">
+                        <svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    {% elif event.event_type == 'submit' %}
+                    <div class="flex items-center justify-center h-10 w-10 rounded-full {% if event.is_critical %}bg-red-100{% else %}bg-green-100{% endif %} border-4 border-white shadow-sm">
+                        <svg class="h-5 w-5 {% if event.is_critical %}text-red-600{% else %}text-green-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Event Details Card -->
+                <div class="flex-1 {% if event.is_critical %}bg-red-50 border-l-4 border-red-500{% else %}bg-gray-50 border-l-4 border-gray-300{% endif %} rounded-r-lg p-4 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold {% if event.is_critical %}text-red-900{% else %}text-gray-900{% endif %}">
+                                {{ event.description }}
+                            </p>
+                            
+                            {% if event.event_type == 'violation' and event.warning_number %}
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if event.warning_number == 3 %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    Warning {{ event.warning_number }} of 3
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.event_type == 'return' and event.duration_formatted %}
+                            <p class="text-sm text-gray-600 mt-2">
+                                Duration away: <span class="font-medium">{{ event.duration_formatted }}</span>
+                            </p>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 ml-4 whitespace-nowrap">
+                            {{ event.timestamp|date:"M d, Y g:i A" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No Activity</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            No tab switching violations were recorded for this exam attempt.
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,220 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - link "Culipapa National High School seal Gradely Examination System Culipapa National High School" [ref=e6] [cursor=pointer]:
+            - /url: /
+            - img "Culipapa National High School seal" [ref=e8]
+            - generic [ref=e9]: Gradely Examination System Culipapa National High School
+          - navigation "Homepage navigation" [ref=e10]:
+            - link "Workflow" [ref=e11] [cursor=pointer]:
+              - /url: "#workflow"
+            - link "Access" [ref=e12] [cursor=pointer]:
+              - /url: "#audiences"
+            - link "Teacher Login" [ref=e13] [cursor=pointer]:
+              - /url: /users/teacher/login/
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - paragraph [ref=e16]: Institutional exam platform
+            - heading "Academic assessment with editorial clarity." [level=1] [ref=e17]
+            - paragraph [ref=e18]: A refined local examination environment for teachers and students, shaped with strong typography, confident structure, and a calmer first impression.
+            - generic [ref=e19]:
+              - link "Teacher Login" [ref=e20] [cursor=pointer]:
+                - /url: /users/teacher/login/
+              - link "Student Login" [ref=e21] [cursor=pointer]:
+                - /url: /users/student/login/
+              - link "Explore the workflow" [ref=e22] [cursor=pointer]:
+                - /url: "#workflow"
+            - generic "Platform highlights" [ref=e23]:
+              - article [ref=e24]:
+                - paragraph [ref=e25]: Oversight
+                - paragraph [ref=e26]: Teacher-led preparation, publication, and grading remain central from start to finish.
+              - article [ref=e27]:
+                - paragraph [ref=e28]: Discipline
+                - paragraph [ref=e29]: Structured layouts and intentional whitespace make the system feel precise and credible.
+              - article [ref=e30]:
+                - paragraph [ref=e31]: Trust
+                - paragraph [ref=e32]: Local deployment, clear entry points, and calm navigation reduce friction for students.
+          - generic [ref=e33]:
+            - article [ref=e34]:
+              - paragraph [ref=e35]: Institutional mark
+              - img "School seal displayed as the primary supporting visual" [ref=e37]
+              - paragraph [ref=e38]: An academic homepage should feel anchored in school identity, not borrowed from generic software branding.
+            - article [ref=e39]:
+              - generic [ref=e40]: Editorial workflow 01
+              - generic "Exam workflow overview" [ref=e41]:
+                - generic [ref=e42]:
+                  - text: Prepare
+                  - strong [ref=e43]: Build and review examination material
+                - generic [ref=e44]:
+                  - text: Publish
+                  - strong [ref=e45]: Release exams through a clear faculty-controlled process
+                - generic [ref=e46]:
+                  - text: Take
+                  - strong [ref=e47]: Give students a simple, calm, focused entry point
+                - generic [ref=e48]:
+                  - text: Review
+                  - strong [ref=e49]: Grade, analyze, and track outcomes with confidence
+            - article [ref=e50]:
+              - paragraph [ref=e51]: Designed to reassure faculty, orient students, and uphold examination standards before the first click.
+      - region "Core strengths" [ref=e52]:
+        - article [ref=e53]:
+          - paragraph [ref=e54]: "01"
+          - heading "Locally grounded" [level=2] [ref=e55]
+          - paragraph [ref=e56]: The experience supports a local exam workflow with a serious, campus-ready tone rather than a casual consumer feel.
+        - article [ref=e57]:
+          - paragraph [ref=e58]: "02"
+          - heading "Typography first" [level=2] [ref=e59]
+          - paragraph [ref=e60]: Large serif headlines, disciplined sans-serif detail text, and elegant spacing drive the page hierarchy.
+        - article [ref=e61]:
+          - paragraph [ref=e62]: "03"
+          - heading "Conversion ready" [level=2] [ref=e63]
+          - paragraph [ref=e64]: Teacher and student access are visible immediately, then repeated in the right places throughout the page.
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - paragraph [ref=e67]: Homepage rhythm
+          - heading "Built like a prospectus, then organized to convert." [level=2] [ref=e68]
+          - paragraph [ref=e69]: "Each section carries one message clearly: institutional confidence at the top, product clarity in the middle, and direct access at the end."
+        - generic [ref=e70]:
+          - article [ref=e71]:
+            - paragraph [ref=e72]: "01"
+            - heading "Hero with authority" [level=3] [ref=e73]
+            - paragraph [ref=e74]: A headline-led opening with school identity, editorial spacing, and immediate teacher and student calls to action.
+          - article [ref=e75]:
+            - paragraph [ref=e76]: "02"
+            - heading "Structured proof" [level=3] [ref=e77]
+            - paragraph [ref=e78]: Supporting visuals use framed panels, ruled dividers, and faux folio layouts instead of playful marketing graphics.
+          - article [ref=e79]:
+            - paragraph [ref=e80]: "03"
+            - heading "Refined transitions" [level=3] [ref=e81]
+            - paragraph [ref=e82]: Soft background shifts, thin borders, and measured section spacing create a confident editorial rhythm.
+          - article [ref=e83]:
+            - paragraph [ref=e84]: "04"
+            - heading "Clear destination" [level=3] [ref=e85]
+            - paragraph [ref=e86]: Access routes stay visible, so users never need to hunt for the right place to begin.
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - paragraph [ref=e89]: Audience pathways
+          - heading "One refined landing page, two confident entry points." [level=2] [ref=e90]
+          - paragraph [ref=e91]: The layout makes the distinction between faculty management and student participation feel clear, intentional, and easy to trust.
+        - generic [ref=e92]:
+          - article [ref=e93]:
+            - paragraph [ref=e94]: For teachers
+            - heading "Prepare, publish, and review without visual clutter." [level=3] [ref=e95]
+            - list [ref=e96]:
+              - listitem [ref=e97]: Lead exam creation with a more polished first-screen experience.
+              - listitem [ref=e98]: Present key actions in a hierarchy that feels deliberate and professional.
+              - listitem [ref=e99]: Reinforce institutional quality before users reach the dashboard.
+            - link "Enter teacher workspace" [ref=e100] [cursor=pointer]:
+              - /url: /users/teacher/login/
+          - article [ref=e101]:
+            - paragraph [ref=e102]: For students
+            - heading "Arrive in a calmer environment that feels direct and academically serious." [level=3] [ref=e103]
+            - list [ref=e104]:
+              - listitem [ref=e105]: Clear orientation from the hero makes student access immediately visible.
+              - listitem [ref=e106]: Minimal navigation keeps attention on the exam journey, not on interface noise.
+              - listitem [ref=e107]: Sharper hierarchy helps students recognize the right action quickly.
+            - link "Enter student access" [ref=e108] [cursor=pointer]:
+              - /url: /users/student/login/
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - paragraph [ref=e111]: Final call to action
+          - heading "Let the homepage set the standard before the exam experience begins." [level=2] [ref=e112]
+          - paragraph [ref=e113]: The redesign positions Gradely as a serious academic platform with premium tone, stronger hierarchy, and cleaner conversion points for both audiences.
+        - generic [ref=e114]:
+          - link "Teacher Login" [ref=e115] [cursor=pointer]:
+            - /url: /users/teacher/login/
+          - link "Student Login" [ref=e116] [cursor=pointer]:
+            - /url: /users/student/login/
+  - contentinfo [ref=e117]:
+    - generic [ref=e119]:
+      - paragraph [ref=e120]: © 2026 Gradely. All rights reserved.
+      - paragraph [ref=e121]:
+        - generic [ref=e122]: "Developed by:"
+        - generic [ref=e123]: <toto/>
+        - img [ref=e124]
+  - list [ref=e127]:
+    - listitem [ref=e128]:
+      - link "Hide »" [ref=e129] [cursor=pointer]:
+        - /url: "#"
+    - listitem [ref=e130]:
+      - link "Toggle Theme" [ref=e131] [cursor=pointer]:
+        - /url: "#"
+        - text: Toggle Theme
+        - img [ref=e132]
+    - listitem [ref=e134]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e135]
+      - link "History /" [ref=e136] [cursor=pointer]:
+        - /url: "#"
+        - text: History
+        - text: /
+    - listitem [ref=e137]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e138]
+      - link "Versions Django 4.2.27" [ref=e139] [cursor=pointer]:
+        - /url: "#"
+        - text: Versions
+        - text: Django 4.2.27
+    - listitem [ref=e140]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e141]
+      - generic [ref=e142]:
+        - text: Time
+        - text: "Total: 290.41ms"
+    - listitem [ref=e143]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e144]
+      - link "Settings" [ref=e145] [cursor=pointer]:
+        - /url: "#"
+    - listitem [ref=e146]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e147]
+      - link "Headers" [ref=e148] [cursor=pointer]:
+        - /url: "#"
+    - listitem [ref=e149]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e150]
+      - link "Request TemplateView" [ref=e151] [cursor=pointer]:
+        - /url: "#"
+        - text: Request
+        - text: TemplateView
+    - listitem [ref=e152]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e153]
+      - link "SQL 1 query in 0.97ms" [ref=e154] [cursor=pointer]:
+        - /url: "#"
+        - text: SQL
+        - text: 1 query in 0.97ms
+    - listitem [ref=e155]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e156]
+      - link "Static files 9 files used" [ref=e157] [cursor=pointer]:
+        - /url: "#"
+        - text: Static files
+        - text: 9 files used
+    - listitem [ref=e158]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e159]
+      - link "Templates home.html" [ref=e160] [cursor=pointer]:
+        - /url: "#"
+        - text: Templates
+        - text: home.html
+    - listitem [ref=e161]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e162]
+      - link "Alerts" [ref=e163] [cursor=pointer]:
+        - /url: "#"
+    - listitem [ref=e164]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e165]
+      - link "Cache 0 calls in 0.00ms" [ref=e166] [cursor=pointer]:
+        - /url: "#"
+        - text: Cache
+        - text: 0 calls in 0.00ms
+    - listitem [ref=e167]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e168]
+      - link "Signals 36 receivers of 15 signals" [ref=e169] [cursor=pointer]:
+        - /url: "#"
+        - text: Signals
+        - text: 36 receivers of 15 signals
+    - listitem [ref=e170]:
+      - checkbox "Disable for next and successive requests" [checked] [ref=e171]
+      - link "Community" [ref=e172] [cursor=pointer]:
+        - /url: "#"
+    - listitem [ref=e173]:
+      - checkbox "Enable for next and successive requests" [ref=e174]
+      - generic [ref=e175]: Intercept redirects
+    - listitem [ref=e176]:
+      - checkbox "Enable for next and successive requests" [ref=e177]
+      - generic [ref=e178]: Profiling

@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ exam.title }} - Seamless{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="flex flex-col lg:flex-row gap-4 px-2 sm:px-4 max-w-7xl mx-auto">
+    <!-- Left Sidebar - Question Navigation -->
+    <aside class="w-full lg:w-64 flex-shrink-0 order-2 lg:order-1">
+        <div class="bg-white shadow rounded-lg p-4 sticky top-4">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">Question Navigation</h3>
+            <div id="question-sidebar" class="grid grid-cols-5 lg:grid-cols-3 gap-2">
+                {% for data in questions_data %}
+                <button type="button" 
+                        class="question-nav-btn w-10 h-10 rounded-md border-2 text-sm font-medium transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        data-question-number="{{ forloop.counter }}"
+                        data-question-id="{{ data.question.id }}"
+                        data-answered="{% if data.answer %}true{% else %}false{% endif %}">
+                    {{ forloop.counter }}
+                </button>
+                {% endfor %}
+            </div>
+            <div class="mt-4 pt-4 border-t">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-4 h-4 rounded border-2 bg-blue-100 border-blue-500"></div>
+                    <span class="text-xs text-gray-600">Current</span>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-4 h-4 rounded border-2 bg-green-100 border-green-500"></div>
+                    <span class="text-xs text-gray-600">Answered</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded border-2 bg-gray-100 border-gray-300"></div>
+                    <span class="text-xs text-gray-600">Unanswered</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <div class="flex-1 order-1 lg:order-2">
+        <!-- Exam Header -->
+        <div class="bg-white shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                <div class="flex-1">
+                    <h2 class="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">{{ exam.title }}</h2>
+                    {% if exam.description %}
+                    <p class="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600">{{ exam.description }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Timer and Warning Count -->
+                <div class="text-center sm:text-right flex-shrink-0">
+                    <div>
+                        <div class="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1">Time Remaining</div>
+                        <div id="timer" class="text-2xl sm:text-3xl font-bold text-blue-600" 
+                             data-remaining="{{ remaining_time }}"
+                             data-attempt-id="{{ attempt.id }}">
+                            --:--
+                        </div>
+                    </div>
+                    
+                    <!-- Warning Count Display -->
+                    <div class="mt-2 sm:mt-3">
+                        <div class="text-xs sm:text-sm text-gray-500 mb-0.5">Tab Warnings</div>
+                        <div id="warning-count-display" class="flex items-center justify-center sm:justify-end gap-2">
+                            <span id="warning-count-badge" class="px-2 py-1 rounded text-sm font-semibold bg-green-100 text-green-800">
+                                0/3
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Questions Container with Pagination -->
+        <form id="exam-form" data-attempt-id="{{ attempt.id }}">
+            {% csrf_token %}
+            <div id="questions-container">
+                {% for data in questions_data %}
+        <div class="bg-white shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 question-card" 
+             data-question-id="{{ data.question.id }}">
+            
+            <!-- Question Header -->
+            <div class="flex justify-between items-start mb-3 sm:mb-4">
+                <div class="flex-1">
+                    <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800 mb-1.5 sm:mb-2">
+                        {{ data.question.get_question_type_display }}
+                    </span>
+                    <h3 class="text-base sm:text-lg font-medium text-gray-900">
+                        Question {{ forloop.counter }}
+                    </h3>
+                </div>
+                <span class="text-xs sm:text-sm text-gray-500 ml-2 flex-shrink-0">{{ data.question.points }} pts</span>
+            </div>
+            
+            <!-- Question Text -->
+            <div class="mb-3 sm:mb-4">
+                <p class="text-sm sm:text-base text-gray-800 leading-relaxed">{{ data.question.question_text }}</p>
+            </div>
+            
+            <!-- Answer Input -->
+            <div class="answer-container">
+                {% if data.question.question_type == 'MCQ' %}
+                    <!-- Multiple Choice -->
+                    <div class="space-y-2">
+                        {% for option in data.question.options %}
+                        <label class="flex items-start p-2.5 sm:p-3 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" 
+                                   name="question_{{ data.question.id }}" 
+                                   value="{{ option.key }}"
+                                   class="answer-input h-4 w-4 sm:h-5 sm:w-5 text-blue-600 focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                                   data-question-id="{{ data.question.id }}"
+                                   {% if data.answer and data.answer.answer_text.value == option.key %}checked{% endif %}>
+                            <span class="ml-2.5 sm:ml-3 text-sm sm:text-base text-gray-700 leading-relaxed">
+                                <span class="font-semibold">{{ option.key }}.</span> {{ option.value }}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                
+                {% elif data.question.question_type == 'TRUE_FALSE' %}
+                    <!-- True/False -->
+                    <div class="space-y-2">
+                        <label class="flex items-center p-2.5 sm:p-3 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" 
+                                   name="question_{{ data.question.id }}" 
+                                   value="true"
+                                   class="answer-input h-4 w-4 sm:h-5 sm:w-5 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                                   data-question-id="{{ data.question.id }}"
+                                   {% if data.answer and data.answer.answer_text.value == 'true' %}checked{% endif %}>
+                            <span class="ml-2.5 sm:ml-3 text-sm sm:text-base text-gray-700">True</span>
+                        </label>
+                        <label class="flex items-center p-2.5 sm:p-3 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" 
+                                   name="question_{{ data.question.id }}" 
+                                   value="false"
+                                   class="answer-input h-4 w-4 sm:h-5 sm:w-5 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                                   data-question-id="{{ data.question.id }}"
+                                   {% if data.answer and data.answer.answer_text.value == 'false' %}checked{% endif %}>
+                            <span class="ml-2.5 sm:ml-3 text-sm sm:text-base text-gray-700">False</span>
+                        </label>
+                    </div>
+                
+                {% elif data.question.question_type == 'IDENTIFICATION' %}
+                    <!-- Identification -->
+                    <input type="text" 
+                           name="question_{{ data.question.id }}"
+                           class="answer-input w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter your answer"
+                           data-question-id="{{ data.question.id }}"
+                           value="{% if data.answer %}{{ data.answer.answer_text.value }}{% endif %}">
+                
+                {% elif data.question.question_type == 'ENUMERATION' %}
+                    <!-- Enumeration -->
+                    <textarea name="question_{{ data.question.id }}"
+                              class="answer-input w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="4"
+                              placeholder="Enter items separated by commas or new lines"
+                              data-question-id="{{ data.question.id }}">{% if data.answer %}{{ data.answer.answer_text.value }}{% endif %}</textarea>
+                    <p class="mt-1 text-xs sm:text-sm text-gray-500">
+                        Separate multiple items with commas or new lines
+                    </p>
+                
+                {% elif data.question.question_type == 'ESSAY' %}
+                    <!-- Essay -->
+                    <textarea name="question_{{ data.question.id }}"
+                              class="answer-input w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="6"
+                              placeholder="Write your answer here"
+                              data-question-id="{{ data.question.id }}">{% if data.answer %}{{ data.answer.answer_text.value }}{% endif %}</textarea>
+                {% endif %}
+            </div>
+            
+            <!-- Save Status -->
+            <div class="mt-2 text-xs sm:text-sm text-gray-500 save-status" data-question-id="{{ data.question.id }}">
+                <span class="saved-indicator hidden">
+                    <svg class="inline w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Saved
+                </span>
+                <span class="saving-indicator hidden">Saving...</span>
+            </div>
+        </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="bg-white shadow rounded-lg p-4 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-gray-600">
+                        <span id="page-indicator">Page 1 of 1</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" 
+                                id="prev-page-btn"
+                                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Previous
+                        </button>
+                        <button type="button" 
+                                id="next-page-btn"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+        <div class="bg-white shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <p class="text-xs sm:text-sm text-gray-600">
+                    Make sure you have answered all questions before submitting.
+                </p>
+                <button type="button" 
+                        id="submit-exam-btn"
+                        class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base font-semibold rounded-md transition-colors">
+                    Submit and Review
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="submit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+    <div class="relative top-20 mx-auto p-4 border w-full max-w-xs sm:max-w-sm shadow-lg rounded-md bg-white">
+        <div class="mt-1 text-center">
+            <h3 class="text-base leading-6 font-medium text-gray-900">Submit Exam?</h3>
+            <div class="mt-2 px-3 py-2">
+                <p class="text-xs text-gray-500">
+                    Are you sure you want to submit your exam? You will not be able to change your answers after submission.
+                </p>
+            </div>
+            <div class="items-center px-2 py-2">
+                <button id="confirm-submit-btn"
+                        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                    Yes, Submit
+                </button>
+                <button id="cancel-submit-btn"
+                        class="mt-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md w-full shadow-sm border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Warning Modal -->
+<div id="tab-warning-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+    <div class="relative top-20 mx-auto p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-2 sm:mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-3">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mb-2">Tab Switch Detected</h3>
+            <div class="mt-2 px-4 sm:px-7 py-2 sm:py-3">
+                <p id="warning-text" class="text-xs sm:text-sm text-gray-600 mb-3">
+                    You have switched away from the exam tab. Please stay on this page to avoid automatic submission.
+                </p>
+                <div id="warning-count" class="text-sm sm:text-base font-semibold text-yellow-600">
+                    Warning 1 of 3
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    After 3 warnings, your exam will be automatically submitted and flagged.
+                </p>
+            </div>
+            <div class="items-center px-3 sm:px-4 py-2 sm:py-3">
+                <button onclick="document.getElementById('tab-warning-modal').classList.add('hidden')"
+                        class="px-4 py-2 bg-yellow-600 text-white text-sm sm:text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors">
+                    OK, I Understand
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-Submit Modal -->
+<div id="auto-submit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+    <div class="relative top-20 mx-auto p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-2 sm:mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-3">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mb-2">Exam Auto-Submitted</h3>
+            <div class="mt-2 px-4 sm:px-7 py-2 sm:py-3">
+                <p class="text-xs sm:text-sm text-gray-600 mb-3">
+                    You have exceeded the maximum number of tab switches. Your exam is being submitted automatically.
+                </p>
+                <div class="flex justify-center mt-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/exam-timer.js' %}"></script>
+<script src="{% static 'js/answer-saver.js' %}"></script>
+<script src="{% static 'js/tab-monitor.js' %}"></script>
+<script src="{% static 'js/exam-navigation.js' %}"></script>
+<script src="{% static 'js/exam-pagination.js' %}"></script>
+{% endblock %}
+

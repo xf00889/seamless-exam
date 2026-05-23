@@ -1,0 +1,442 @@
+/* Profile Page Specific Styles */
+/* Extends main.css with profile-specific components */
+
+/* Profile Picture Styles */
+.profile-picture-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #e5e7eb;
+    transition: border-color 0.3s;
+}
+
+.profile-picture:hover {
+    border-color: #3b82f6;
+}
+
+.profile-picture-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+}
+
+.profile-picture-upload-overlay {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.profile-picture-upload-overlay:hover {
+    background-color: #2563eb;
+}
+
+/* Metric Card Styles */
+.metric-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.metric-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.metric-card-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.metric-card-icon.blue {
+    background-color: #dbeafe;
+    color: #2563eb;
+}
+
+.metric-card-icon.green {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.metric-card-icon.purple {
+    background-color: #f3e8ff;
+    color: #9333ea;
+}
+
+.metric-card-icon.amber {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.metric-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.metric-card-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Chart Container Styles */
+.chart-container {
+    position: relative;
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.chart-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 1rem;
+}
+
+.chart-canvas {
+    max-height: 300px;
+}
+
+/* Profile Info Card */
+.profile-info-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.profile-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.profile-info-row:last-child {
+    border-bottom: none;
+}
+
+.profile-info-label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.profile-info-value {
+    color: #111827;
+    font-size: 0.875rem;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    transition: all 0.3s;
+}
+
+.password-strength.weak {
+    width: 33%;
+    background-color: #dc2626;
+}
+
+.password-strength.medium {
+    width: 66%;
+    background-color: #f59e0b;
+}
+
+.password-strength.strong {
+    width: 100%;
+    background-color: #16a34a;
+}
+
+/* Recent Activity List */
+.activity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s;
+}
+
+.activity-item:hover {
+    background-color: #f9fafb;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 500;
+    color: #111827;
+    font-size: 0.875rem;
+}
+
+.activity-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.activity-score {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.activity-score.pass {
+    color: #16a34a;
+}
+
+.activity-score.fail {
+    color: #dc2626;
+}
+
+.activity-score.pending {
+    color: #f59e0b;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-badge.graded {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.in-progress {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+/* Responsive Grid for Metrics */
+@media (max-width: 768px) {
+    .metric-card-value {
+        font-size: 1.5rem;
+    }
+    
+    .profile-picture {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .chart-canvas {
+        max-height: 250px;
+    }
+    
+    /* Mobile-specific profile adjustments */
+    .profile-info-row {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .profile-info-label,
+    .profile-info-value {
+        text-align: left;
+    }
+    
+    /* Stack metric cards on mobile */
+    .metric-card {
+        margin-bottom: 1rem;
+    }
+    
+    /* Improve activity list on mobile */
+    .activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .activity-icon {
+        margin-right: 0;
+    }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+    .metric-card-value {
+        font-size: 1.25rem;
+    }
+    
+    .profile-picture {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+    }
+    
+    .chart-container {
+        padding: 1rem;
+    }
+    
+    .profile-info-card {
+        padding: 1rem;
+    }
+}
+
+/* Tablet landscape optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .metric-card-value {
+        font-size: 1.75rem;
+    }
+}
+
+/* Touch-friendly interactions for mobile */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .activity-item,
+    .profile-info-row,
+    button,
+    a {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .metric-card:hover {
+        transform: none;
+    }
+    
+    .activity-item:hover {
+        background-color: transparent;
+    }
+    
+    /* Add active states for touch feedback */
+    .metric-card:active {
+        transform: scale(0.98);
+    }
+    
+    button:active,
+    a:active {
+        opacity: 0.8;
+    }
+}
+
+/* File Upload Preview */
+.file-upload-preview {
+    margin-top: 1rem;
+    display: none;
+}
+
+.file-upload-preview.active {
+    display: block;
+}
+
+.file-upload-preview img {
+    max-width: 200px;
+    border-radius: 0.5rem;
+    border: 2px solid #e5e7eb;
+}
+
+/* Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(59, 130, 246, 0.3);
+    border-radius: 50%;
+    border-top-color: #3b82f6;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+}

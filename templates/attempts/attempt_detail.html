@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Attempt Details - {{ exam.title }} - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header with Navigation -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-indigo-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 mr-3">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-1">Attempt Details</h1>
+                    <p class="text-gray-600">{{ student.get_full_name }} - {{ exam.title }}</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <a href="{% url 'teacher_grading_list' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="View all submissions">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    All Submissions
+                </a>
+                <a href="{% url 'teacher_dashboard' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Go to dashboard">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Student</div>
+                <div class="text-lg font-semibold text-gray-900">{{ student.get_full_name }}</div>
+                <div class="text-sm text-gray-500">{{ student.school_id }}</div>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Total Score</div>
+                <div class="text-lg font-semibold text-gray-900">{{ total_score }} / {{ total_possible_points }}</div>
+                <div class="text-sm {% if percentage_score >= 75 %}text-green-600{% elif percentage_score >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                    {{ percentage_score }}%
+                </div>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Status</div>
+                <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full 
+                    {% if attempt.status == 'graded' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ attempt.get_status_display }}
+                </span>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Submitted</div>
+                <div class="text-sm text-gray-900">
+                    {% if submitted_at %}
+                        {{ submitted_at|date:"M d, Y" }}<br>
+                        {{ submitted_at|time:"H:i" }}
+                    {% else %}
+                        Not submitted
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if attempt.status == 'submitted' %}
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <a href="{% url 'teacher_grading' attempt.id %}" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors inline-block">
+                Grade This Attempt
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Questions and Answers -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Questions and Answers</h2>
+        </div>
+        
+        <div class="divide-y divide-gray-200">
+            {% for data in questions_data %}
+            <div class="p-6">
+                <!-- Question Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded mr-2">
+                                {{ data.question.get_question_type_display }}
+                            </span>
+                            <span class="text-sm text-gray-500">{{ data.question.points }} points</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ data.question.question_text }}</h3>
+                    </div>
+                    <div class="ml-4">
+                        {% if data.is_correct is not None %}
+                            {% if data.is_correct %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    ✓ Correct
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    ✗ Incorrect
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                Not Graded
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- MCQ Options -->
+                {% if data.question.question_type == 'MCQ' and data.question.options %}
+                <div class="mb-4 ml-4">
+                    <div class="text-sm font-medium text-gray-700 mb-2">Options:</div>
+                    <div class="space-y-1">
+                        {% for option in data.question.options %}
+                        <div class="text-sm text-gray-600">
+                            {{ option.key }}. {{ option.value }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Student Answer -->
+                <div class="mb-4">
+                    <div class="text-sm font-medium text-gray-700 mb-2">Student's Answer:</div>
+                    <div class="bg-gray-50 rounded-md p-3">
+                        {% if data.student_answer_display %}
+                            <p class="text-gray-900">{{ data.student_answer_display }}</p>
+                        {% else %}
+                            <p class="text-gray-400 italic">No answer provided</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Correct Answer (for non-essay questions) -->
+                {% if not data.is_essay and data.correct_answer_display %}
+                <div class="mb-4">
+                    <div class="text-sm font-medium text-gray-700 mb-2">Correct Answer:</div>
+                    <div class="bg-green-50 rounded-md p-3">
+                        <p class="text-gray-900">{{ data.correct_answer_display }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Teacher Feedback -->
+                {% if data.teacher_feedback %}
+                <div class="mb-4">
+                    <div class="text-sm font-medium text-gray-700 mb-2">Teacher Feedback:</div>
+                    <div class="bg-blue-50 rounded-md p-3">
+                        <p class="text-gray-900">{{ data.teacher_feedback }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Points Earned -->
+                <div class="flex items-center justify-between pt-3 border-t border-gray-200">
+                    <span class="text-sm text-gray-600">Points Earned:</span>
+                    <span class="text-lg font-semibold {% if data.is_correct %}text-green-600{% elif data.is_correct == False %}text-red-600{% else %}text-gray-600{% endif %}">
+                        {{ data.points_earned }} / {{ data.question.points }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-8 bg-white shadow-md rounded-lg p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-600">
+                <span class="font-semibold">Total Score:</span> {{ total_score }} / {{ total_possible_points }} ({{ percentage_score }}%)
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                {% if attempt.status == 'submitted' %}
+                <a href="{% url 'teacher_grading' attempt.id %}" 
+                   class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Grade this attempt">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Grade This Attempt
+                </a>
+                {% endif %}
+                <a href="{% url 'view_activity_log' attempt.id %}" 
+                   class="inline-flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="View activity log">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Activity Log
+                </a>
+                <a href="{% url 'teacher_dashboard' %}" 
+                   class="inline-flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Go to dashboard">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

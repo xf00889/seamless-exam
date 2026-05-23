@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Exam Takers - {{ exam.title }} - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 mr-3">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-1">Exam Takers</h1>
+                    <p class="text-gray-600">{{ exam.title }}</p>
+                </div>
+            </div>
+            <a href="{% url 'exam_list' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to My Exams
+            </a>
+        </div>
+    </div>
+
+    <!-- Exam Summary Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Total Takers</div>
+                <div class="text-2xl font-bold text-gray-900">{{ total_takers }}</div>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Duration</div>
+                <div class="text-2xl font-bold text-gray-900">{{ exam.duration_minutes }} min</div>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Questions</div>
+                <div class="text-2xl font-bold text-gray-900">{{ question_count }}</div>
+            </div>
+            <div>
+                <div class="text-sm font-medium text-gray-500 mb-1">Total Points</div>
+                <div class="text-2xl font-bold text-gray-900">{{ total_possible_points }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Takers List -->
+    {% if takers_data %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Student Submissions</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Student Name
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Student ID
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Score
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Percentage
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Submitted
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for data in takers_data %}
+                    <tr class="hover:bg-gray-50 {% if data.attempt.is_flagged %}bg-red-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ data.student.get_full_name }}
+                                </div>
+                                {% if data.attempt.is_flagged %}
+                                <span class="ml-2 text-red-600" title="{{ data.attempt.flag_reason }}">
+                                    🚩
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if data.attempt.is_flagged %}
+                            <div class="text-xs text-red-600 mt-1">{{ data.attempt.flag_reason }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">
+                                {{ data.student.school_id }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ data.attempt.total_score }} / {{ data.total_possible }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold {% if data.percentage >= 75 %}text-green-600{% elif data.percentage >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ data.percentage }}%
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs leading-5 font-semibold rounded-full 
+                                {% if data.attempt.status == 'graded' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ data.attempt.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">
+                                {% if data.attempt.submitted_at %}
+                                    {{ data.attempt.submitted_at|date:"M d, Y" }}<br>
+                                    <span class="text-xs">{{ data.attempt.submitted_at|time:"H:i" }}</span>
+                                {% else %}
+                                    Not submitted
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end items-center gap-3">
+                                <!-- View Details -->
+                                <a href="{% url 'teacher_attempt_detail' data.attempt.id %}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors"
+                                   title="View Details">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </a>
+                                
+                                <!-- Grade (if submitted) -->
+                                {% if data.attempt.status == 'submitted' %}
+                                <a href="{% url 'teacher_grading' data.attempt.id %}" 
+                                   class="text-green-600 hover:text-green-900 transition-colors"
+                                   title="Grade Exam">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                
+                                <!-- View Activity Button -->
+                                <a href="{% url 'view_activity_log' data.attempt.id %}" 
+                                   class="text-gray-600 hover:text-gray-900 transition-colors"
+                                   title="View Activity Log">
+                                    <!-- Activity/Timeline Icon -->
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% include 'components/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-md p-8 text-center">
+        <div class="text-gray-400 mb-4">
+            <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Submissions Yet</h3>
+        <p class="text-gray-500">No students have taken this exam yet.</p>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="mt-8 flex justify-between">
+        <a href="{% url 'exam_list' %}" 
+           class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors">
+            Back to My Exams
+        </a>
+        <a href="{% url 'exam_edit' exam.id %}" 
+           class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            Edit Exam
+        </a>
+    </div>
+</div>
+{% endblock %}
+

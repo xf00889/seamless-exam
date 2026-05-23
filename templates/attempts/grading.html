@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grade Exam - {{ exam.title }}{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="max-w-7xl mx-auto" role="main" aria-labelledby="grading-heading">
+    <!-- Page Header with Navigation -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-100 mr-3">
+                    <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="grading-heading" class="text-3xl font-bold text-gray-900 mb-1">Grade Exam Submission</h1>
+                    <p class="text-gray-600">
+                        Student: <span class="font-medium">{{ student.get_full_name }}</span> | 
+                        Exam: <span class="font-medium">{{ exam.title }}</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <a href="{% url 'teacher_grading_list' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Back to submissions list">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    All Submissions
+                </a>
+                <a href="{% url 'teacher_dashboard' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Go to dashboard">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+<!-- Grading Summary -->
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <div class="text-sm text-gray-500">Total Questions</div>
+            <div class="text-2xl font-bold text-gray-900">{{ grading_status.total_questions }}</div>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Graded</div>
+            <div class="text-2xl font-bold text-green-600">{{ grading_status.graded_questions }}</div>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Ungraded Essays</div>
+            <div class="text-2xl font-bold text-yellow-600">{{ grading_status.ungraded_essays }}</div>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Current Score</div>
+            <div class="text-2xl font-bold text-blue-600">{{ grading_status.total_score|floatformat:2 }} pts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Questions and Answers -->
+<div class="space-y-6">
+    {% for data in questions_data %}
+    <div class="bg-white shadow rounded-lg p-6 {% if data.is_essay and not data.is_graded %}border-l-4 border-yellow-400{% endif %}">
+        <!-- Question Header -->
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex-1">
+                <div class="flex items-center mb-2">
+                    <span class="inline-block px-2 py-1 text-xs font-semibold rounded mr-2
+                        {% if data.is_essay %}bg-purple-100 text-purple-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ data.question.get_question_type_display }}
+                    </span>
+                    <span class="text-sm text-gray-500">{{ data.question.points }} points</span>
+                    {% if data.is_graded %}
+                        <span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                            Graded: {{ data.answer.points_earned|floatformat:2 }} pts
+                        </span>
+                    {% elif data.is_essay %}
+                        <span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                            Needs Grading
+                        </span>
+                    {% endif %}
+                </div>
+                <h3 class="text-lg font-medium text-gray-900">{{ data.question.question_text }}</h3>
+            </div>
+        </div>
+
+        <!-- Student Answer -->
+        <div class="mb-4">
+            <div class="text-sm font-medium text-gray-700 mb-2">Student Answer:</div>
+            <div class="bg-gray-50 rounded-md p-4">
+                {% if data.question.question_type == 'MCQ' %}
+                    <div class="space-y-2">
+                        {% for option in data.question.options %}
+                        <div class="flex items-center
+                            {% if option.key == data.answer_text %}font-semibold text-blue-600
+                            {% elif option.key == data.question.correct_answer %}text-green-600
+                            {% else %}text-gray-600{% endif %}">
+                            <span class="mr-2">{{ option.key }}.</span>
+                            <span>{{ option.value }}</span>
+                            {% if option.key == data.answer_text %}
+                                <span class="ml-2 text-xs">(Student's answer)</span>
+                            {% endif %}
+                            {% if option.key == data.question.correct_answer %}
+                                <span class="ml-2 text-xs">(Correct answer)</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% elif data.question.question_type == 'TRUE_FALSE' %}
+                    <div class="text-gray-900">
+                        <span class="font-semibold">{{ data.answer_text|title }}</span>
+                        {% if data.is_graded %}
+                            {% if data.answer.is_correct %}
+                                <span class="ml-2 text-green-600">(Correct)</span>
+                            {% else %}
+                                <span class="ml-2 text-red-600">(Incorrect - Correct: {{ data.question.correct_answer|title }})</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-gray-900 whitespace-pre-wrap">{{ data.answer_text }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grading Section for Essays -->
+        {% if data.is_essay %}
+        <div class="border-t border-gray-200 pt-4 grading-section" data-answer-id="{{ data.answer.id }}">
+            <div class="text-sm font-medium text-gray-700 mb-3">Grade This Essay:</div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Points Earned (Max: {{ data.question.points }})
+                    </label>
+                    <input type="number" 
+                           class="essay-points-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           min="0" 
+                           max="{{ data.question.points }}" 
+                           step="0.5"
+                           value="{% if data.is_graded %}{{ data.answer.points_earned }}{% else %}0{% endif %}"
+                           data-answer-id="{{ data.answer.id }}"
+                           data-max-points="{{ data.question.points }}">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Feedback (Optional)
+                </label>
+                <textarea class="essay-feedback-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows="3"
+                          placeholder="Provide feedback to the student..."
+                          data-answer-id="{{ data.answer.id }}">{% if data.is_graded and data.answer.teacher_feedback %}{{ data.answer.teacher_feedback }}{% endif %}</textarea>
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <div class="grading-status text-sm" data-answer-id="{{ data.answer.id }}">
+                    {% if data.is_graded %}
+                        <span class="text-green-600">
+                            <svg class="inline w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Graded on {{ data.answer.graded_at|date:"M d, Y g:i A" }}
+                        </span>
+                    {% else %}
+                        <span class="text-gray-500">Not yet graded</span>
+                    {% endif %}
+                </div>
+                
+                <button type="button" 
+                        class="grade-essay-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        data-answer-id="{{ data.answer.id }}">
+                    {% if data.is_graded %}Update Grade{% else %}Save Grade{% endif %}
+                </button>
+            </div>
+        </div>
+        {% elif data.is_graded %}
+        <!-- Show grading result for non-essay questions -->
+        <div class="border-t border-gray-200 pt-4">
+            <div class="flex items-center justify-between">
+                <div class="text-sm">
+                    {% if data.answer.is_correct %}
+                        <span class="text-green-600 font-medium">
+                            <svg class="inline w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Correct
+                        </span>
+                    {% else %}
+                        <span class="text-red-600 font-medium">
+                            <svg class="inline w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            Incorrect
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="text-sm font-medium text-gray-900">
+                    {{ data.answer.points_earned|floatformat:2 }} / {{ data.question.points }} points
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Summary Actions -->
+<div class="bg-white shadow rounded-lg p-6 mt-6">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div>
+            <div class="text-sm text-gray-600">Final Score</div>
+            <div class="text-2xl font-bold text-gray-900" id="final-score">
+                {{ grading_status.total_score|floatformat:2 }} points
+            </div>
+            {% if grading_status.ungraded_essays > 0 %}
+            <div class="text-xs text-yellow-600 mt-1">
+                {{ grading_status.ungraded_essays }} essay{{ grading_status.ungraded_essays|pluralize }} need{{ grading_status.ungraded_essays|pluralize:"s," }} grading
+            </div>
+            {% endif %}
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            {% if grading_status.ungraded_essays > 0 %}
+            <a href="{% url 'teacher_grading_list' %}" 
+               class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+               aria-label="Done grading, return to submissions">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Done Grading
+            </a>
+            {% else %}
+            <a href="{% url 'teacher_grading_list' %}" 
+               class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+               aria-label="Back to submissions">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Back to Submissions
+            </a>
+            {% endif %}
+            <a href="{% url 'teacher_dashboard' %}" 
+               class="inline-flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+               aria-label="Go to dashboard">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/grading.js' %}"></script>
+{% endblock %}

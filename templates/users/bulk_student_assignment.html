@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Assign Students - Seamless{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="mx-auto px-4 py-0" role="main" aria-labelledby="bulk-assign-heading">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-green-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-green-100 mr-3">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="bulk-assign-heading" class="text-3xl font-bold text-gray-900 mb-1">
+                        {% if class_preselected %}Assign Students{% else %}Bulk Assign Students{% endif %}
+                    </h1>
+                    <p class="text-gray-600">
+                        {% if class_preselected %}
+                            Assign multiple students to <strong>{{ selected_class_name }}</strong>
+                        {% else %}
+                            Assign multiple students to a class at once
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <a href="{% if class_preselected %}{% url 'class_detail' class_id %}{% else %}{% url 'class_list' %}{% endif %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors inline-flex items-center"
+               aria-label="{% if class_preselected %}Return to class detail{% else %}Return to class list{% endif %}">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                {% if class_preselected %}Back to Class{% else %}Back to Classes{% endif %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Bulk Assignment Form -->
+    <section class="bg-white shadow-md rounded-lg overflow-hidden" aria-labelledby="form-heading">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 id="form-heading" class="text-lg font-semibold text-gray-900">Bulk Student Assignment</h2>
+        </div>
+        <div class="p-6">
+            <form method="post" id="bulk-assign-form" class="space-y-6" aria-label="Bulk student assignment form">
+                {% csrf_token %}
+                
+                {% if class_preselected %}
+                <!-- Class is pre-selected from class detail page -->
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                <strong>Target Class:</strong> {{ selected_class_name }}
+                            </p>
+                            <p class="mt-1 text-xs text-blue-600">
+                                All selected students will be assigned to this class
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden field to maintain class selection -->
+                <input type="hidden" name="class_assigned" value="{{ selected_class.id }}">
+                {% else %}
+                <!-- Standard class selection dropdown -->
+                <div>
+                    <label for="id_class_assigned" class="block text-sm font-medium text-gray-700 mb-2">
+                        Select Target Class <span class="text-red-500" aria-label="required">*</span>
+                    </label>
+                    {{ form.class_assigned }}
+                    <p class="mt-1 text-xs text-gray-500">
+                        All selected students will be assigned to this class
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Select Students <span class="text-red-500" aria-label="required">*</span>
+                    </label>
+                    <div class="bg-gray-50 border border-gray-300 rounded-md p-4 max-h-96 overflow-y-auto">
+                        <div class="space-y-2">
+                            {% for checkbox in form.students %}
+                            <div class="flex items-center">
+                                {{ checkbox.tag }}
+                                <label for="{{ checkbox.id_for_label }}" class="ml-2 text-sm text-gray-700 cursor-pointer">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Select all students you want to assign to the class
+                    </p>
+                </div>
+                
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Important:</strong> This operation is atomic. Either all students will be assigned successfully, or none will be assigned if any error occurs.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                <strong>Note:</strong> Students can only be in one class at a time. If any selected student is already in another class, they will be moved to the new class.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button type="submit" 
+                            class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 sm:py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                        Assign Students
+                    </button>
+                    <a href="{% if class_preselected %}{% url 'class_detail' class_id %}{% else %}{% url 'class_list' %}{% endif %}" 
+                       class="flex-1 sm:flex-none text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 sm:py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pages/class-management.js' %}"></script>
+<script src="{% static 'js/pages/bulk-student-assignment.js' %}"></script>
+
+<!-- Assignment Configuration Data -->
+{{ assignment_config|json_script:"assignment-config-data" }}
+
+<script>
+// Pass assignment configuration to JavaScript using JSON data
+document.addEventListener('DOMContentLoaded', function() {
+    // Load assignment configuration and apply to bulk assignment handler
+    JsonDataLoader.applyConfiguration('assignment-config-data', window.BulkAssignmentHandler);
+});
+</script>
+{% endblock %}
+

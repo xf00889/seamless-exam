@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Remove Student from Class - Seamless{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="max-w-3xl mx-auto" role="main" aria-labelledby="remove-heading">
+    <!-- Header -->
+    <div class="mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+                <h1 id="remove-heading" class="text-2xl sm:text-3xl font-bold text-gray-900">Remove Student from Class</h1>
+                <p class="mt-1 sm:mt-2 text-sm text-gray-600">Confirm removal of student from their assigned class</p>
+            </div>
+            <a href="{% url 'class_detail' class_obj.pk %}" 
+               class="inline-flex items-center justify-center sm:justify-start text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg px-4 py-2 transition-colors duration-200"
+               aria-label="Return to class detail">
+                &larr; Back to Class
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <section class="bg-white shadow-md rounded-lg overflow-hidden" aria-labelledby="confirm-heading">
+        <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
+            <h2 id="confirm-heading" class="text-lg font-semibold text-red-900">Confirm Removal</h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-gray-700 mb-4">
+                    Are you sure you want to remove <strong>{{ student.get_full_name }}</strong> from 
+                    <strong>{{ class_obj.grade_level }} - {{ class_obj.strand }} - {{ class_obj.section }}</strong>?
+                </p>
+                
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Important:</strong> This action will remove the student from the class, but their exam history will be preserved.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                This student has <strong>{{ attempt_count }}</strong> exam attempt(s) on record. These will not be affected by this removal.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-4" aria-label="Student removal confirmation form">
+                {% csrf_token %}
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit" 
+                            class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white font-medium py-3 sm:py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
+                        Yes, Remove Student
+                    </button>
+                    <a href="{% url 'class_detail' class_obj.pk %}" 
+                       class="flex-1 sm:flex-none text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 sm:py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
+

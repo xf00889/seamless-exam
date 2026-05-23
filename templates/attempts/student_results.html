@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Exam Results - {{ exam.title }}{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="max-w-7xl mx-auto" role="main" aria-labelledby="results-heading">
+    <!-- Page Header with Navigation -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-green-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-green-100 mr-3">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="results-heading" class="text-3xl font-bold text-gray-900 mb-1">Exam Results</h1>
+                    <p class="text-gray-600">{{ exam.title }}</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <a href="{% url 'student_exam_list' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Browse available exams">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Available Exams
+                </a>
+                <a href="{% url 'student_history' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="View exam history">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    My History
+                </a>
+            </div>
+        </div>
+    </div>
+
+<!-- Score Summary Card -->
+<section class="bg-white shadow-lg rounded-lg overflow-hidden mb-8" aria-label="Score summary">
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+            <!-- Your Score Section -->
+            <div class="text-center">
+                <div class="text-sm font-medium opacity-90 uppercase tracking-wide leading-normal">Your Score</div>
+                <div class="text-5xl font-bold mt-4 leading-none" aria-label="Score: {{ total_score|floatformat:2 }} out of {{ total_possible_points|floatformat:2 }} points">{{ total_score|floatformat:2 }}</div>
+                <div class="text-sm opacity-80 mt-2 leading-normal">out of {{ total_possible_points|floatformat:2 }} points</div>
+            </div>
+            
+            <!-- Percentage Section -->
+            <div class="text-center">
+                <div class="text-sm font-medium opacity-90 uppercase tracking-wide leading-normal">Percentage</div>
+                <div class="text-5xl font-bold mt-4 leading-none" aria-label="Percentage: {{ percentage_score|floatformat:1 }} percent">{{ percentage_score|floatformat:1 }}%</div>
+                <div class="text-base font-medium opacity-90 mt-2 leading-normal">
+                    {% if percentage_score >= 90 %}
+                        Excellent!
+                    {% elif percentage_score >= 80 %}
+                        Very Good!
+                    {% elif percentage_score >= 70 %}
+                        Good!
+                    {% elif percentage_score >= 60 %}
+                        Satisfactory
+                    {% else %}
+                        Needs Improvement
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Submission Date Section -->
+            <div class="text-center">
+                <div class="text-sm font-medium opacity-90 uppercase tracking-wide leading-normal">Submitted</div>
+                <div class="text-xl font-semibold mt-4 leading-tight">{{ submitted_at|date:"M d, Y" }}</div>
+                <div class="text-base opacity-80 mt-2 leading-normal">{{ submitted_at|date:"g:i A" }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Questions and Answers -->
+<main>
+<section class="space-y-6" aria-label="Question results">
+    {% for data in questions_data %}
+    <article class="bg-white shadow-md rounded-lg overflow-hidden">
+        <!-- Question Header -->
+        <header class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center mb-4">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold rounded-lg mr-3 leading-normal
+                            {% if data.question.question_type == 'MCQ' %}bg-blue-100 text-blue-800
+                            {% elif data.question.question_type == 'IDENTIFICATION' %}bg-green-100 text-green-800
+                            {% elif data.question.question_type == 'ENUMERATION' %}bg-yellow-100 text-yellow-800
+                            {% elif data.question.question_type == 'TRUE_FALSE' %}bg-purple-100 text-purple-800
+                            {% elif data.question.question_type == 'ESSAY' %}bg-pink-100 text-pink-800
+                            {% endif %}">
+                            {{ data.question.get_question_type_display }}
+                        </span>
+                        <span class="text-sm font-medium text-gray-600 leading-normal">{{ data.question.points }} points</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 leading-relaxed">{{ data.question.question_text }}</h3>
+                </div>
+                <div class="ml-6 flex-shrink-0">
+                    {% if data.is_correct %}
+                        <div class="flex items-center text-green-600" role="status" aria-label="Correct answer: {{ data.points_earned|floatformat:2 }} points earned">
+                            <svg class="w-7 h-7 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 18a8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-lg font-bold leading-tight">{{ data.points_earned|floatformat:2 }} pts</span>
+                        </div>
+                    {% elif data.is_correct == False %}
+                        <div class="flex items-center text-red-600" role="status" aria-label="Incorrect answer: {{ data.points_earned|floatformat:2 }} points earned">
+                            <svg class="w-7 h-7 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-lg font-bold leading-tight">{{ data.points_earned|floatformat:2 }} pts</span>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center text-gray-600" role="status" aria-label="Partial credit: {{ data.points_earned|floatformat:2 }} points earned">
+                            <span class="text-lg font-bold leading-tight">{{ data.points_earned|floatformat:2 }} pts</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        <!-- Question Content -->
+        <div class="px-6 py-4">
+            <!-- MCQ Options Display -->
+            {% if data.question.question_type == 'MCQ' %}
+                <div class="space-y-4 mb-4">
+                    {% for option in data.question.options %}
+                    <div class="flex items-start p-4 rounded-lg transition-all duration-150
+                        {% if option.key == data.answer.answer_text.value or option.key == data.student_answer_display|slice:':1' %}
+                            {% if data.is_correct %}bg-green-50 border-2 border-green-300
+                            {% else %}bg-red-50 border-2 border-red-300{% endif %}
+                        {% elif option.key == data.question.correct_answer %}
+                            bg-green-50 border-2 border-green-300
+                        {% else %}
+                            bg-gray-50 border border-gray-200
+                        {% endif %}">
+                        <span class="font-bold text-base mr-3 flex-shrink-0
+                            {% if option.key == data.answer.answer_text.value or option.key == data.student_answer_display|slice:':1' %}
+                                {% if data.is_correct %}text-green-700{% else %}text-red-700{% endif %}
+                            {% elif option.key == data.question.correct_answer %}
+                                text-green-700
+                            {% else %}
+                                text-gray-700
+                            {% endif %}">
+                            {{ option.key }}.
+                        </span>
+                        <span class="flex-1 leading-relaxed
+                            {% if option.key == data.answer.answer_text.value or option.key == data.student_answer_display|slice:':1' %}
+                                {% if data.is_correct %}text-green-900 font-medium{% else %}text-red-900 font-medium{% endif %}
+                            {% elif option.key == data.question.correct_answer %}
+                                text-green-900 font-medium
+                            {% else %}
+                                text-gray-800
+                            {% endif %}">
+                            {{ option.value }}
+                        </span>
+                        <div class="ml-3 flex items-center gap-2 flex-shrink-0">
+                            {% if option.key == data.answer.answer_text.value or option.key == data.student_answer_display|slice:':1' %}
+                                {% if data.is_correct %}
+                                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                {% else %}
+                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                {% endif %}
+                                <span class="text-xs font-semibold px-2 py-1 rounded
+                                    {% if data.is_correct %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    Your answer
+                                </span>
+                            {% endif %}
+                            {% if option.key == data.question.correct_answer and not data.is_correct %}
+                                <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-800">
+                                    Correct answer
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Your Answer -->
+                <div class="mb-4">
+                    <div class="flex items-center mb-2">
+                        <span class="text-sm font-semibold text-gray-700 leading-normal">Your Answer:</span>
+                        {% if data.is_correct %}
+                            <svg class="w-5 h-5 text-green-600 ml-2" fill="currentColor" viewBox="0 0 20 20" aria-label="Correct" role="img">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        {% elif data.is_correct == False %}
+                            <svg class="w-5 h-5 text-red-600 ml-2" fill="currentColor" viewBox="0 0 20 20" aria-label="Incorrect" role="img">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="rounded-lg p-4 border-2
+                        {% if data.is_correct %}
+                            bg-green-50 border-green-300
+                        {% elif data.is_correct == False %}
+                            bg-red-50 border-red-300
+                        {% else %}
+                            bg-gray-50 border-gray-200
+                        {% endif %}">
+                        {% if data.student_answer_display %}
+                            <div class="leading-relaxed
+                                {% if data.is_correct %}
+                                    text-green-900
+                                {% elif data.is_correct == False %}
+                                    text-red-900
+                                {% else %}
+                                    text-gray-900
+                                {% endif %} whitespace-pre-wrap">{{ data.student_answer_display }}</div>
+                        {% else %}
+                            <div class="text-gray-400 italic leading-relaxed">No answer provided</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Correct Answer (for non-essay questions) -->
+                {% if not data.is_essay and data.correct_answer_display %}
+                <div class="mb-4">
+                    <div class="flex items-center mb-2">
+                        <span class="text-sm font-semibold text-gray-700 leading-normal">Correct Answer:</span>
+                        <svg class="w-5 h-5 text-green-600 ml-2" fill="currentColor" viewBox="0 0 20 20" aria-label="Correct" role="img">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4 border-2 border-green-300">
+                        <div class="text-green-900 leading-relaxed whitespace-pre-wrap">{{ data.correct_answer_display }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Teacher Feedback -->
+            {% if data.teacher_feedback %}
+            <aside class="mt-4 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg" aria-label="Teacher feedback">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800 mb-2 leading-normal">Teacher Feedback</h3>
+                        <p class="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">{{ data.teacher_feedback }}</p>
+                    </div>
+                </div>
+            </aside>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</section>
+
+<!-- Summary Footer -->
+<footer class="bg-white shadow-md rounded-lg p-6 mt-8">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div>
+            <div class="text-sm text-gray-600 leading-normal">Final Score</div>
+            <div class="text-2xl font-bold text-gray-900 leading-tight">
+                {{ total_score|floatformat:2 }} / {{ total_possible_points|floatformat:2 }}
+            </div>
+            <div class="text-lg text-gray-600 mt-2 leading-normal">{{ percentage_score|floatformat:1 }}%</div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <a href="{% url 'student_dashboard' %}" 
+               class="inline-flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+               aria-label="Go to dashboard">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </a>
+            <a href="{% url 'student_exam_list' %}" 
+               class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+               aria-label="Browse available exams">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Available Exams
+            </a>
+        </div>
+    </div>
+</footer>
+</main>
+</div>
+{% endblock %}

@@ -1,0 +1,319 @@
+/**
+ * Form Components CSS
+ * Provides styling for form elements, validation states, and form-related UI
+ * 
+ * @author ExamMaker Development Team
+ * @version 1.0.0
+ * @since 2024
+ * 
+ * Requirements: 10.1, 10.2, 10.4 - Coding standards compliance
+ */
+
+/* Password Display Styles */
+.password-display {
+    background-color: #fef3c7; /* bg-yellow-100 */
+    border: 2px solid #f59e0b; /* border-yellow-500 */
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.password-value {
+    font-family: var(--font-sans);
+    font-size: 1.25rem; /* text-xl */
+    font-weight: bold;
+    color: #92400e; /* text-yellow-800 */
+}
+
+/* Form Input Styles */
+.form-input {
+    appearance: none;
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem; /* px-3 py-2 */
+    border: 1px solid #d1d5db; /* border-gray-300 */
+    border-radius: 0.5rem; /* rounded-lg */
+    color: #111827; /* text-gray-900 */
+    transition: all 0.15s ease-in-out;
+}
+
+.form-input::placeholder {
+    color: #9ca3af; /* placeholder-gray-400 */
+}
+
+.form-input:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #8b5cf6; /* focus:ring-purple-500 */
+    border-color: transparent;
+}
+
+.form-input-blue:focus {
+    ring-color: #3b82f6; /* focus:ring-blue-500 */
+}
+
+.form-input-red:focus {
+    ring-color: #ef4444; /* focus:ring-red-500 */
+}
+
+/* Form Input with Icon */
+.form-input-with-icon {
+    padding-right: 2.5rem; /* pr-10 */
+}
+
+/* Form Labels */
+.form-label {
+    display: block;
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500;
+    color: #374151; /* text-gray-700 */
+    margin-bottom: 0.25rem; /* mb-1 */
+}
+
+.form-label-required::after {
+    content: " *";
+    color: #ef4444; /* text-red-500 */
+}
+
+/* Form Help Text */
+.form-help-text {
+    margin-top: 0.25rem; /* mt-1 */
+    font-size: 0.75rem; /* text-xs */
+    color: #6b7280; /* text-gray-500 */
+}
+
+/* Password Toggle Button */
+.password-toggle-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    padding-right: 0.75rem; /* pr-3 */
+    display: flex;
+    align-items: center;
+    color: #9ca3af; /* text-gray-400 */
+    outline: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.password-toggle-btn:hover {
+    color: #4b5563; /* hover:text-gray-600 */
+}
+
+.password-toggle-btn svg {
+    height: 1.25rem; /* h-5 */
+    width: 1.25rem; /* w-5 */
+}
+
+/* Form Buttons */
+.form-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.5rem; /* px-6 py-2 */
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+    outline: none;
+    border: none;
+    cursor: pointer;
+}
+
+.form-btn:focus {
+    ring: 2px;
+    ring-offset: 2px;
+}
+
+.form-btn-primary {
+    background-color: #2563eb; /* bg-blue-600 */
+    color: white;
+}
+
+.form-btn-primary:hover {
+    background-color: #1d4ed8; /* hover:bg-blue-700 */
+}
+
+.form-btn-primary:focus {
+    ring-color: #3b82f6; /* focus:ring-blue-500 */
+}
+
+.form-btn-secondary {
+    background-color: #4b5563; /* bg-gray-600 */
+    color: white;
+}
+
+.form-btn-secondary:hover {
+    background-color: #374151; /* hover:bg-gray-700 */
+}
+
+.form-btn-secondary:focus {
+    ring-color: #6b7280; /* focus:ring-gray-500 */
+}
+
+.form-btn-gradient {
+    background: linear-gradient(to right, #8b5cf6, #7c3aed); /* from-purple-600 to-purple-700 */
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.form-btn-gradient:hover {
+    background: linear-gradient(to right, #7c3aed, #6d28d9); /* hover:from-purple-700 hover:to-purple-800 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.form-btn-gradient:focus {
+    ring-color: #8b5cf6; /* focus:ring-purple-500 */
+}
+
+.form-btn-full {
+    width: 100%;
+    padding: 0.75rem 1rem; /* py-3 px-4 */
+}
+
+.form-btn svg {
+    width: 1.25rem; /* w-5 */
+    height: 1.25rem; /* h-5 */
+    margin-right: 0.5rem; /* mr-2 */
+}
+
+/* Form Grid Layouts */
+.form-grid {
+    display: grid;
+    gap: 1rem; /* gap-4 */
+}
+
+.form-grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.form-grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+    .form-grid-md-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 640px) {
+    .form-grid-sm-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Form Spacing */
+.form-space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+/* Success Message Styles */
+.success-message {
+    margin-top: 1rem;
+    background-color: #f0fdf4; /* bg-green-50 */
+    border: 1px solid #bbf7d0; /* border-green-200 */
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.success-message-header {
+    display: flex;
+    align-items: flex-start;
+}
+
+.success-message-icon {
+    height: 1.25rem; /* h-5 */
+    width: 1.25rem; /* w-5 */
+    color: #16a34a; /* text-green-600 */
+    margin-top: 0.125rem; /* mt-0.5 */
+    margin-right: 0.75rem; /* mr-3 */
+}
+
+.success-message-content {
+    flex: 1;
+}
+
+.success-message-title {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500;
+    color: #166534; /* text-green-800 */
+}
+
+.success-message-details {
+    margin-top: 0.5rem;
+    font-size: 0.875rem; /* text-sm */
+    color: #15803d; /* text-green-700 */
+}
+
+.success-message-details p {
+    margin-bottom: 0.25rem;
+}
+
+.success-message-password {
+    font-family: var(--font-sans);
+    font-weight: bold;
+    font-size: 1.125rem; /* text-lg */
+}
+
+.success-message-warning {
+    margin-top: 0.75rem;
+    font-size: 0.75rem; /* text-xs */
+    color: #16a34a; /* text-green-600 */
+}
+
+/* Form Validation Styles */
+.form-error {
+    margin-top: 0.25rem;
+    font-size: 0.875rem; /* text-sm */
+    color: #dc2626; /* text-red-600 */
+}
+
+.form-input-error {
+    border-color: #dc2626; /* border-red-500 */
+}
+
+.form-input-error:focus {
+    ring-color: #dc2626; /* focus:ring-red-500 */
+}
+
+/* Message Styles */
+.message {
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.875rem; /* text-sm */
+    margin-bottom: 0.5rem;
+}
+
+.message-error {
+    background-color: #fef2f2; /* bg-red-50 */
+    color: #991b1b; /* text-red-800 */
+    border: 1px solid #fecaca; /* border-red-200 */
+}
+
+.message-success {
+    background-color: #f0fdf4; /* bg-green-50 */
+    color: #166534; /* text-green-800 */
+    border: 1px solid #bbf7d0; /* border-green-200 */
+}
+
+.message-info {
+    background-color: #eff6ff; /* bg-blue-50 */
+    color: #1e40af; /* text-blue-800 */
+    border: 1px solid #dbeafe; /* border-blue-200 */
+}
+
+/* Relative Container for Positioned Elements */
+.form-relative {
+    position: relative;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .form-grid-cols-2 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+    
+    .form-btn {
+        padding: 0.75rem 1rem; /* Larger touch targets on mobile */
+    }
+}

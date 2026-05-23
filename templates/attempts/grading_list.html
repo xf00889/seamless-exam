@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grading - Seamless{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<!-- Page Header -->
+<div class="bg-white rounded-lg shadow-sm border-l-4 border-l-orange-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-orange-100 mr-3">
+                <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-1">Student Submissions</h1>
+                <p class="text-gray-600">Review and grade student exam submissions</p>
+            </div>
+        </div>
+        <a href="{% url 'exam_list' %}" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Exams
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+    <form method="get" action="{% url 'teacher_grading_list' %}" class="space-y-4">
+        <div class="flex flex-col sm:flex-row gap-4 items-end">
+            <!-- Exam Filter -->
+            <div class="flex-1">
+                <label for="exam-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                    Filter by Exam
+                </label>
+                <select id="exam-filter" 
+                        name="exam" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">All Exams</option>
+                    {% for exam in available_exams %}
+                    <option value="{{ exam.id }}" {% if selected_exam == exam.id|stringformat:"s" %}selected{% endif %}>
+                        {{ exam.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="flex-1">
+                <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                    Filter by Status
+                </label>
+                <select id="status-filter" 
+                        name="status" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">All Statuses</option>
+                    <option value="needs_grading" {% if selected_status == 'needs_grading' %}selected{% endif %}>Needs Grading</option>
+                    <option value="graded" {% if selected_status == 'graded' %}selected{% endif %}>Graded</option>
+                    <option value="auto_graded" {% if selected_status == 'auto_graded' %}selected{% endif %}>Auto-Graded</option>
+                </select>
+            </div>
+            
+            <!-- Flagged Filter -->
+            <div class="flex-1">
+                <label for="flagged-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                    Flagged Only
+                </label>
+                <select id="flagged-filter" 
+                        name="flagged" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">All Submissions</option>
+                    <option value="yes" {% if selected_flagged == 'yes' %}selected{% endif %}>Flagged Only</option>
+                </select>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <button type="submit" 
+                        class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors">
+                    Apply
+                </button>
+                <a href="{% url 'teacher_grading_list' %}" 
+                   class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md transition-colors">
+                    Clear
+                </a>
+            </div>
+        </div>
+        
+        <!-- Active Filters Display -->
+        {% if selected_exam or selected_status or selected_flagged %}
+        <div class="pt-4 border-t border-gray-200">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium text-gray-700">Active Filters:</span>
+                {% if selected_exam %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                    Exam: {{ selected_exam_name }}
+                </span>
+                {% endif %}
+                {% if selected_status %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    Status: {{ selected_status|title }}
+                </span>
+                {% endif %}
+                {% if selected_flagged %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    Flagged Only
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+{% if attempts_data %}
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Student
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Exam
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Submitted
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Score
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for data in attempts_data %}
+            <tr class="hover:bg-gray-50 {% if data.attempt.is_flagged %}bg-red-50{% endif %}">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="text-sm font-medium text-gray-900">
+                            {{ data.student_name }}
+                        </div>
+                        {% if data.attempt.is_flagged %}
+                        <span class="ml-2 text-red-600" title="{{ data.attempt.flag_reason }}">
+                            🚩
+                        </span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">{{ data.exam.title }}</div>
+                    <div class="text-sm text-gray-500">{{ data.exam.questions.count }} questions</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">
+                        {% if data.attempt.submitted_at %}
+                            {{ data.attempt.submitted_at|date:"M d, Y" }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        {% if data.attempt.submitted_at %}
+                            {{ data.attempt.submitted_at|time:"g:i A" }}
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">
+                        {{ data.attempt.total_score|floatformat:2 }} pts
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col gap-1">
+                        {% if data.attempt.status == 'graded' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 w-fit">
+                                Passed
+                            </span>
+                        {% elif data.has_ungraded_essays %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 w-fit">
+                                Needs Grading
+                            </span>
+                        {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 w-fit">
+                                Failed
+                            </span>
+                        {% endif %}
+                        {% if data.attempt.is_flagged %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-300 w-fit">
+                                Flagged
+                            </span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end items-center space-x-3">
+                        <!-- Grade/Review -->
+                        <a href="{% url 'teacher_grading' data.attempt.id %}" 
+                           class="{% if data.has_ungraded_essays %}text-orange-600 hover:text-orange-900{% else %}text-blue-600 hover:text-blue-900{% endif %} transition-colors"
+                           title="{% if data.has_ungraded_essays %}Grade Essays{% else %}Review Submission{% endif %}">
+                            {% if data.has_ungraded_essays %}
+                            <!-- Grade Icon -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            {% else %}
+                            <!-- Review Icon -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            {% endif %}
+                        </a>
+                        
+                        <!-- View Activity Button -->
+                        <a href="{% url 'view_activity_log' data.attempt.id %}" 
+                           class="text-gray-600 hover:text-gray-900 transition-colors"
+                           title="View Activity Log">
+                            <!-- Activity/Timeline Icon -->
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                            </svg>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination Component -->
+{% include 'components/pagination.html' with page_obj=page_obj %}
+
+{% else %}
+<div class="bg-white shadow rounded-lg p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No submissions yet</h3>
+    <p class="mt-1 text-sm text-gray-500">
+        Student exam submissions will appear here once they submit their exams.
+    </p>
+</div>
+{% endif %}
+{% endblock %}
+

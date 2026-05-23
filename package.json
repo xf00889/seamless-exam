@@ -1,0 +1,11 @@
+{
+  "name": "localexammaker",
+  "private": true,
+  "description": "Root npm scripts for the Local Exam Maker Django project.",
+  "scripts": {
+    "start": "npm --prefix theme/static_src run start",
+    "dev": "npm --prefix theme/static_src run dev",
+    "build": "npm --prefix theme/static_src run build",
+    "tailwindcss": "npm --prefix theme/static_src run tailwindcss"
+  }
+}

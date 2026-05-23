@@ -1,0 +1,1709 @@
+/**
+ * Main CSS file for Offline Exam System
+ * All styles use standard CSS - no build process required (Requirement 18.4)
+ * 
+ * @author ExamMaker Development Team
+ * @version 1.0.0
+ * @since 2024
+ * 
+ * Requirements: 10.1, 10.2, 10.4 - Coding standards compliance
+ */
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('../fonts/space-grotesk/space-grotesk-latin-300-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/space-grotesk/space-grotesk-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../fonts/space-grotesk/space-grotesk-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/space-grotesk/space-grotesk-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/space-grotesk/space-grotesk-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea,
+code,
+kbd,
+pre,
+samp,
+.swal2-popup,
+.swal2-close {
+    font-family: var(--font-sans);
+}
+
+/* Custom utility classes */
+.btn-primary {
+    background-color: #2563eb;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+}
+
+.btn-secondary {
+    background-color: #4b5563;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #374151;
+}
+
+.btn-danger {
+    background-color: #dc2626;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c;
+}
+
+.btn-success {
+    background-color: #16a34a;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.btn-success:hover {
+    background-color: #15803d;
+}
+
+/* Form styles */
+.form-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+}
+
+.form-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+.form-error {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Card styles */
+.card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+/* Table styles */
+.table {
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.table-header {
+    background-color: #f9fafb;
+}
+
+.table-cell {
+    padding: 1rem 1.5rem;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: #111827;
+}
+
+/* Alert styles */
+.alert {
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.alert-warning {
+    background-color: #fefce8;
+    color: #854d0e;
+    border: 1px solid #fef08a;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+/* Accessibility Enhancements */
+
+/* Enhanced focus indicators for better keyboard navigation */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[tabindex]:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Skip to main content link for screen readers */
+.skip-to-main {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+    padding: 1rem;
+    background-color: #3b82f6;
+    color: white;
+    text-decoration: none;
+}
+
+.skip-to-main:focus {
+    left: 0;
+    top: 0;
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Focus visible for modern browsers */
+*:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    a {
+        text-decoration: underline;
+    }
+    
+    button,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-success {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Ensure sufficient color contrast for text */
+.text-gray-500 {
+    color: #6b7280;
+}
+
+.text-gray-600 {
+    color: #4b5563;
+}
+
+/* Interactive element minimum touch target size (44x44px for mobile) */
+@media (max-width: 768px) {
+    a,
+    button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS ENHANCEMENTS (Task 15)
+   Requirements: 5.1, 5.2, 5.3, 5.5
+   ============================================ */
+
+/* Extra small devices - show/hide logo text */
+@media (min-width: 375px) {
+    .hidden.xs\:block {
+        display: block;
+    }
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+    /* Ensure proper spacing on mobile */
+    .max-w-7xl {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Container padding adjustments for mobile (Requirement 5.1) */
+    .container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    
+    /* Stack flex items on mobile */
+    .mobile-stack {
+        flex-direction: column;
+    }
+    
+    /* Full width buttons on mobile */
+    .mobile-full-width {
+        width: 100%;
+    }
+    
+    /* Reduce font sizes slightly on mobile (Requirement 5.1) */
+    h1 {
+        font-size: 1.875rem; /* 30px */
+        line-height: 1.2;
+    }
+    
+    h2 {
+        font-size: 1.5rem; /* 24px */
+        line-height: 1.3;
+    }
+    
+    /* Page header mobile optimization (Requirement 5.1) */
+    .bg-white.rounded-lg.shadow-sm.border-l-4 {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-sm.border-l-4 h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-sm.border-l-4 p {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Statistics cards - force vertical stacking (Requirement 5.1) */
+    .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    
+    /* Stat card mobile optimization */
+    .stat-card {
+        padding: 1rem !important;
+    }
+    
+    .stat-card .text-3xl {
+        font-size: 2rem !important;
+    }
+    
+    .stat-card .text-sm {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Quick actions section mobile optimization (Requirement 5.1) */
+    .bg-gradient-to-r.from-blue-50 {
+        padding: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .bg-gradient-to-r.from-blue-50 .grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+    
+    /* Quick action cards - ensure proper touch targets (Requirement 5.5) */
+    .bg-gradient-to-r.from-blue-50 a {
+        min-height: 60px !important;
+        padding: 1rem !important;
+    }
+    
+    /* Charts section - force single column (Requirement 5.2) */
+    .grid.grid-cols-1.lg\:grid-cols-2 {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    
+    /* Chart card mobile optimization (Requirement 5.2) */
+    .bg-white.rounded-lg.shadow-md:has(.chart-container) {
+        margin-bottom: 1rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(.chart-container) .px-6 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(.chart-container) .py-4 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(.chart-container) h2 {
+        font-size: 1rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(.chart-container) p {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Filter panel mobile optimization (Requirement 5.3) */
+    .bg-white.rounded-lg.shadow-md:has(#filter-form) {
+        padding: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(#filter-form) h2 {
+        font-size: 1.125rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* Filter form - stack all inputs vertically (Requirement 5.3) */
+    #filter-form.grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+    
+    /* Filter inputs - ensure proper touch targets (Requirement 5.5) */
+    #filter-form select,
+    #filter-form button {
+        min-height: 44px !important;
+        font-size: 0.875rem !important;
+        padding: 0.625rem 0.75rem !important;
+    }
+    
+    #filter-form label {
+        font-size: 0.875rem !important;
+        margin-bottom: 0.375rem !important;
+    }
+    
+    /* Filter button full width on mobile */
+    #filter-form .flex.items-end {
+        width: 100%;
+    }
+    
+    #filter-form button[type="submit"] {
+        width: 100% !important;
+    }
+    
+    /* Attempts table section mobile optimization */
+    .bg-white.rounded-lg.shadow-md:has(.attempts-table) .px-6 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(.attempts-table) h2 {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Class statistics table mobile optimization */
+    .bg-white.rounded-lg.shadow-md:has(table) {
+        padding: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .bg-white.rounded-lg.shadow-md:has(table) h2 {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Improve touch targets for all interactive elements (Requirement 5.5) */
+    a,
+    button,
+    input[type="button"],
+    input[type="submit"],
+    select {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Ensure proper touch targets for links in tables */
+    table a {
+        display: inline-block;
+        padding: 0.5rem 0.25rem;
+        min-height: 44px;
+        line-height: 1.5;
+    }
+    
+    /* Touch targets for checkboxes and radios */
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-height: 24px;
+        min-width: 24px;
+        margin: 10px;
+    }
+    
+    /* Improve touch targets for tooltip triggers */
+    .tooltip-trigger {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        padding: 0.5rem !important;
+    }
+    
+    /* Navbar mobile improvements */
+    nav .max-w-7xl {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    /* Reduce spacing between sections on mobile */
+    .mb-6,
+    .mb-8 {
+        margin-bottom: 1rem !important;
+    }
+    
+    .sm\:mb-8 {
+        margin-bottom: 1rem !important;
+    }
+}
+
+/* Tablet breakpoint (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+    /* Optimize grid layouts for tablets */
+    .tablet-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Statistics cards - 2 columns on tablet (Requirement 5.1) */
+    .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.25rem !important;
+    }
+    
+    /* Quick actions - 2 columns on tablet */
+    .bg-gradient-to-r.from-blue-50 .grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Filter form - 2-3 columns on tablet (Requirement 5.3) */
+    #filter-form.grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+    }
+    
+    #filter-form .flex.items-end {
+        grid-column: span 2;
+    }
+    
+    /* Ensure touch targets on tablet */
+    a,
+    button,
+    select {
+        min-height: 40px;
+    }
+}
+
+/* Small mobile devices (< 375px) */
+@media (max-width: 374px) {
+    /* Extra compact spacing for very small screens */
+    .container {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    .stat-card .text-3xl {
+        font-size: 1.75rem !important;
+    }
+    
+    /* Reduce padding on very small screens */
+    .bg-white.rounded-lg.shadow-sm,
+    .bg-white.rounded-lg.shadow-md {
+        padding: 0.75rem !important;
+    }
+}
+
+/* Responsive table to card conversion */
+@media (max-width: 768px) {
+    .responsive-table-card {
+        display: block;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+    }
+    
+    .responsive-table-card-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .responsive-table-card-row:last-child {
+        border-bottom: none;
+    }
+    
+    .responsive-table-card-label {
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .responsive-table-card-value {
+        color: #111827;
+        font-size: 0.875rem;
+        text-align: right;
+    }
+}
+
+/* ===========================
+   CHART RESPONSIVE STYLES
+   Requirements: 5.2, 8.1, 8.2, 8.3, 8.4
+   =========================== */
+
+/* Chart container base styles */
+.chart-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Mobile chart adjustments (< 640px) - Requirement 5.2 */
+@media (max-width: 640px) {
+    .chart-container {
+        height: 250px !important;
+        min-height: 250px !important;
+        padding: 0.5rem;
+        margin: 0 auto;
+    }
+    
+    canvas {
+        max-height: 250px !important;
+        touch-action: pan-y;
+        width: 100% !important;
+    }
+    
+    /* Ensure chart cards have proper spacing on mobile */
+    .chart-container + .chart-container {
+        margin-top: 1rem;
+    }
+}
+
+/* Tablet chart adjustments (641px - 1023px) */
+@media (min-width: 641px) and (max-width: 1023px) {
+    .chart-container {
+        height: 280px !important;
+        min-height: 280px !important;
+        padding: 0.75rem;
+    }
+    
+    canvas {
+        max-height: 280px !important;
+        width: 100% !important;
+    }
+}
+
+/* Desktop chart adjustments (>= 1024px) */
+@media (min-width: 1024px) {
+    .chart-container {
+        height: 320px !important;
+        min-height: 320px !important;
+        padding: 1rem;
+    }
+    
+    canvas {
+        max-height: 320px !important;
+        width: 100% !important;
+    }
+}
+
+/* Larger chart for subject passing rate (full-width chart) */
+.chart-container:has(#passingRateBySubjectChart) {
+    height: 300px !important;
+    min-height: 300px !important;
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+    .chart-container:has(#passingRateBySubjectChart) {
+        height: 350px !important;
+        min-height: 350px !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .chart-container:has(#passingRateBySubjectChart) {
+        height: 400px !important;
+        min-height: 400px !important;
+    }
+}
+
+/* Ensure proper spacing for chart cards */
+.bg-white.rounded-lg.shadow-md:has(.chart-container) {
+    overflow: visible;
+}
+
+/* Chart loading and empty states */
+.chart-container .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+}
+
+/* Responsive chart legend adjustments */
+@media (max-width: 640px) {
+    /* Chart.js legends are handled via JavaScript options */
+    .chart-container canvas {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Prevent chart overflow on mobile */
+@media (max-width: 640px) {
+    .chart-container,
+    .chart-container canvas {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+}
+
+/* Mobile navigation improvements */
+@media (max-width: 640px) {
+    /* Collapsible mobile menu */
+    .mobile-menu-collapsed {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    
+    .mobile-menu-expanded {
+        max-height: 500px;
+        transition: max-height 0.3s ease-in;
+    }
+    
+    /* Mobile-friendly dropdowns */
+    .mobile-dropdown {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+    }
+}
+
+/* Exam taking page mobile improvements */
+@media (max-width: 640px) {
+    /* Better spacing for question cards */
+    .question-card {
+        margin-bottom: 1rem;
+    }
+    
+    /* Improve radio button and checkbox touch targets */
+    .answer-input[type="radio"],
+    .answer-input[type="checkbox"] {
+        min-height: 20px;
+        min-width: 20px;
+        margin-top: 2px;
+    }
+    
+    /* Better text wrapping for long options */
+    .answer-container label {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* Optimize timer display */
+    #timer {
+        font-size: 1.75rem;
+        line-height: 1.2;
+    }
+}
+
+/* Landscape mobile optimization (Requirement 5.1) */
+@media (max-width: 896px) and (orientation: landscape) {
+    /* Reduce vertical spacing in landscape */
+    .landscape-compact {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    /* Compact page header in landscape */
+    .bg-white.rounded-lg.shadow-sm.border-l-4 {
+        padding: 0.75rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* Compact stat cards in landscape */
+    .stat-card {
+        padding: 0.75rem !important;
+    }
+    
+    /* Reduce chart heights in landscape for better visibility */
+    .chart-container {
+        height: 200px !important;
+        min-height: 200px !important;
+    }
+    
+    /* Compact filter panel in landscape */
+    .bg-white.rounded-lg.shadow-md:has(#filter-form) {
+        padding: 0.75rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Reduce section spacing in landscape */
+    .mb-6,
+    .mb-8,
+    .sm\:mb-8 {
+        margin-bottom: 0.75rem !important;
+    }
+}
+
+/* Large mobile devices (iPhone Plus, etc.) */
+@media (min-width: 414px) and (max-width: 640px) {
+    /* Slightly larger touch targets for larger phones */
+    a,
+    button,
+    select {
+        min-height: 46px;
+    }
+    
+    /* Better use of space on larger mobile screens */
+    .stat-card .text-3xl {
+        font-size: 2.25rem !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    /* Hide navigation and interactive elements */
+    nav,
+    .no-print,
+    button:not(.print-button) {
+        display: none !important;
+    }
+    
+    /* Optimize for print */
+    body {
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+    
+    /* Ensure proper page breaks */
+    .page-break-before {
+        page-break-before: always;
+    }
+    
+    .page-break-after {
+        page-break-after: always;
+    }
+    
+    .page-break-avoid {
+        page-break-inside: avoid;
+    }
+}
+
+/* Step Form Styles */
+.form-step {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-circle {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-text {
+    transition: all 0.3s ease-in-out;
+}
+
+.step-description {
+    transition: all 0.3s ease-in-out;
+}
+
+.step-connector {
+    transition: all 0.5s ease-in-out;
+}
+
+/* Progress bar animation */
+#progressBar {
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Step item hover effect */
+.step-item:hover .step-circle {
+    transform: scale(1.05);
+}
+
+/* Button hover effects */
+#nextBtn, #prevBtn, #submitBtn {
+    transition: all 0.2s ease-in-out;
+}
+
+#nextBtn:hover, #submitBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+#prevBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Input focus effects */
+input:focus, textarea:focus, select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Checkbox and radio hover effects */
+input[type="checkbox"]:hover, input[type="radio"]:hover {
+    cursor: pointer;
+}
+
+/* Progress step responsive adjustments */
+@media (max-width: 768px) {
+    .step-item .step-description {
+        display: none;
+    }
+    
+    .step-circle {
+        width: 3rem !important;
+        height: 3rem !important;
+    }
+    
+    .step-number {
+        font-size: 1rem !important;
+    }
+    
+    .step-text {
+        font-size: 0.75rem !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .step-item .step-text {
+        display: none;
+    }
+}
+
+/* Enhanced form input styles */
+.form-step input[type="text"],
+.form-step input[type="number"],
+.form-step textarea,
+.form-step select {
+    transition: all 0.2s ease-in-out;
+}
+
+.form-step input[type="text"]:focus,
+.form-step input[type="number"]:focus,
+.form-step textarea:focus,
+.form-step select:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* Label animation */
+.form-step label {
+    transition: color 0.2s ease-in-out;
+}
+
+/* Class selection cards */
+.form-step label.flex.items-center {
+    transition: all 0.2s ease-in-out;
+}
+
+.form-step label.flex.items-center:hover {
+    transform: translateX(4px);
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Generation method options */
+.generation-method-option {
+    transition: all 0.3s ease-in-out;
+}
+
+.generation-method-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.generation-method-option.border-indigo-500 {
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+/* Summary cards animation */
+.form-step #step4 .bg-white {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Error state styling */
+.border-red-500 {
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Success checkmark animation */
+.step-check {
+    animation: checkmark 0.4s ease-in-out;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0) rotate(-45deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(0deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Ultra Compact Summary Section Styles */
+#summary-title,
+#summary-subject,
+#summary-duration,
+#summary-classes,
+#summary-method {
+    transition: all 0.2s ease;
+}
+
+/* Truncate long text */
+#summary-title,
+#summary-subject {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Badge styling */
+#summary-method {
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+/* Hover effect on summary values */
+#summary-title:not(:empty),
+#summary-subject:not(:empty) {
+    cursor: default;
+}
+
+#summary-title:hover,
+#summary-subject:hover {
+    color: #1e40af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    /* Stack all items vertically on mobile */
+    .grid.grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Reduce label width on mobile */
+    .w-20, .w-16 {
+        width: 3.5rem !important;
+    }
+}
+
+/* Empty State Component Styles */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.empty-state-icon {
+    margin-bottom: 1.5rem;
+}
+
+.empty-state-icon svg {
+    width: 4rem;
+    height: 4rem;
+    color: #9ca3af;
+}
+
+.empty-state-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    max-width: 28rem;
+    margin: 0 auto 1.5rem;
+    line-height: 1.5;
+}
+
+.empty-state-action {
+    margin-top: 0.5rem;
+}
+
+.empty-state-action a,
+.empty-state-action button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    color: white;
+    background-color: #2563eb;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.empty-state-action a:hover,
+.empty-state-action button:hover {
+    background-color: #1d4ed8;
+}
+
+.empty-state-action a:focus,
+.empty-state-action button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.5);
+}
+
+/* Responsive adjustments for empty state */
+@media (max-width: 640px) {
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state-icon svg {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .empty-state-title {
+        font-size: 1rem;
+    }
+    
+    .empty-state-description {
+        font-size: 0.8125rem;
+    }
+}
+
+/* Statistics Cards Enhancement Styles */
+.stat-card {
+    position: relative;
+    cursor: default;
+}
+
+/* Enhanced hover effect with shadow and lift */
+.stat-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Smooth transitions for all stat card effects */
+.stat-card,
+.stat-card * {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+/* Icon container styling */
+.stat-card .flex-shrink-0 > div {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover .flex-shrink-0 > div {
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive stat card adjustments */
+@media (max-width: 640px) {
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-card .text-3xl {
+        font-size: 1.875rem;
+    }
+    
+    .stat-card .flex-shrink-0 > div {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .stat-card .flex-shrink-0 svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
+
+/* Tooltip System Styles */
+.tooltip-trigger {
+    position: relative;
+    cursor: help;
+    transition: color 0.2s ease;
+}
+
+.tooltip-trigger:hover {
+    color: #4b5563;
+}
+
+/* Tooltip popup container */
+.tooltip-popup {
+    position: fixed;
+    z-index: 9999;
+    background-color: #1f2937;
+    color: #ffffff;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    max-width: 16rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.tooltip-popup.tooltip-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip arrow */
+.tooltip-popup::before {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #1f2937;
+}
+
+/* Ensure tooltips are readable on mobile */
+@media (max-width: 640px) {
+    .tooltip-popup {
+        max-width: 12rem;
+        font-size: 0.8125rem;
+        padding: 0.375rem 0.625rem;
+    }
+}
+
+/* High contrast mode support for tooltips */
+@media (prefers-contrast: high) {
+    .tooltip-popup {
+        border: 2px solid #ffffff;
+    }
+}
+
+/* Reduced motion support for tooltips */
+@media (prefers-reduced-motion: reduce) {
+    .tooltip-popup {
+        transition: none;
+    }
+}
+
+/* Focus state for tooltip triggers */
+.tooltip-trigger:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 9999px;
+}
+
+/* Ensure tooltip triggers meet minimum touch target size */
+@media (max-width: 768px) {
+    .tooltip-trigger {
+        min-height: 44px;
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Attempts Table Readability Enhancements (Task 4) */
+
+/* Alternating row colors for better readability (Requirement 3.1) */
+.attempts-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.attempts-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* Hover state highlighting for table rows (Requirement 3.2) */
+.attempts-table tbody tr {
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.attempts-table tbody tr:hover {
+    background-color: #f3f4f6 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Text truncation with ellipsis for long exam titles (Requirement 3.3) */
+.attempts-table .exam-title-cell {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attempts-table .exam-title-cell:hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Sticky table headers for scrolling (Requirement 3.5) */
+.attempts-table-container {
+    position: relative;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.attempts-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f9fafb;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.attempts-table thead th {
+    background-color: #f9fafb;
+}
+
+/* Horizontal scrolling on mobile (Requirement 3.5) */
+@media (max-width: 768px) {
+    .attempts-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .attempts-table {
+        min-width: 800px;
+    }
+    
+    /* Adjust max-width for exam title on mobile */
+    .attempts-table .exam-title-cell {
+        max-width: 180px;
+    }
+    
+    /* Reduce sticky header max-height on mobile for better visibility */
+    .attempts-table-container {
+        max-height: 500px;
+    }
+}
+
+/* Ensure proper spacing and alignment in table cells */
+.attempts-table td,
+.attempts-table th {
+    vertical-align: middle;
+}
+
+/* Improve action links visibility */
+.attempts-table .action-links a {
+    transition: color 0.15s ease-in-out;
+}
+
+.attempts-table .action-links a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-width: 640px) {
+    .attempts-table {
+        min-width: 900px;
+    }
+    
+    .attempts-table .exam-title-cell {
+        max-width: 150px;
+    }
+    
+    .attempts-table-container {
+        max-height: 400px;
+    }
+}
+
+
+/* ============================================
+   Pagination Styles (Requirement 3.4 & 5.5)
+   ============================================ */
+
+.pagination-container {
+    background-color: white;
+    border-top: 1px solid #E5E7EB; /* gray-200 */
+}
+
+/* Mobile pagination buttons */
+.pagination-container a,
+.pagination-container span {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Ensure minimum touch target size on mobile (44x44px) - Requirement 5.5 */
+@media (max-width: 640px) {
+    .pagination-container {
+        padding: 0.75rem !important;
+    }
+    
+    .pagination-container a,
+    .pagination-container span {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem !important;
+        font-size: 0.875rem;
+    }
+    
+    /* Larger touch targets for prev/next buttons */
+    .pagination-container a:first-child,
+    .pagination-container a:last-child {
+        min-width: 60px !important;
+        padding: 0.625rem 0.75rem !important;
+    }
+}
+
+/* Desktop pagination page numbers */
+.pagination-container nav a:focus,
+.pagination-container nav span:focus {
+    outline: 2px solid #3B82F6; /* blue-500 */
+    outline-offset: 2px;
+}
+
+/* Hover effects for pagination links */
+.pagination-container a:not(.cursor-not-allowed):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Active page styling */
+.pagination-container .bg-blue-50 {
+    font-weight: 600;
+}
+
+/* Disabled state styling */
+.pagination-container .cursor-not-allowed {
+    opacity: 0.6;
+}
+
+/* Smooth scrolling when navigating pages */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Pagination info text */
+.pagination-container p {
+    line-height: 1.5;
+}
+
+/* Responsive pagination spacing */
+@media (min-width: 640px) {
+    .pagination-container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+/* Ensure pagination does not overflow on small screens */
+.pagination-container nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for pagination on desktop */
+@media (min-width: 640px) {
+    .pagination-container nav {
+        overflow-x: visible;
+    }
+}
+
+/* Pagination button spacing and sizing */
+.pagination-container .inline-flex {
+    gap: 0.25rem;
+}
+
+/* Ensure proper alignment of pagination elements */
+.pagination-container .flex {
+    align-items: center;
+}
+
+/* Mobile-specific pagination adjustments */
+@media (max-width: 640px) {
+    .pagination-container .flex-1 {
+        width: 100%;
+    }
+    
+    .pagination-container p {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Stack pagination info and controls on very small screens */
+    .pagination-container > div {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .pagination-container nav {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Exam Taking Interface Styles */
+
+/* Sidebar Navigation */
+.question-nav-btn {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.question-nav-btn:hover {
+    transform: scale(1.1);
+}
+
+.question-nav-btn svg {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Question Cards */
+.question-card {
+    transition: all 0.3s ease;
+}
+
+.question-card.hidden {
+    display: none;
+}
+
+/* Pagination Controls */
+#prev-page-btn:disabled,
+#next-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Review Modal */
+#review-modal {
+    z-index: 9999;
+}
+
+#review-content {
+    max-height: calc(90vh - 200px);
+}
+
+#review-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#review-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#review-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#review-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Navbar fallback layout: keep nav links visible on desktop even if utility classes are stale */
+.desktop-nav-links {
+    display: flex;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.desktop-nav-links-inner {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding: 0 0.25rem;
+}
+
+.navbar-mobile-toggle {
+    display: none;
+}
+
+.desktop-nav-links-inner::-webkit-scrollbar {
+    height: 4px;
+}
+
+.desktop-nav-links-inner::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 9999px;
+}
+
+/* Responsive Design for Exam Taking */
+@media (max-width: 1024px) {
+    .flex.lg\\:flex-row {
+        flex-direction: column;
+    }
+    
+    aside.w-full.lg\\:w-64 {
+        width: 100%;
+        order: 1;
+    }
+    
+    #question-sidebar {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .desktop-nav-links {
+        display: none;
+    }
+
+    .navbar-mobile-toggle {
+        display: flex;
+        align-items: center;
+    }
+
+    #question-sidebar {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .question-nav-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 0.75rem;
+    }
+    
+    #review-modal .max-w-5xl {
+        max-width: 95%;
+        margin: 1rem auto;
+    }
+}

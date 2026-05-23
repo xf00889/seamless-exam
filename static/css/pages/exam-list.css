@@ -1,0 +1,39 @@
+/* Exam List Page Styles */
+
+/* Button minimum height for touch targets */
+.btn-min-height {
+    min-height: 44px;
+}
+
+/* Exam action buttons */
+.exam-action-btn {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Progress bar styles */
+.progress-bar {
+    width: 25%;
+    transition: width 0.3s ease;
+}
+
+/* Responsive button text */
+@media (max-width: 640px) {
+    .btn-responsive-text .btn-text-full {
+        display: none;
+    }
+    .btn-responsive-text .btn-text-short {
+        display: inline;
+    }
+}
+
+@media (min-width: 641px) {
+    .btn-responsive-text .btn-text-full {
+        display: inline;
+    }
+    .btn-responsive-text .btn-text-short {
+        display: none;
+    }
+}

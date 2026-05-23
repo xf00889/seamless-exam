@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Questions - {{ document.file_path }}{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Review Extracted Questions</h1>
+        <p class="text-gray-600">Document: {{ document.file_path }}</p>
+        <p class="text-sm text-gray-500">
+            Total Questions: {{ summary.total_questions }} | 
+            {% for type, count in summary.by_type.items %}
+                {{ type }}: {{ count }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+
+    {# Messages are now handled by components/messages.html using SweetAlert2 #}
+
+    {% if questions %}
+        <div class="mb-6 flex justify-between items-center">
+            <button type="button" id="select-all-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                Select All
+            </button>
+            <button type="button" id="approve-selected-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Approve Selected
+            </button>
+        </div>
+
+        <div id="questions-container" class="space-y-6">
+            {% for question in questions %}
+                <div class="question-card bg-white shadow-md rounded-lg p-6 border border-gray-200" data-index="{{ forloop.counter0 }}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="question-checkbox w-5 h-5 text-blue-600 mr-3" data-index="{{ forloop.counter0 }}">
+                            <span class="text-lg font-semibold text-gray-700">Question {{ forloop.counter }}</span>
+                            <span class="ml-3 px-2 py-1 text-xs font-medium rounded 
+                                {% if question.type == 'MCQ' %}bg-blue-100 text-blue-800
+                                {% elif question.type == 'IDENTIFICATION' %}bg-green-100 text-green-800
+                                {% elif question.type == 'ENUMERATION' %}bg-purple-100 text-purple-800
+                                {% elif question.type == 'ESSAY' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ question.type }}
+                            </span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button type="button" class="edit-question-btn px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600" data-index="{{ forloop.counter0 }}">
+                                Edit
+                            </button>
+                            <button type="button" class="delete-question-btn px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600" data-index="{{ forloop.counter0 }}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="question-content">
+                        <div class="mb-3">
+                            <p class="text-gray-800 font-medium">{{ question.question }}</p>
+                        </div>
+
+                        {% if question.type == 'MCQ' and question.options %}
+                            <div class="ml-4 space-y-2">
+                                {% for option in question.options %}
+                                    <div class="flex items-center">
+                                        <span class="font-semibold mr-2">{{ option.key }}.</span>
+                                        <span class="{% if option.key == question.correct_answer %}text-green-600 font-semibold{% endif %}">
+                                            {{ option.value }}
+                                            {% if option.key == question.correct_answer %}
+                                                <span class="ml-2 text-xs">(Correct)</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% elif question.type == 'ENUMERATION' %}
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Expected answers:</p>
+                                <ul class="list-disc list-inside">
+                                    {% for answer in question.correct_answer %}
+                                        <li class="text-gray-700">{{ answer }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% elif question.type == 'IDENTIFICATION' %}
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Correct answer(s):</p>
+                                <p class="text-gray-700">
+                                    {% if question.correct_answer is list %}
+                                        {{ question.correct_answer|join:", " }}
+                                    {% else %}
+                                        {{ question.correct_answer }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        <div class="mt-3 text-sm text-gray-500">
+                            Points: {{ question.points|default:"1.0" }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Approval Modal -->
+        <div id="approval-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Approve Questions to Exam</h3>
+                    <form id="approval-form" method="post" action="{% url 'uploads:questions_approve' document.id %}">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="exam-select" class="block text-sm font-medium text-gray-700 mb-2">
+                                Select Exam:
+                            </label>
+                            <select id="exam-select" name="exam_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">-- Select an Exam --</option>
+                                <!-- Exams will be loaded via JavaScript or server-side -->
+                            </select>
+                        </div>
+                        <input type="hidden" id="question-indices-input" name="question_indices" value="">
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" id="cancel-approval-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                                Approve
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">
+            <p class="font-bold">No Questions Found</p>
+            <p>No questions were extracted or generated from this document. Try processing the document again or add questions manually.</p>
+        </div>
+    {% endif %}
+
+    <div class="mt-8 flex justify-between">
+        <a href="{% url 'uploads:document_list' %}" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+            Back to Documents
+        </a>
+        <a href="{% url 'uploads:document_process' document.id %}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Reprocess Document
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/question-editor.js' %}"></script>
+{% endblock %}

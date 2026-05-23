@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Available Exams - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/exam-list.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<!-- CSRF token for AJAX requests -->
+{% csrf_token %}
+
+<div class="mx-auto px-4 py-0" role="main" aria-labelledby="available-exams-heading">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-blue-100 mr-2 sm:mr-3">
+                    <svg class="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="available-exams-heading" class="text-xl sm:text-3xl font-bold text-gray-900 mb-0.5 sm:mb-1">Available Exams</h1>
+                    <p class="text-xs sm:text-base text-gray-600 hidden sm:block">Select an exam to begin</p>
+                </div>
+            </div>
+            <a href="{% url 'student_dashboard' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-md text-sm sm:text-base font-medium transition-colors inline-flex items-center justify-center"
+               aria-label="Return to dashboard">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span class="hidden sm:inline">Back to Dashboard</span>
+                <span class="sm:hidden">Back</span>
+            </a>
+        </div>
+    </div>
+
+{% if has_exams %}
+<main>
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" aria-label="Available exams">
+    {% for data in exam_data %}
+    <article class="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-lg overflow-hidden flex flex-col h-full">
+        <div class="p-4 sm:p-6 flex flex-col flex-grow">
+            <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
+                {{ data.exam.title }}
+            </h3>
+            
+            {% if data.exam.description %}
+            <p class="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+                {{ data.exam.description|truncatewords:20 }}
+            </p>
+            {% endif %}
+            
+            <div class="space-y-2.5 sm:space-y-4 mb-4 sm:mb-6">
+                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium">Duration:</span>
+                    <span class="ml-1">{{ data.exam.duration_minutes }} min</span>
+                </div>
+                
+                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="font-medium">Questions:</span>
+                    <span class="ml-1">{{ data.question_count }}</span>
+                </div>
+            </div>
+            
+            <div class="mt-auto">
+                {% if data.graded_attempt %}
+                <div class="space-y-2.5 sm:space-y-4">
+                    <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-green-50 border-2 border-green-200 text-green-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Completed and graded">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Completed & Graded</span>
+                    </div>
+                    <a href="{% url 'student_results' data.graded_attempt.id %}" 
+                       class="block w-full text-center py-2.5 sm:py-3 px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height">
+                        View Results
+                    </a>
+                </div>
+                {% elif data.is_completed %}
+                <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Awaiting grading">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Awaiting Grading</span>
+                </div>
+                {% elif data.in_progress_attempt %}
+                <a href="{% url 'exam_take' data.in_progress_attempt.id %}" 
+                   class="flex items-center justify-center w-full py-2.5 sm:py-3 px-3 sm:px-4 bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height"
+                   aria-label="Resume exam: {{ data.exam.title }}">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Resume Exam</span>
+                </a>
+                {% else %}
+                <button class="start-exam-btn flex items-center justify-center w-full py-3 sm:py-4 px-4 sm:px-6 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg font-bold text-base sm:text-lg leading-tight transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 btn-min-height"
+                        data-exam-id="{{ data.exam.id }}"
+                        aria-label="Start exam: {{ data.exam.title }}">
+                    <span>Start Exam</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+</main>
+{% else %}
+<main>
+<section class="bg-white shadow-md rounded-lg p-16 text-center" aria-label="Empty state">
+    <svg class="mx-auto h-12 w-12 text-gray-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h3 class="text-xl font-semibold text-gray-900 mb-4 leading-tight">No Active Exams</h3>
+    <p class="text-base text-gray-500 max-w-md mx-auto leading-relaxed">There are no exams available at this time. Check back later or contact your teacher for more information.</p>
+</section>
+</main>
+{% endif %}
+</div>
+
+<!-- Monitoring Notice Modal -->
+<div id="monitoring-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-3 sm:px-4">
+    <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-6 border w-full max-w-lg shadow-lg rounded-lg bg-white my-4 sm:my-0">
+        <div class="text-center">
+            <!-- Warning Icon -->
+            <div class="mx-auto flex items-center justify-center h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-yellow-100 mb-3 sm:mb-4">
+                <svg class="h-7 w-7 sm:h-10 sm:w-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            
+            <h3 class="text-lg sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Exam Monitoring Notice</h3>
+            
+            <div class="text-left space-y-3 sm:space-y-4 mb-4 sm:mb-6 px-2 sm:px-4 max-h-[60vh] overflow-y-auto">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 rounded">
+                    <p class="text-xs sm:text-sm text-gray-800 font-semibold mb-1.5 sm:mb-2">⚠️ This exam is being monitored</p>
+                    <p class="text-xs sm:text-sm text-gray-700">Our system will detect and record any suspicious activity during the exam.</p>
+                </div>
+                
+                <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-700">
+                    <p class="font-semibold text-gray-900">The following will be monitored:</p>
+                    <ul class="space-y-1.5 sm:space-y-2 ml-2 sm:ml-4">
+                        <li class="flex items-start">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-1.5 sm:mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <span><strong>Tab switching:</strong> Leaving the exam page will be recorded</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-1.5 sm:mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <span><strong>Window focus:</strong> Switching to other apps will trigger warnings</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-1.5 sm:mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <span><strong>Time away:</strong> Duration spent outside the exam will be tracked</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded">
+                    <p class="text-xs sm:text-sm text-red-800 font-semibold">
+                        ⚠️ After 3 violations, your exam will be auto-submitted and flagged for review.
+                    </p>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-3 sm:p-4 rounded">
+                    <p class="text-xs sm:text-sm text-blue-800">
+                        <strong>Tip:</strong> Stay focused on the exam tab and avoid switching windows or tabs.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 px-2 sm:px-4">
+                <button id="cancel-exam-btn"
+                        class="flex-1 px-4 py-2.5 sm:px-6 sm:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm sm:text-base font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button id="accept-start-btn"
+                        class="flex-1 px-4 py-2.5 sm:px-6 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg transition-colors">
+                    I Understand, Start Exam
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/exam-starter.js' %}"></script>
+{% endblock %}
+
