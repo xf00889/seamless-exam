@@ -325,3 +325,52 @@ class SuperAdminNotificationsView(View):
             messages.success(request, 'Notification deleted.')
 
         return redirect('superadmin_notifications')
+
+
+class SuperAdminCreateTeacherView(View):
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request):
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        password_confirm = request.POST.get('password_confirm', '')
+        notif_id = request.POST.get('notification_id')
+
+        errors = []
+        if not username or len(username) < 3:
+            errors.append('Username must be at least 3 characters.')
+        if User.objects.filter(username=username).exists():
+            errors.append('Username already exists.')
+        if not email:
+            errors.append('Email is required.')
+        if User.objects.filter(email=email).exists():
+            errors.append('A user with this email already exists.')
+        if not password or len(password) < 8:
+            errors.append('Password must be at least 8 characters.')
+        if password != password_confirm:
+            errors.append('Passwords do not match.')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect('superadmin_notifications')
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        Teacher.objects.create(user=user)
+
+        if notif_id:
+            AdminNotification.objects.filter(id=notif_id).update(is_read=True)
+
+        messages.success(request, f'Teacher account created for {first_name} {last_name} ({username}).')
+        return redirect('superadmin_notifications')
