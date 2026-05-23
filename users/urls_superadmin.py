@@ -8,6 +8,7 @@ from .views_superadmin import (
     SuperAdminResetPasswordView,
     SuperAdminDeleteUserView,
     SuperAdminCreateView,
+    SuperAdminNotificationsView,
 )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     path('dashboard/', SuperAdminDashboardView.as_view(), name='superadmin_dashboard'),
     path('teachers/', SuperAdminTeachersView.as_view(), name='superadmin_teachers'),
     path('students/', SuperAdminStudentsView.as_view(), name='superadmin_students'),
+    path('notifications/', SuperAdminNotificationsView.as_view(), name='superadmin_notifications'),
     path('reset-password/', SuperAdminResetPasswordView.as_view(), name='superadmin_reset_password'),
     path('delete-user/', SuperAdminDeleteUserView.as_view(), name='superadmin_delete_user'),
     path('create/', SuperAdminCreateView.as_view(), name='superadmin_create'),

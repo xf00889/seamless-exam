@@ -98,8 +98,12 @@
 
             <div class="login-footer">
                 <p class="footer-text">
-                    Student account? 
+                    Student account?
                     <a href="{% url 'student_login' %}" class="footer-link">Login here</a>
+                </p>
+                <p class="footer-text" style="margin-top: 0.5rem;">
+                    No account yet?
+                    <a href="{% url 'request_access' %}" class="footer-link">Request access</a>
                 </p>
                 <a href="{% url 'home' %}" class="back-link">
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">

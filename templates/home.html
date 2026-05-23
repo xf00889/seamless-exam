@@ -18,8 +18,12 @@
             </div>
         </div>
         <div class="nav-actions">
+            {% if dashboard_url %}
+            <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
+            {% else %}
             <a href="{% url 'student_login' %}" class="nav-link">Student Portal</a>
             <a href="{% url 'teacher_login' %}" class="btn-nav">Teacher Login</a>
+            {% endif %}
         </div>
     </nav>
 
@@ -28,6 +32,14 @@
             <h1 class="hero-title">Comprehensive Examination Management for Schools</h1>
             <p class="hero-subtitle">A professional platform designed to streamline exam creation, administration, and grading. Empowering educators with reliable tools for academic assessment.</p>
             <div class="hero-buttons">
+                {% if dashboard_url %}
+                <a href="{{ dashboard_url }}" class="btn btn-primary">
+                    <span>{{ dashboard_label }}</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                {% else %}
                 <a href="{% url 'teacher_login' %}" class="btn btn-primary">
                     <span>Access Teacher Portal</span>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -35,6 +47,7 @@
                     </svg>
                 </a>
                 <a href="{% url 'student_login' %}" class="btn btn-outline">Student Login</a>
+                {% endif %}
             </div>
         </div>
         <div class="hero-visual">
@@ -166,6 +179,14 @@
                 <h2 class="cta-title">Begin Your Examination Management Journey</h2>
                 <p class="cta-subtitle">Access the platform through your designated portal and experience streamlined assessment administration</p>
                 <div class="cta-buttons">
+                    {% if dashboard_url %}
+                    <a href="{{ dashboard_url }}" class="btn btn-primary btn-large">
+                        <span>{{ dashboard_label }}</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                    {% else %}
                     <a href="{% url 'teacher_login' %}" class="btn btn-primary btn-large">
                         <span>Teacher Portal</span>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -178,6 +199,7 @@
                             <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

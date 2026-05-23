@@ -25,10 +25,14 @@ from .views import (
     StudentAccountManagementView
 )
 from .views_setup import FirstTimeSetupView
+from .views_request import RequestAccessView
 
 urlpatterns = [
     # First-time setup route
     path('setup/', FirstTimeSetupView.as_view(), name='first_time_setup'),
+
+    # Access request (public)
+    path('request-access/', RequestAccessView.as_view(), name='request_access'),
     
     # Authentication routes
     path('teacher/login/', TeacherLoginView.as_view(), name='teacher_login'),

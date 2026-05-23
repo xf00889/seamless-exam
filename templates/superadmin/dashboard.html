@@ -1,4 +1,5 @@
 {% extends 'superadmin/base.html' %}
+{% load static %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -39,6 +40,17 @@
     </div>
 </div>
 
+<!-- Attempts Chart -->
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>Exam Attempts (Last 7 Days)</h3>
+    </div>
+    <div class="sa-card-body">
+        <canvas id="attemptsChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- Recent Activity -->
 <div class="sa-card">
     <div class="sa-card-header">
         <h3>Recent Activity</h3>
@@ -62,10 +74,57 @@
                     <td>{% if attempt.submitted_at %}{{ attempt.submitted_at|date:"M d, H:i" }}{% else %}-{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4" style="text-align:center; color:#64748b; padding:2rem;">No attempts yet</td></tr>
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">No attempts yet</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+(function() {
+    var labels = {{ daily_labels|safe }};
+    var data = {{ daily_attempts|safe }};
+    var theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    var gridColor = theme === 'dark' ? 'rgba(148,163,184,0.1)' : 'rgba(15,23,42,0.08)';
+    var textColor = theme === 'dark' ? '#94a3b8' : '#475569';
+
+    var ctx = document.getElementById('attemptsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Attempts',
+                data: data,
+                backgroundColor: theme === 'dark' ? 'rgba(96, 165, 250, 0.6)' : 'rgba(37, 99, 235, 0.6)',
+                borderColor: theme === 'dark' ? '#60a5fa' : '#2563eb',
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: textColor, precision: 0 },
+                    grid: { color: gridColor }
+                },
+                x: {
+                    ticks: { color: textColor },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}

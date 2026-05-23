@@ -10,12 +10,14 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Count, Avg, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import timedelta
 from functools import wraps
 from django.utils.decorators import method_decorator
+import json
 
-from .models import Teacher, Student, Class
+from .models import Teacher, Student, Class, AdminNotification
 from exams.models import Exam
 from attempts.models import Attempt
 
@@ -98,6 +100,20 @@ class SuperAdminDashboardView(View):
             'exam'
         ).order_by('-submitted_at')[:10]
 
+        # Daily attempts for chart (last 7 days)
+        daily_attempts = []
+        daily_labels = []
+        for i in range(6, -1, -1):
+            day = (now - timedelta(days=i)).date()
+            count = Attempt.objects.filter(
+                submitted_at__date=day
+            ).count()
+            daily_labels.append(day.strftime('%b %d'))
+            daily_attempts.append(count)
+
+        # Unread notifications
+        unread_notifications = AdminNotification.objects.filter(is_read=False).count()
+
         context = {
             'total_teachers': total_teachers,
             'total_students': total_students,
@@ -109,6 +125,9 @@ class SuperAdminDashboardView(View):
             'avg_score': avg_score,
             'active_exams': active_exams,
             'recent_activity': recent_activity,
+            'daily_labels': json.dumps(daily_labels),
+            'daily_attempts': json.dumps(daily_attempts),
+            'unread_notifications': unread_notifications,
         }
         return render(request, 'superadmin/dashboard.html', context)
 
@@ -275,3 +294,34 @@ class SuperAdminCreateView(View):
         )
         messages.success(request, 'Superadmin account created. Please log in.')
         return redirect('superadmin_login')
+
+
+class SuperAdminNotificationsView(View):
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        notifications = AdminNotification.objects.all()
+        unread_count = notifications.filter(is_read=False).count()
+        return render(request, 'superadmin/notifications.html', {
+            'notifications': notifications,
+            'unread_count': unread_count,
+        })
+
+    def post(self, request):
+        action = request.POST.get('action')
+        notif_id = request.POST.get('notification_id')
+
+        if action == 'mark_read' and notif_id:
+            notif = get_object_or_404(AdminNotification, id=notif_id)
+            notif.is_read = True
+            notif.save()
+        elif action == 'mark_all_read':
+            AdminNotification.objects.filter(is_read=False).update(is_read=True)
+        elif action == 'delete' and notif_id:
+            notif = get_object_or_404(AdminNotification, id=notif_id)
+            notif.delete()
+            messages.success(request, 'Notification deleted.')
+
+        return redirect('superadmin_notifications')

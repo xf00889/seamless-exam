@@ -18,17 +18,38 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
 from django.http import JsonResponse
+from django.shortcuts import render
 from users.views_setup import FirstTimeSetupView
+from users.models import Teacher, Student
 
 
 def health_check(request):
     return JsonResponse({'status': 'ok'})
 
+
+def home_view(request):
+    context = {}
+    if request.user.is_authenticated:
+        if request.user.is_superuser and not Teacher.objects.filter(user=request.user).exists():
+            context['dashboard_url'] = '/superadmin/dashboard/'
+            context['dashboard_label'] = 'Go to Admin Panel'
+        elif Teacher.objects.filter(user=request.user).exists():
+            context['dashboard_url'] = '/exams/'
+            context['dashboard_label'] = 'Go to Dashboard'
+    if request.session.get('student_id'):
+        try:
+            student = Student.objects.get(id=request.session['student_id'])
+            context['dashboard_url'] = '/exams/available/'
+            context['dashboard_label'] = 'Go to Exams'
+        except Student.DoesNotExist:
+            pass
+    return render(request, 'home.html', context)
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    path('', home_view, name='home'),
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
     path('users/', include('users.urls')),

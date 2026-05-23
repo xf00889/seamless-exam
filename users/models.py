@@ -154,3 +154,19 @@ class Student(models.Model):
     def get_full_name(self):
         """Return the student's full name."""
         return f"{self.first_name} {self.last_name}"
+
+
+class AdminNotification(models.Model):
+    """Access request notifications sent to the superadmin."""
+    name = models.CharField(max_length=150)
+    email = models.EmailField(blank=True)
+    message = models.TextField(max_length=500)
+    is_read = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_admin_notification'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} — {'Read' if self.is_read else 'Unread'}"
