@@ -36,6 +36,7 @@ class FirstTimeSetupMiddleware:
         self.exempt_paths = [
             '/setup/',
             '/users/setup/',
+            '/health/',
             '/static/',
             '/media/',
             '/admin/',

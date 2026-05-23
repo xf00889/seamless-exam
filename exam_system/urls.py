@@ -19,12 +19,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from django.http import JsonResponse
 from users.views_setup import FirstTimeSetupView
+
+
+def health_check(request):
+    return JsonResponse({'status': 'ok'})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
+    path('health/', health_check, name='health_check'),
     path('users/', include('users.urls')),
     path('exams/', include('exams.urls')),
     path('attempts/', include('attempts.urls')),
