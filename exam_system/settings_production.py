@@ -22,6 +22,8 @@ if 'debug_toolbar' in INSTALLED_APPS:
 if 'debug_toolbar.middleware.DebugToolbarMiddleware' in MIDDLEWARE:
     MIDDLEWARE.remove('debug_toolbar.middleware.DebugToolbarMiddleware')
 
+NPM_BIN_PATH = '/usr/bin/npm'
+
 STATIC_URL = '/static/'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
