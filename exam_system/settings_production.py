@@ -25,7 +25,7 @@ if 'debug_toolbar.middleware.DebugToolbarMiddleware' in MIDDLEWARE:
 NPM_BIN_PATH = '/usr/bin/npm'
 
 STATIC_URL = '/static/'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
