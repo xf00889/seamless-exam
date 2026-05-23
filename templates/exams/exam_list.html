@@ -11,7 +11,7 @@
 {% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <!-- Page Header -->
 <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div class="flex items-center">
             <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 mr-3">
                 <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,11 +19,11 @@
                 </svg>
             </div>
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-1">My Exams</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">My Exams</h1>
                 <p class="text-gray-600">Create, manage, and organize your examinations</p>
             </div>
         </div>
-        <a href="{% url 'exam_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+        <a href="{% url 'exam_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center sm:justify-start">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -34,6 +34,7 @@
 
 {% if exams %}
 <div class="bg-white shadow overflow-hidden rounded-lg">
+    <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
             <tr>
@@ -163,6 +164,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Pagination Component -->

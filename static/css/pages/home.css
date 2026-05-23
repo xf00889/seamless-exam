@@ -723,6 +723,10 @@ body:has(.landing) main {
         font-size: 2rem;
     }
 
+    .workflow {
+        padding: 4rem 0;
+    }
+
     .workflow-steps {
         grid-template-columns: 1fr;
     }
@@ -731,8 +735,16 @@ body:has(.landing) main {
         max-width: 100%;
     }
 
+    .cta {
+        padding: 4rem 0;
+    }
+
     .cta-title {
         font-size: 2rem;
+    }
+
+    .cta-subtitle {
+        font-size: 1.0625rem;
     }
 
     .hero-buttons,
@@ -754,6 +766,133 @@ body:has(.landing) main {
 
     .footer-info {
         text-align: center;
+    }
+
+    .visual-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .section-header {
+        margin-bottom: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .landing-nav {
+        padding: 0.75rem 4%;
+    }
+
+    .nav-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .nav-title {
+        font-size: 1.25rem;
+    }
+
+    .nav-actions {
+        gap: 0.75rem;
+    }
+
+    .nav-link {
+        font-size: 0.8125rem;
+    }
+
+    .btn-nav {
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+    }
+
+    .hero {
+        padding: 2rem 4%;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.9375rem;
+    }
+
+    .btn-large {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+
+    .workflow {
+        padding: 3rem 0;
+    }
+
+    .workflow-step {
+        padding: 2rem 1.5rem;
+    }
+
+    .step-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .step-title {
+        font-size: 1.125rem;
+    }
+
+    .cta {
+        padding: 3rem 0;
+    }
+
+    .cta-title {
+        font-size: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.625rem;
+    }
+
+    .section-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .card-icon-wrapper {
+        width: 64px;
+        height: 64px;
+    }
+
+    .card-icon-wrapper svg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+    }
+
+    .card-desc {
+        font-size: 0.875rem;
+    }
+
+    .footer-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .footer-title {
+        font-size: 1rem;
+    }
+
+    .footer-info p {
+        font-size: 0.8125rem;
     }
 }
 

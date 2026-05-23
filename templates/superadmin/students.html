@@ -1,0 +1,149 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Manage Students{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <h1>Students</h1>
+    <p>Manage student accounts, search and reset passwords</p>
+</div>
+
+<form method="get" action="{% url 'superadmin_students' %}" class="sa-search">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search by name or school ID...">
+    <button type="submit" class="sa-btn sa-btn-blue">Search</button>
+    {% if search %}
+    <a href="{% url 'superadmin_students' %}" class="sa-btn sa-btn-ghost">Clear</a>
+    {% endif %}
+</form>
+
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>{% if search %}Results for "{{ search }}"{% else %}All Students{% endif %} ({{ students.paginator.count }})</h3>
+    </div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>School ID</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Attempts</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><span class="sa-badge sa-badge-purple">{{ student.school_id }}</span></td>
+                    <td>{{ student.get_full_name }}</td>
+                    <td>{% if student.class_assigned %}{{ student.class_assigned }}{% else %}<span style="color:#64748b;">Unassigned</span>{% endif %}</td>
+                    <td>{{ student.attempt_count }}</td>
+                    <td>{{ student.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="sa-btn sa-btn-sm sa-btn-blue" onclick="openResetModal('student', '{{ student.id }}', '{{ student.get_full_name|escapejs }}')">Reset Password</button>
+                            <button class="sa-btn sa-btn-sm sa-btn-red" onclick="openDeleteModal('student', '{{ student.id }}', '{{ student.get_full_name|escapejs }}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:#64748b; padding:2rem;">No students found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if students.has_other_pages %}
+<div class="sa-pagination">
+    {% if students.has_previous %}
+    <a href="?page={{ students.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">Prev</a>
+    {% endif %}
+    {% for num in students.paginator.page_range %}
+        {% if students.number == num %}
+        <span class="current">{{ num }}</span>
+        {% elif num > students.number|add:"-3" and num < students.number|add:"3" %}
+        <a href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if students.has_next %}
+    <a href="?page={{ students.next_page_number }}{% if search %}&search={{ search }}{% endif %}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Reset Password Modal -->
+<div class="sa-modal-overlay" id="resetModal">
+    <div class="sa-modal">
+        <h3>Reset Password</h3>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-bottom:1rem;">Set a new password for <strong id="resetUserName" style="color:#e2e8f0;"></strong></p>
+        <form method="post" action="{% url 'superadmin_reset_password' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="resetUserType">
+            <input type="hidden" name="user_id" id="resetUserId">
+            <div class="sa-form-group">
+                <label>New Password</label>
+                <input type="password" name="new_password" required minlength="8" placeholder="Minimum 8 characters">
+            </div>
+            <div class="sa-form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirm_password" required minlength="8" placeholder="Re-enter password">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('resetModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Reset Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="sa-modal-overlay" id="deleteModal">
+    <div class="sa-modal">
+        <h3 style="color:#fca5a5;">Delete Student</h3>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-bottom:1rem;">You are about to permanently delete <strong id="deleteUserName" style="color:#e2e8f0;"></strong>. All exam attempts and data will be lost.</p>
+        <form method="post" action="{% url 'superadmin_delete_user' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="deleteUserType">
+            <input type="hidden" name="user_id" id="deleteUserId">
+            <div class="sa-form-group">
+                <label>Enter your admin password to confirm</label>
+                <input type="password" name="admin_password" required placeholder="Your admin password">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-red">Delete Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openResetModal(type, id, name) {
+    document.getElementById('resetUserType').value = type;
+    document.getElementById('resetUserId').value = id;
+    document.getElementById('resetUserName').textContent = name;
+    document.getElementById('resetModal').classList.add('active');
+}
+
+function openDeleteModal(type, id, name) {
+    document.getElementById('deleteUserType').value = type;
+    document.getElementById('deleteUserId').value = id;
+    document.getElementById('deleteUserName').textContent = name;
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+document.querySelectorAll('.sa-modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+    });
+});
+</script>
+{% endblock %}

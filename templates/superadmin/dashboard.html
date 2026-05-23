@@ -1,0 +1,71 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <h1>Dashboard</h1>
+    <p>System overview and statistics</p>
+</div>
+
+<div class="sa-stats">
+    <div class="sa-stat">
+        <div class="sa-stat-label">Teachers</div>
+        <div class="sa-stat-value text-blue">{{ total_teachers }}</div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-label">Students</div>
+        <div class="sa-stat-value text-green">{{ total_students }}</div>
+        <div class="sa-stat-sub">+{{ recent_students }} this week</div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-label">Classes</div>
+        <div class="sa-stat-value text-purple">{{ total_classes }}</div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-label">Exams</div>
+        <div class="sa-stat-value text-orange">{{ total_exams }}</div>
+        <div class="sa-stat-sub">{{ active_exams }} active</div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-label">Total Attempts</div>
+        <div class="sa-stat-value text-cyan">{{ total_attempts }}</div>
+        <div class="sa-stat-sub">{{ recent_attempts }} last 30 days</div>
+    </div>
+    <div class="sa-stat">
+        <div class="sa-stat-label">Avg Score</div>
+        <div class="sa-stat-value text-rose">{{ avg_score|floatformat:1 }}</div>
+        <div class="sa-stat-sub">points (graded)</div>
+    </div>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>Recent Activity</h3>
+    </div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in recent_activity %}
+                <tr>
+                    <td>{{ attempt.exam.title|truncatewords:5 }}</td>
+                    <td><span class="sa-badge {% if attempt.status == 'graded' %}sa-badge-green{% else %}sa-badge-blue{% endif %}">{{ attempt.get_status_display }}</span></td>
+                    <td>{{ attempt.total_score|floatformat:1 }}</td>
+                    <td>{% if attempt.submitted_at %}{{ attempt.submitted_at|date:"M d, H:i" }}{% else %}-{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center; color:#64748b; padding:2rem;">No attempts yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

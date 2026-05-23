@@ -32,6 +32,7 @@ urlpatterns = [
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
     path('users/', include('users.urls')),
+    path('superadmin/', include('users.urls_superadmin')),
     path('exams/', include('exams.urls')),
     path('attempts/', include('attempts.urls')),
     path('uploads/', include('uploads.urls')),

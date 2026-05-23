@@ -7,7 +7,7 @@
 {% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <!-- Page Header -->
 <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-orange-500 border-t border-r border-b border-gray-200 p-6 mb-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div class="flex items-center">
             <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-orange-100 mr-3">
                 <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,11 +15,11 @@
                 </svg>
             </div>
             <div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-1">Student Submissions</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Student Submissions</h1>
                 <p class="text-gray-600">Review and grade student exam submissions</p>
             </div>
         </div>
-        <a href="{% url 'exam_list' %}" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center">
+        <a href="{% url 'exam_list' %}" class="bg-orange-600 hover:bg-orange-700 text-white px-4 sm:px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center sm:justify-start">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -118,6 +118,7 @@
 
 {% if attempts_data %}
 <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
             <tr>
@@ -235,9 +236,8 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
-
-<!-- Pagination Component -->
 {% include 'components/pagination.html' with page_obj=page_obj %}
 
 {% else %}

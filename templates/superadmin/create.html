@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Super Admin - Seamless</title>
+    <link rel="icon" type="image/png" href="{% static 'img/brand.png' %}">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 420px; }
+        .brand { text-align: center; margin-bottom: 2rem; }
+        .brand img { width: 56px; height: 56px; border-radius: 12px; margin-bottom: 1rem; }
+        .brand h1 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; }
+        .brand p { font-size: 0.8125rem; color: #94a3b8; margin-top: 0.25rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; font-size: 0.8125rem; font-weight: 500; color: #94a3b8; margin-bottom: 0.375rem; }
+        .form-group input { width: 100%; padding: 0.75rem 1rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.9375rem; transition: border-color 0.2s; }
+        .form-group input:focus { outline: none; border-color: #60a5fa; }
+        .form-group .help { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+        .btn { width: 100%; padding: 0.875rem; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 0.9375rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+        .btn:hover { background: #1d4ed8; }
+        .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.8125rem; margin-bottom: 1rem; background: rgba(220, 38, 38, 0.15); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.3); }
+        .footer { text-align: center; margin-top: 1.5rem; }
+        .footer a { color: #60a5fa; text-decoration: none; font-size: 0.8125rem; }
+        .footer a:hover { text-decoration: underline; }
+        .note { background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.8125rem; color: #93c5fd; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="brand">
+            <img src="{% static 'img/brand.png' %}" alt="Logo">
+            <h1>Create Super Admin</h1>
+            <p>One-time setup for system administration</p>
+        </div>
+
+        <div class="note">
+            This account is separate from teacher accounts and has full system management privileges.
+        </div>
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="post" action="{% url 'superadmin_create' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ username|default:'' }}" required minlength="3" placeholder="admin" autocomplete="username">
+                <p class="help">Minimum 3 characters</p>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="8" placeholder="Minimum 8 characters" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="password_confirm">Confirm Password</label>
+                <input type="password" id="password_confirm" name="password_confirm" required minlength="8" placeholder="Re-enter password" autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn">Create Super Admin</button>
+        </form>
+
+        <div class="footer">
+            <a href="{% url 'superadmin_login' %}">Already have an account? Login</a>
+        </div>
+    </div>
+</body>
+</html>

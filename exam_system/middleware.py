@@ -37,6 +37,7 @@ class FirstTimeSetupMiddleware:
             '/setup/',
             '/users/setup/',
             '/health/',
+            '/superadmin/',
             '/static/',
             '/media/',
             '/admin/',
