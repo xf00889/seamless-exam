@@ -8,6 +8,7 @@
         <h1>Teachers</h1>
         <p>Manage teacher accounts and reset passwords</p>
     </div>
+    <button type="button" class="sa-btn sa-btn-primary" onclick="openCreateTeacherModal()">+ Create Account</button>
 </div>
 
 <div class="sa-card">
@@ -59,11 +60,11 @@
             <input type="hidden" name="user_id" id="resetUserId">
             <div class="sa-form-group">
                 <label>New Password</label>
-                <input type="password" name="new_password" required minlength="8" placeholder="Minimum 8 characters">
+                <input type="password" name="new_password" class="sa-input" required minlength="8" placeholder="Minimum 8 characters">
             </div>
             <div class="sa-form-group">
                 <label>Confirm Password</label>
-                <input type="password" name="confirm_password" required minlength="8" placeholder="Re-enter password">
+                <input type="password" name="confirm_password" class="sa-input" required minlength="8" placeholder="Re-enter password">
             </div>
             <div class="sa-modal-actions">
                 <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('resetModal')">Cancel</button>
@@ -84,11 +85,63 @@
             <input type="hidden" name="user_id" id="deleteUserId">
             <div class="sa-form-group">
                 <label>Enter your admin password to confirm</label>
-                <input type="password" name="admin_password" required placeholder="Your admin password">
+                <input type="password" name="admin_password" class="sa-input" required placeholder="Your admin password">
             </div>
             <div class="sa-modal-actions">
                 <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
                 <button type="submit" class="sa-btn sa-btn-red">Delete Teacher</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Teacher Modal -->
+<div class="sa-modal-overlay" id="createTeacherModal">
+    <div class="sa-modal" style="max-width:520px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <div>
+                <h3 style="margin:0;">Create Teacher Account</h3>
+                <p style="color:#94a3b8; font-size:0.8125rem; margin:0.25rem 0 0;">Create a new teacher login</p>
+            </div>
+            <button type="button" onclick="closeModal('createTeacherModal')" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:0.25rem;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="post" action="{% url 'superadmin_create_teacher' %}">
+            {% csrf_token %}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                <div class="sa-form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" class="sa-input" required>
+                </div>
+                <div class="sa-form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" class="sa-input">
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                <div class="sa-form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" class="sa-input" required>
+                </div>
+                <div class="sa-form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" class="sa-input" required>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+                <div class="sa-form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" class="sa-input" required minlength="8" placeholder="Min 8 characters">
+                </div>
+                <div class="sa-form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" name="password_confirm" class="sa-input" required minlength="8">
+                </div>
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('createTeacherModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-primary">Create Teacher</button>
             </div>
         </form>
     </div>
@@ -102,6 +155,10 @@ function openResetModal(type, id, name) {
     document.getElementById('resetUserId').value = id;
     document.getElementById('resetUserName').textContent = name;
     document.getElementById('resetModal').classList.add('active');
+}
+
+function openCreateTeacherModal() {
+    document.getElementById('createTeacherModal').classList.add('active');
 }
 
 function openDeleteModal(type, id, name) {
