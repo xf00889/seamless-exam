@@ -21,9 +21,9 @@ class ExamForm(forms.ModelForm):
     """
     
     # Generation method choice field (Requirement 1.1)
-    # AI generation has been disabled; only manual and file upload methods remain.
     GENERATION_METHOD_CHOICES = [
         ('manual', 'Manual Entry'),
+        ('ai_generate', 'AI Generate'),
         ('upload', 'File Upload'),
     ]
     

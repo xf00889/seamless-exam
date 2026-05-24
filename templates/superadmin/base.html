@@ -205,6 +205,10 @@
                     Notifications
                     {% if unread_notifications %}<span class="sa-nav-badge">{{ unread_notifications }}</span>{% endif %}
                 </a>
+                <a href="{% url 'superadmin_ai_settings' %}" class="{% if request.resolver_match.url_name == 'superadmin_ai_settings' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    AI Settings
+                </a>
             </nav>
             <div class="sa-sidebar-actions">
                 <button class="sa-theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark mode">

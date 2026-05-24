@@ -170,3 +170,27 @@ class AdminNotification(models.Model):
 
     def __str__(self):
         return f"{self.name} — {'Read' if self.is_read else 'Unread'}"
+
+
+class SystemSettings(models.Model):
+    """Singleton model for system-wide settings including AI configuration."""
+    ai_api_key = models.CharField(max_length=500, blank=True, default='')
+    ai_base_url = models.CharField(max_length=255, blank=True, default='https://openrouter.ai/api/v1')
+    ai_model = models.CharField(max_length=255, blank=True, default='meta-llama/llama-3.1-8b-instruct:free')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'system_settings'
+        verbose_name_plural = 'System Settings'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return "System Settings"

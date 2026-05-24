@@ -79,8 +79,14 @@ def exam_create_view(request):
     
     if request.method == 'POST':
         form = ExamForm(request.POST, request.FILES, teacher=teacher)
-        
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         if not form.is_valid():
+            if is_ajax:
+                from django.http import JsonResponse
+                errors = [e for field_errors in form.errors.values() for e in field_errors]
+                return JsonResponse({'success': False, 'error': errors[0] if errors else 'Form validation failed.'})
+
             # Display field-specific error messages (Requirement 1.4)
             for field, errors in form.errors.items():
                 for error in errors:
@@ -116,6 +122,8 @@ def exam_create_view(request):
         
         exam = exam_service.create_exam(exam_data)
         if not exam:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'Failed to create exam.'})
             messages.error(request, 'Failed to create exam')
             
             # Get teacher's classes for the template
@@ -152,7 +160,68 @@ def exam_create_view(request):
         if generation_method == 'upload':
             # Handle file upload and automatic extraction
             return _handle_file_upload(request, exam, form)
-        
+
+        elif generation_method == 'ai_generate':
+            # AI generation - generate questions then redirect to editor
+            from services.ai_generation_service import generate_exam_questions
+            from django.http import JsonResponse
+            topic = request.POST.get('ai_topic', '').strip()
+            difficulty = request.POST.get('ai_difficulty', 'medium')
+            subject = exam_data.get('subject', '')
+
+            # Build per-type counts
+            type_counts = {}
+            for qt in ['MCQ', 'TRUE_FALSE', 'IDENTIFICATION', 'ENUMERATION', 'ESSAY']:
+                count = int(request.POST.get(f'ai_count_{qt}', 0))
+                if count > 0:
+                    type_counts[qt] = count
+
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+            if not topic:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': 'No topic provided for AI generation.'})
+                messages.warning(request, 'No topic provided for AI generation. You can generate questions from the exam editor.')
+                return redirect('exam_edit', exam_id=exam.id)
+
+            if not type_counts:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': 'No question counts specified.'})
+                messages.warning(request, 'No question counts specified. You can generate questions from the exam editor.')
+                return redirect('exam_edit', exam_id=exam.id)
+
+            try:
+                questions = generate_exam_questions(topic, subject, type_counts=type_counts, difficulty=difficulty)
+                questions_by_type = {}
+                for i, q in enumerate(questions):
+                    Question.objects.create(
+                        exam=exam,
+                        question_type=q['question_type'],
+                        question_text=q['question_text'],
+                        options=q.get('options', []),
+                        correct_answer=q.get('correct_answer'),
+                        points=q.get('points', 1.0),
+                        order_index=i + 1,
+                    )
+                    qt = q['question_type']
+                    questions_by_type[qt] = questions_by_type.get(qt, 0) + 1
+
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'exam_id': exam.id,
+                        'total_questions': len(questions),
+                        'questions_by_type': questions_by_type,
+                        'message': f'Exam "{exam.title}" created with {len(questions)} AI-generated questions.',
+                    })
+                messages.success(request, f'Exam "{exam.title}" created with {len(questions)} AI-generated questions.')
+            except ValueError as e:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': str(e)})
+                messages.warning(request, f'AI generation issue: {e}. You can add questions manually.')
+
+            return redirect('exam_edit', exam_id=exam.id)
+
         else:  # manual
             # Manual entry - redirect to exam editor
             messages.success(
@@ -838,6 +907,62 @@ def question_delete_view(request, question_id):
 
 
 @teacher_required
+@require_http_methods(["POST"])
+def ai_generate_questions_view(request, exam_id):
+    """Generate questions using AI and add them to an exam."""
+    import json as json_module
+    from services.ai_generation_service import generate_exam_questions
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    try:
+        body = json_module.loads(request.body)
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    topic = body.get('topic', '').strip()
+    subject = body.get('subject', exam.subject or '').strip()
+    type_counts = body.get('type_counts', {})
+    difficulty = body.get('difficulty', 'medium')
+
+    if not topic:
+        return JsonResponse({'error': 'Topic is required'}, status=400)
+    if not type_counts or not any(v > 0 for v in type_counts.values()):
+        return JsonResponse({'error': 'At least one question type count must be greater than 0'}, status=400)
+
+    try:
+        questions = generate_exam_questions(topic, subject, type_counts=type_counts, difficulty=difficulty)
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    current_max_order = exam.questions.count()
+    created_questions = []
+
+    for i, q in enumerate(questions):
+        question = Question.objects.create(
+            exam=exam,
+            question_type=q['question_type'],
+            question_text=q['question_text'],
+            options=q.get('options', []),
+            correct_answer=q.get('correct_answer'),
+            points=q.get('points', 1.0),
+            order_index=current_max_order + i + 1,
+        )
+        created_questions.append({
+            'id': question.id,
+            'question_type': question.question_type,
+            'question_text': question.question_text,
+            'points': float(question.points),
+        })
+
+    return JsonResponse({
+        'status': 'ok',
+        'message': f'Generated {len(created_questions)} questions',
+        'questions': created_questions,
+    })@teacher_required
 def exam_takers_view(request, exam_id):
     """
     Display all students who have taken a specific exam.

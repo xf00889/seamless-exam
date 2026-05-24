@@ -11,6 +11,7 @@ from .views_superadmin import (
     SuperAdminNotificationsView,
     SuperAdminCreateTeacherView,
 )
+from .views_ai_settings import ai_settings_view
 
 urlpatterns = [
     path('login/', SuperAdminLoginView.as_view(), name='superadmin_login'),
@@ -23,4 +24,5 @@ urlpatterns = [
     path('delete-user/', SuperAdminDeleteUserView.as_view(), name='superadmin_delete_user'),
     path('create/', SuperAdminCreateView.as_view(), name='superadmin_create'),
     path('create-teacher/', SuperAdminCreateTeacherView.as_view(), name='superadmin_create_teacher'),
+    path('ai-settings/', ai_settings_view, name='superadmin_ai_settings'),
 ]
