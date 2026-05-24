@@ -6,6 +6,7 @@
 let currentExamId = null;
 
 function openDeleteModal(examId, examTitle) {
+    closeReopenModal();
     currentExamId = examId;
     document.getElementById('examTitle').textContent = examTitle;
     document.getElementById('deletePassword').value = '';
@@ -41,6 +42,7 @@ let allStudents = [];
 let selectedStudentIds = new Set();
 
 function openReopenModal(examId, examTitle) {
+    closeDeleteModal();
     currentReopenExamId = examId;
     document.getElementById('reopenExamTitle').textContent = examTitle;
     document.getElementById('reopenModal').classList.remove('hidden');
