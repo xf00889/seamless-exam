@@ -13,11 +13,14 @@
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(75, 85, 99, 0.5); /* bg-gray-600 bg-opacity-50 */
+    background-color: rgba(75, 85, 99, 0.5);
     overflow-y: auto;
     height: 100%;
     width: 100%;
     z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-container {
@@ -34,10 +37,15 @@
 
 .modal-container-wide {
     width: 100%;
-    max-width: 42rem; /* max-w-2xl */
+    max-width: 42rem;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem;
+    margin: 1rem;
 }
 
 /* Modal Content */
