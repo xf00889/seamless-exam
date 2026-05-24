@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import tempfile
 from datetime import datetime
@@ -7,12 +8,16 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 try:
-    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
     HAS_GOOGLE = True
 except ImportError:
     HAS_GOOGLE = False
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 
 class Command(BaseCommand):
@@ -25,30 +30,33 @@ class Command(BaseCommand):
             default=7,
             help='Number of backups to retain in Google Drive (default: 7)',
         )
+        parser.add_argument(
+            '--auth',
+            action='store_true',
+            help='Run the OAuth2 authorization flow to generate a refresh token',
+        )
 
     def handle(self, *args, **options):
         if not HAS_GOOGLE:
             self.stderr.write(self.style.ERROR(
-                'google-api-python-client and google-auth are required. '
-                'Install with: pip install google-api-python-client google-auth'
+                'Required packages missing. Install with:\n'
+                'pip install google-api-python-client google-auth google-auth-oauthlib'
             ))
             return
 
-        credentials_json = os.environ.get('GOOGLE_DRIVE_CREDENTIALS')
+        if options['auth']:
+            self._run_auth_flow()
+            return
+
         folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID')
-
-        if not credentials_json:
-            self.stderr.write(self.style.ERROR(
-                'GOOGLE_DRIVE_CREDENTIALS environment variable is not set. '
-                'Set it to the path of your service account JSON file or the JSON content itself.'
-            ))
-            return
-
         if not folder_id:
             self.stderr.write(self.style.ERROR(
-                'GOOGLE_DRIVE_FOLDER_ID environment variable is not set. '
-                'Set it to the ID of the Google Drive folder for backups.'
+                'GOOGLE_DRIVE_FOLDER_ID environment variable is not set.'
             ))
+            return
+
+        creds = self._get_credentials()
+        if not creds:
             return
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -75,10 +83,71 @@ class Command(BaseCommand):
             file_size = os.path.getsize(filepath)
             self.stdout.write(f'Database dump created: {filename} ({file_size / 1024:.1f} KB)')
 
-            self._upload_to_drive(filepath, filename, credentials_json, folder_id)
-            self._cleanup_old_backups(credentials_json, folder_id, options['keep'])
+            self._upload_to_drive(filepath, filename, creds, folder_id)
+            self._cleanup_old_backups(creds, folder_id, options['keep'])
 
         self.stdout.write(self.style.SUCCESS('Backup completed successfully'))
+
+    def _get_credentials(self):
+        refresh_token = os.environ.get('GOOGLE_DRIVE_REFRESH_TOKEN')
+        client_id = os.environ.get('GOOGLE_DRIVE_CLIENT_ID')
+        client_secret = os.environ.get('GOOGLE_DRIVE_CLIENT_SECRET')
+
+        if not all([refresh_token, client_id, client_secret]):
+            self.stderr.write(self.style.ERROR(
+                'Missing OAuth2 credentials. Set these environment variables:\n'
+                '  GOOGLE_DRIVE_CLIENT_ID\n'
+                '  GOOGLE_DRIVE_CLIENT_SECRET\n'
+                '  GOOGLE_DRIVE_REFRESH_TOKEN\n\n'
+                'To get the refresh token, run locally:\n'
+                '  python manage.py backup_to_drive --auth'
+            ))
+            return None
+
+        creds = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri='https://oauth2.googleapis.com/token',
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=SCOPES,
+        )
+        creds.refresh(Request())
+        return creds
+
+    def _run_auth_flow(self):
+        client_id = os.environ.get('GOOGLE_DRIVE_CLIENT_ID')
+        client_secret = os.environ.get('GOOGLE_DRIVE_CLIENT_SECRET')
+
+        if not client_id or not client_secret:
+            self.stderr.write(self.style.ERROR(
+                'Set GOOGLE_DRIVE_CLIENT_ID and GOOGLE_DRIVE_CLIENT_SECRET first.\n\n'
+                'To get these:\n'
+                '1. Go to Google Cloud Console > APIs & Services > Credentials\n'
+                '2. Create an OAuth 2.0 Client ID (Desktop app type)\n'
+                '3. Copy the Client ID and Client Secret'
+            ))
+            return
+
+        client_config = {
+            'installed': {
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://oauth2.googleapis.com/token',
+                'redirect_uris': ['http://localhost'],
+            }
+        }
+
+        flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+        creds = flow.run_local_server(port=8090)
+
+        self.stdout.write(self.style.SUCCESS('\nAuthorization successful!\n'))
+        self.stdout.write('Set this environment variable on your server:\n')
+        self.stdout.write(self.style.WARNING(
+            f'GOOGLE_DRIVE_REFRESH_TOKEN={creds.refresh_token}'
+        ))
+        self.stdout.write('\nThis token does not expire unless you revoke it.')
 
     def _dump_mysql(self, db_settings, filepath):
         cmd = [
@@ -124,23 +193,8 @@ class Command(BaseCommand):
         import shutil
         shutil.copy2(db_settings['NAME'], filepath)
 
-    def _get_drive_service(self, credentials_json):
-        if os.path.isfile(credentials_json):
-            creds = service_account.Credentials.from_service_account_file(
-                credentials_json,
-                scopes=['https://www.googleapis.com/auth/drive.file']
-            )
-        else:
-            import json
-            info = json.loads(credentials_json)
-            creds = service_account.Credentials.from_service_account_info(
-                info,
-                scopes=['https://www.googleapis.com/auth/drive.file']
-            )
-        return build('drive', 'v3', credentials=creds)
-
-    def _upload_to_drive(self, filepath, filename, credentials_json, folder_id):
-        service = self._get_drive_service(credentials_json)
+    def _upload_to_drive(self, filepath, filename, creds, folder_id):
+        service = build('drive', 'v3', credentials=creds)
 
         file_metadata = {
             'name': filename,
@@ -155,8 +209,8 @@ class Command(BaseCommand):
 
         self.stdout.write(f'Uploaded to Google Drive: {file["name"]} (ID: {file["id"]})')
 
-    def _cleanup_old_backups(self, credentials_json, folder_id, keep):
-        service = self._get_drive_service(credentials_json)
+    def _cleanup_old_backups(self, creds, folder_id, keep):
+        service = build('drive', 'v3', credentials=creds)
 
         results = service.files().list(
             q=f"'{folder_id}' in parents and trashed=false and name contains 'backup_'",
