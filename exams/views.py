@@ -164,33 +164,37 @@ def exam_create_view(request):
         elif generation_method == 'ai_generate':
             # AI generation - start background task
             import threading
-            topic = request.POST.get('ai_topic', '').strip()
-            difficulty = request.POST.get('ai_difficulty', 'medium')
-            subject = exam_data.get('subject', '')
-
-            # Build per-type counts
-            type_counts = {}
-            for qt in ['MCQ', 'TRUE_FALSE', 'IDENTIFICATION', 'ENUMERATION', 'ESSAY']:
-                count = int(request.POST.get(f'ai_count_{qt}', 0))
-                if count > 0:
-                    type_counts[qt] = count
-
             is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-            if not topic:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'error': 'No topic provided for AI generation.'})
-                messages.warning(request, 'No topic provided for AI generation. You can generate questions from the exam editor.')
-                return redirect('exam_edit', exam_id=exam.id)
-
-            if not type_counts:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'error': 'No question counts specified.'})
-                messages.warning(request, 'No question counts specified. You can generate questions from the exam editor.')
-                return redirect('exam_edit', exam_id=exam.id)
-
-            # Create task record
             try:
+                topic = request.POST.get('ai_topic', '').strip()
+                difficulty = request.POST.get('ai_difficulty', 'medium')
+                subject = exam_data.get('subject', '')
+
+                # Build per-type counts (safe int parsing)
+                type_counts = {}
+                for qt in ['MCQ', 'TRUE_FALSE', 'IDENTIFICATION', 'ENUMERATION', 'ESSAY']:
+                    raw = request.POST.get(f'ai_count_{qt}', '0')
+                    try:
+                        count = int(raw) if raw else 0
+                    except (ValueError, TypeError):
+                        count = 0
+                    if count > 0:
+                        type_counts[qt] = count
+
+                if not topic:
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': 'No topic provided for AI generation.'})
+                    messages.warning(request, 'No topic provided for AI generation.')
+                    return redirect('exam_edit', exam_id=exam.id)
+
+                if not type_counts:
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': 'No question counts specified.'})
+                    messages.warning(request, 'No question counts specified.')
+                    return redirect('exam_edit', exam_id=exam.id)
+
+                # Create task record
                 task = AIGenerationTask.objects.create(
                     exam=exam,
                     topic=topic,
@@ -200,30 +204,34 @@ def exam_create_view(request):
                     total_requested=sum(type_counts.values()),
                     status='pending',
                 )
-            except Exception as e:
+
+                # Start background thread
+                thread = threading.Thread(
+                    target=_run_ai_generation,
+                    args=(task.id,),
+                    daemon=True,
+                )
+                thread.start()
+
                 if is_ajax:
-                    return JsonResponse({'success': False, 'error': f'Failed to start AI task: {e}'})
-                messages.error(request, f'Failed to start AI task: {e}')
+                    return JsonResponse({
+                        'success': True,
+                        'task_id': task.id,
+                        'exam_id': exam.id,
+                        'status': 'pending',
+                    })
+
+                messages.info(request, 'AI generation started. Questions will appear shortly.')
                 return redirect('exam_edit', exam_id=exam.id)
 
-            # Start background thread
-            thread = threading.Thread(
-                target=_run_ai_generation,
-                args=(task.id,),
-                daemon=True,
-            )
-            thread.start()
-
-            if is_ajax:
-                return JsonResponse({
-                    'success': True,
-                    'task_id': task.id,
-                    'exam_id': exam.id,
-                    'status': 'pending',
-                })
-
-            messages.info(request, 'AI generation started. Questions will appear shortly.')
-            return redirect('exam_edit', exam_id=exam.id)
+            except Exception as e:
+                import traceback
+                import logging
+                logging.getLogger(__name__).error(f'AI generation error: {traceback.format_exc()}')
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': f'Server error: {str(e)}'})
+                messages.error(request, f'AI generation error: {e}')
+                return redirect('exam_edit', exam_id=exam.id)
 
         else:  # manual
             # Manual entry - redirect to exam editor
