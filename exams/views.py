@@ -83,7 +83,6 @@ def exam_create_view(request):
 
         if not form.is_valid():
             if is_ajax:
-                from django.http import JsonResponse
                 errors = [e for field_errors in form.errors.values() for e in field_errors]
                 return JsonResponse({'success': False, 'error': errors[0] if errors else 'Form validation failed.'})
 
