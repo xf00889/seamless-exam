@@ -248,7 +248,15 @@ document.addEventListener('DOMContentLoaded', function() {
             completeProgress();
             setTimeout(function() {
                 hideAiOverlay();
-                alert('Network error. Please try again.');
+                // Request may have succeeded but timed out - check by advancing
+                var retryMsg = document.createElement('div');
+                retryMsg.className = 'mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm';
+                retryMsg.innerHTML = '<strong>Request timed out.</strong> The AI may still be generating questions. Please wait a moment and try again, or reduce the number of questions.';
+                var aiSection = document.getElementById('aiSection');
+                var existing = document.getElementById('aiTimeoutMsg');
+                if (existing) existing.remove();
+                retryMsg.id = 'aiTimeoutMsg';
+                if (aiSection) aiSection.appendChild(retryMsg);
             }, 500);
             return false;
         }

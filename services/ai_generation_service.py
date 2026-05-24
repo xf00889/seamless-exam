@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import logging
 
 import requests
@@ -61,9 +62,13 @@ def get_ai_config():
     }
 
 
+BATCH_SIZE = 15
+BATCH_DELAY = 3
+
+
 def generate_exam_questions(topic, subject, num_questions=None, question_types=None, difficulty='medium', type_counts=None):
     """
-    Generate exam questions using the OpenRouter API.
+    Generate exam questions using the OpenRouter API in batches to avoid timeouts.
 
     Args:
         topic: The topic(s) to generate questions about (comma-separated)
@@ -87,26 +92,73 @@ def generate_exam_questions(topic, subject, num_questions=None, question_types=N
             'Set it in Superadmin > AI Settings or in the .env file (AI_API_KEY).'
         )
 
-    # Build type instructions based on type_counts or legacy params
+    # Build batches from type_counts or legacy params
     if type_counts:
-        total_questions = sum(type_counts.values())
-        type_instructions = []
-        for qt, count in type_counts.items():
-            if qt in QUESTION_TYPE_CONFIGS:
-                config_qt = QUESTION_TYPE_CONFIGS[qt]
-                type_instructions.append(f"- {qt} ({count} questions): {config_qt['description']}\n  Format: {config_qt['format']}")
+        batches = _build_batches_from_counts(type_counts)
     else:
         total_questions = num_questions or 10
         question_types = question_types or ['MCQ', 'TRUE_FALSE']
-        type_instructions = []
-        for qt in question_types:
-            if qt in QUESTION_TYPE_CONFIGS:
-                config_qt = QUESTION_TYPE_CONFIGS[qt]
-                type_instructions.append(f"- {qt}: {config_qt['description']}\n  Format: {config_qt['format']}")
+        per_type = total_questions // len(question_types)
+        remainder = total_questions % len(question_types)
+        type_counts = {}
+        for i, qt in enumerate(question_types):
+            type_counts[qt] = per_type + (1 if i < remainder else 0)
+        batches = _build_batches_from_counts(type_counts)
+
+    all_questions = []
+    for i, batch in enumerate(batches):
+        if i > 0:
+            time.sleep(BATCH_DELAY)
+
+        batch_questions = _generate_batch(batch, topic, subject, difficulty, api_key, base_url, model)
+        all_questions.extend(batch_questions)
+
+    return all_questions
+
+
+def _build_batches_from_counts(type_counts):
+    """Split type_counts into batches of BATCH_SIZE questions max."""
+    items = []
+    for qt, count in type_counts.items():
+        if count > 0 and qt in QUESTION_TYPE_CONFIGS:
+            items.append((qt, count))
+
+    batches = []
+    current_batch = {}
+    current_size = 0
+
+    for qt, count in items:
+        remaining = count
+        while remaining > 0:
+            space = BATCH_SIZE - current_size
+            take = min(remaining, space)
+            current_batch[qt] = current_batch.get(qt, 0) + take
+            current_size += take
+            remaining -= take
+
+            if current_size >= BATCH_SIZE:
+                batches.append(current_batch)
+                current_batch = {}
+                current_size = 0
+
+    if current_batch:
+        batches.append(current_batch)
+
+    return batches
+
+
+def _generate_batch(batch_counts, topic, subject, difficulty, api_key, base_url, model):
+    """Generate a single batch of questions."""
+    batch_total = sum(batch_counts.values())
+
+    type_instructions = []
+    for qt, count in batch_counts.items():
+        config_qt = QUESTION_TYPE_CONFIGS[qt]
+        type_instructions.append(f"- {qt} ({count} questions): {config_qt['description']}\n  Format: {config_qt['format']}")
 
     types_text = '\n'.join(type_instructions)
 
-    prompt = f"""You are an expert exam creator for educational institutions. Generate exactly {total_questions} exam questions about the following:
+    prompt = f"""You are an expert exam creator for educational institutions. Generate exactly {batch_total} exam questions about the following:
 
 Subject: {subject}
 Topics: {topic}
