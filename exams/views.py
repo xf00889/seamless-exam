@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from exams.models import Exam, Question, QuestionType
+from exams.models import Exam, Question, QuestionType, AIGenerationTask
 from exams.forms import ExamForm, QuestionForm
 from users.models import Class
 from users.decorators import teacher_required
@@ -162,9 +162,8 @@ def exam_create_view(request):
             return _handle_file_upload(request, exam, form)
 
         elif generation_method == 'ai_generate':
-            # AI generation - generate questions then redirect to editor
-            from services.ai_generation_service import generate_exam_questions
-            from django.http import JsonResponse
+            # AI generation - start background task
+            import threading
             topic = request.POST.get('ai_topic', '').strip()
             difficulty = request.POST.get('ai_difficulty', 'medium')
             subject = exam_data.get('subject', '')
@@ -190,36 +189,34 @@ def exam_create_view(request):
                 messages.warning(request, 'No question counts specified. You can generate questions from the exam editor.')
                 return redirect('exam_edit', exam_id=exam.id)
 
-            try:
-                questions = generate_exam_questions(topic, subject, type_counts=type_counts, difficulty=difficulty)
-                questions_by_type = {}
-                for i, q in enumerate(questions):
-                    Question.objects.create(
-                        exam=exam,
-                        question_type=q['question_type'],
-                        question_text=q['question_text'],
-                        options=q.get('options', []),
-                        correct_answer=q.get('correct_answer'),
-                        points=q.get('points', 1.0),
-                        order_index=i + 1,
-                    )
-                    qt = q['question_type']
-                    questions_by_type[qt] = questions_by_type.get(qt, 0) + 1
+            # Create task record
+            task = AIGenerationTask.objects.create(
+                exam=exam,
+                topic=topic,
+                subject=subject,
+                difficulty=difficulty,
+                type_counts=type_counts,
+                total_requested=sum(type_counts.values()),
+                status='pending',
+            )
 
-                if is_ajax:
-                    return JsonResponse({
-                        'success': True,
-                        'exam_id': exam.id,
-                        'total_questions': len(questions),
-                        'questions_by_type': questions_by_type,
-                        'message': f'Exam "{exam.title}" created with {len(questions)} AI-generated questions.',
-                    })
-                messages.success(request, f'Exam "{exam.title}" created with {len(questions)} AI-generated questions.')
-            except ValueError as e:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'error': str(e)})
-                messages.warning(request, f'AI generation issue: {e}. You can add questions manually.')
+            # Start background thread
+            thread = threading.Thread(
+                target=_run_ai_generation,
+                args=(task.id,),
+                daemon=True,
+            )
+            thread.start()
 
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'task_id': task.id,
+                    'exam_id': exam.id,
+                    'status': 'pending',
+                })
+
+            messages.info(request, 'AI generation started. Questions will appear shortly.')
             return redirect('exam_edit', exam_id=exam.id)
 
         else:  # manual
@@ -246,6 +243,75 @@ def exam_create_view(request):
         'form': form,
         'classes': classes,
         'page_breadcrumbs': breadcrumbs
+    })
+
+
+def _run_ai_generation(task_id):
+    """Background worker that generates AI questions in batches."""
+    import django
+    django.db.connections.close_all()
+
+    from services.ai_generation_service import generate_exam_questions
+
+    try:
+        task = AIGenerationTask.objects.get(pk=task_id)
+        task.status = 'processing'
+        task.save(update_fields=['status'])
+
+        questions = generate_exam_questions(
+            task.topic, task.subject,
+            type_counts=task.type_counts,
+            difficulty=task.difficulty,
+        )
+
+        questions_by_type = {}
+        for i, q in enumerate(questions):
+            Question.objects.create(
+                exam=task.exam,
+                question_type=q['question_type'],
+                question_text=q['question_text'],
+                options=q.get('options', []),
+                correct_answer=q.get('correct_answer'),
+                points=q.get('points', 1.0),
+                order_index=i + 1,
+            )
+            qt = q['question_type']
+            questions_by_type[qt] = questions_by_type.get(qt, 0) + 1
+
+        task.status = 'completed'
+        task.total_generated = len(questions)
+        task.questions_by_type = questions_by_type
+        task.completed_at = timezone.now()
+        task.save()
+
+    except Exception as e:
+        try:
+            task = AIGenerationTask.objects.get(pk=task_id)
+            task.status = 'failed'
+            task.error_message = str(e)
+            task.completed_at = timezone.now()
+            task.save()
+        except Exception:
+            pass
+
+
+@teacher_required
+@require_http_methods(["GET"])
+def ai_task_status_view(request, task_id):
+    """Polling endpoint to check AI generation task status."""
+    task = get_object_or_404(AIGenerationTask, pk=task_id)
+    teacher = auth_service.get_current_teacher(request)
+    if task.exam.created_by.pk != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    return JsonResponse({
+        'task_id': task.id,
+        'exam_id': task.exam.id,
+        'status': task.status,
+        'total_requested': task.total_requested,
+        'total_generated': task.total_generated,
+        'questions_by_type': task.questions_by_type,
+        'error': task.error_message,
     })
 
 

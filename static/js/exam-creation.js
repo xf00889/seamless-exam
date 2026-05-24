@@ -214,7 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         showAiOverlay();
 
-        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var formData = new FormData(document.getElementById('examForm'));
         formData.set('generation_method', 'ai_generate');
 
@@ -226,18 +225,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             var data = await response.json();
-            completeProgress();
 
-            if (data.success) {
-                aiGenerationComplete = true;
+            if (data.success && data.task_id) {
                 aiGeneratedExamId = data.exam_id;
-
-                setTimeout(function() {
-                    hideAiOverlay();
-                    showAiResults(data);
-                    currentStep = 4;
-                    showStep(4);
-                }, 600);
+                pollTaskStatus(data.task_id);
                 return true;
             } else {
                 hideAiOverlay();
@@ -245,21 +236,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         } catch (err) {
-            completeProgress();
-            setTimeout(function() {
-                hideAiOverlay();
-                // Request may have succeeded but timed out - check by advancing
-                var retryMsg = document.createElement('div');
-                retryMsg.className = 'mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm';
-                retryMsg.innerHTML = '<strong>Request timed out.</strong> The AI may still be generating questions. Please wait a moment and try again, or reduce the number of questions.';
-                var aiSection = document.getElementById('aiSection');
-                var existing = document.getElementById('aiTimeoutMsg');
-                if (existing) existing.remove();
-                retryMsg.id = 'aiTimeoutMsg';
-                if (aiSection) aiSection.appendChild(retryMsg);
-            }, 500);
+            hideAiOverlay();
+            var aiSection = document.getElementById('aiSection');
+            var existing = document.getElementById('aiTimeoutMsg');
+            if (existing) existing.remove();
+            var retryMsg = document.createElement('div');
+            retryMsg.id = 'aiTimeoutMsg';
+            retryMsg.className = 'mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm';
+            retryMsg.innerHTML = '<strong>Connection error.</strong> Please try again.';
+            if (aiSection) aiSection.appendChild(retryMsg);
             return false;
         }
+    }
+
+    function pollTaskStatus(taskId) {
+        var pollInterval = setInterval(async function() {
+            try {
+                var response = await fetch('/exams/ai-task/' + taskId + '/status/', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                var data = await response.json();
+
+                if (data.status === 'completed') {
+                    clearInterval(pollInterval);
+                    completeProgress();
+                    aiGenerationComplete = true;
+
+                    setTimeout(function() {
+                        hideAiOverlay();
+                        showAiResults(data);
+                        currentStep = 4;
+                        showStep(4);
+                    }, 600);
+                } else if (data.status === 'failed') {
+                    clearInterval(pollInterval);
+                    hideAiOverlay();
+                    alert(data.error || 'AI generation failed. Please try again with fewer questions.');
+                }
+            } catch (err) {
+                // Keep polling on network hiccups
+            }
+        }, 3000);
     }
 
     function showAiResults(data) {

@@ -195,3 +195,29 @@ class ExamStudentAssignment(models.Model):
     
     def __str__(self):
         return f"{self.exam.title} → {self.student.get_full_name()}"
+
+
+class AIGenerationTask(models.Model):
+    """Tracks async AI question generation tasks."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='ai_tasks')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    topic = models.TextField()
+    subject = models.CharField(max_length=200, blank=True)
+    difficulty = models.CharField(max_length=20, default='medium')
+    type_counts = models.JSONField(default=dict)
+    total_requested = models.IntegerField(default=0)
+    total_generated = models.IntegerField(default=0)
+    questions_by_type = models.JSONField(default=dict)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'exams_ai_generation_task'
