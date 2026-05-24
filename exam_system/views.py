@@ -1,6 +1,6 @@
 import os
 import hmac
-import hashlib
+import traceback
 
 from django.http import JsonResponse
 from django.core.management import call_command
@@ -24,4 +24,8 @@ def cron_backup(request):
         call_command('backup_to_drive', '--keep', '7')
         return JsonResponse({'status': 'ok', 'message': 'Backup completed successfully'})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }, status=500)
