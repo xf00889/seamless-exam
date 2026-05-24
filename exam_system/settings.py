@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'exams',
     'attempts',
     'uploads',
+    'exam_system',
 ]
 
 MIDDLEWARE = [
