@@ -222,7 +222,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData,
+                credentials: 'same-origin',
             });
+
+            if (!response.ok && response.status !== 200) {
+                var text = await response.text();
+                console.error('AI generation response error:', response.status, text.substring(0, 200));
+                hideAiOverlay();
+                alert('Server error (' + response.status + '). Please try again.');
+                return false;
+            }
+
+            var contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                console.error('Non-JSON response:', contentType);
+                hideAiOverlay();
+                alert('Unexpected server response. Please refresh and try again.');
+                return false;
+            }
 
             var data = await response.json();
 
@@ -254,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 var response = await fetch('/exams/ai-task/' + taskId + '/status/', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
                 });
                 var data = await response.json();
 
