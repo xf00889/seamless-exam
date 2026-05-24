@@ -1,6 +1,7 @@
 import os
 import hmac
 import traceback
+import io
 
 from django.http import JsonResponse
 from django.core.management import call_command
@@ -21,8 +22,15 @@ def cron_backup(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
     try:
-        call_command('backup_to_drive', '--keep', '7')
-        return JsonResponse({'status': 'ok', 'message': 'Backup completed successfully'})
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        call_command('backup_to_drive', '--keep', '7', stdout=stdout, stderr=stderr)
+        return JsonResponse({
+            'status': 'ok',
+            'message': 'Backup completed successfully',
+            'output': stdout.getvalue(),
+            'errors': stderr.getvalue(),
+        })
     except Exception as e:
         return JsonResponse({
             'status': 'error',
