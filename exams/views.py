@@ -190,15 +190,21 @@ def exam_create_view(request):
                 return redirect('exam_edit', exam_id=exam.id)
 
             # Create task record
-            task = AIGenerationTask.objects.create(
-                exam=exam,
-                topic=topic,
-                subject=subject,
-                difficulty=difficulty,
-                type_counts=type_counts,
-                total_requested=sum(type_counts.values()),
-                status='pending',
-            )
+            try:
+                task = AIGenerationTask.objects.create(
+                    exam=exam,
+                    topic=topic,
+                    subject=subject,
+                    difficulty=difficulty,
+                    type_counts=type_counts,
+                    total_requested=sum(type_counts.values()),
+                    status='pending',
+                )
+            except Exception as e:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': f'Failed to start AI task: {e}'})
+                messages.error(request, f'Failed to start AI task: {e}')
+                return redirect('exam_edit', exam_id=exam.id)
 
             # Start background thread
             thread = threading.Thread(
