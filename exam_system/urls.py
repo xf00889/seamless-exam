@@ -23,6 +23,8 @@ from django.shortcuts import render
 from users.views_setup import FirstTimeSetupView
 from users.models import Teacher, Student
 
+from .views import cron_backup
+
 
 def health_check(request):
     return JsonResponse({'status': 'ok'})
@@ -52,6 +54,7 @@ urlpatterns = [
     path('', home_view, name='home'),
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
+    path('cron/backup/', cron_backup, name='cron_backup'),
     path('users/', include('users.urls')),
     path('superadmin/', include('users.urls_superadmin')),
     path('exams/', include('exams.urls')),

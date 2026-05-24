@@ -17,6 +17,11 @@
                 <span class="nav-subtitle">Open-Source Exam System</span>
             </div>
         </div>
+        <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
         <div class="nav-actions">
             {% if dashboard_url %}
             <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
@@ -544,6 +549,27 @@
 </div>
 
 <script>
+// Mobile nav toggle
+(function() {
+    const toggle = document.querySelector('.nav-toggle');
+    const navActions = document.querySelector('.nav-actions');
+
+    toggle.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', !expanded);
+        toggle.classList.toggle('active');
+        navActions.classList.toggle('open');
+    });
+
+    navActions.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.classList.remove('active');
+            navActions.classList.remove('open');
+        });
+    });
+})();
+
 // Copy button functionality
 document.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
