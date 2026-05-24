@@ -279,12 +279,15 @@ def _run_ai_generation(task_id):
 
         questions_by_type = {}
         for i, q in enumerate(questions):
+            correct_answer = q.get('correct_answer')
+            if correct_answer is None:
+                correct_answer = ''
             Question.objects.create(
                 exam=task.exam,
                 question_type=q['question_type'],
                 question_text=q['question_text'],
                 options=q.get('options', []),
-                correct_answer=q.get('correct_answer'),
+                correct_answer=correct_answer,
                 points=q.get('points', 1.0),
                 order_index=i + 1,
             )
@@ -1026,7 +1029,7 @@ def ai_generate_questions_view(request, exam_id):
             question_type=q['question_type'],
             question_text=q['question_text'],
             options=q.get('options', []),
-            correct_answer=q.get('correct_answer'),
+            correct_answer=q.get('correct_answer') or '',
             points=q.get('points', 1.0),
             order_index=current_max_order + i + 1,
         )
