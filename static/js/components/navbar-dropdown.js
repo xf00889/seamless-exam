@@ -1,6 +1,6 @@
 /**
  * Navbar Dropdown Component
- * Handles profile dropdown and mobile menu functionality
+ * Handles profile dropdown and mobile slide-in menu
  */
 
 class NavbarDropdown {
@@ -14,31 +14,25 @@ class NavbarDropdown {
         this.setupKeyboardNavigation();
     }
 
-    /**
-     * Setup profile dropdown functionality
-     */
     setupProfileDropdown() {
         const profileButton = document.getElementById('profile-menu-button');
         const profileMenu = document.getElementById('profile-menu');
-        
+
         if (!profileButton || !profileMenu) return;
 
-        // Toggle dropdown on button click
         profileButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleProfileDropdown(profileButton, profileMenu);
         });
-        
-        // Close dropdown when clicking outside
+
         document.addEventListener('click', (e) => {
-            if (!profileMenu.classList.contains('hidden') && 
-                !profileButton.contains(e.target) && 
+            if (!profileMenu.classList.contains('hidden') &&
+                !profileButton.contains(e.target) &&
                 !profileMenu.contains(e.target)) {
                 this.closeProfileDropdown(profileButton, profileMenu);
             }
         });
-        
-        // Close dropdown on escape key
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !profileMenu.classList.contains('hidden')) {
                 this.closeProfileDropdown(profileButton, profileMenu);
@@ -46,63 +40,68 @@ class NavbarDropdown {
             }
         });
 
-        // Handle menu item keyboard navigation
         this.setupMenuItemNavigation(profileMenu);
     }
 
-    /**
-     * Setup mobile menu functionality
-     */
     setupMobileMenu() {
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuIconClosed = document.getElementById('menu-icon-closed');
-        const menuIconOpen = document.getElementById('menu-icon-open');
-        
-        if (!mobileMenuButton || !mobileMenu) return;
+        this.mobileMenuButton = document.getElementById('mobile-menu-button');
+        this.mobileMenu = document.getElementById('mobile-menu');
+        this.mobileBackdrop = document.getElementById('mobile-menu-backdrop');
+        this.menuIconClosed = document.getElementById('menu-icon-closed');
+        this.menuIconOpen = document.getElementById('menu-icon-open');
 
-        mobileMenuButton.addEventListener('click', () => {
-            this.toggleMobileMenu(
-                mobileMenuButton, 
-                mobileMenu, 
-                menuIconClosed, 
-                menuIconOpen
-            );
+        if (!this.mobileMenuButton || !this.mobileMenu) return;
+
+        this.mobileMenuButton.addEventListener('click', () => {
+            this.toggleMobileMenu();
         });
 
-        // Close mobile menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!mobileMenu.classList.contains('hidden') && 
-                !mobileMenuButton.contains(e.target) && 
-                !mobileMenu.contains(e.target)) {
-                this.closeMobileMenu(
-                    mobileMenuButton, 
-                    mobileMenu, 
-                    menuIconClosed, 
-                    menuIconOpen
-                );
-            }
-        });
+        if (this.mobileBackdrop) {
+            this.mobileBackdrop.addEventListener('click', () => {
+                this.closeMobileMenu();
+            });
+        }
 
-        // Close mobile menu on escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
-                this.closeMobileMenu(
-                    mobileMenuButton, 
-                    mobileMenu, 
-                    menuIconClosed, 
-                    menuIconOpen
-                );
-                mobileMenuButton.focus();
+            if (e.key === 'Escape' && this.mobileMenu.classList.contains('active')) {
+                this.closeMobileMenu();
+                this.mobileMenuButton.focus();
             }
         });
+
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+
+        this.mobileMenu.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+        }, { passive: true });
+
+        this.mobileMenu.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            if (diff > 0) {
+                this.mobileMenu.style.transform = `translateX(${diff}px)`;
+            }
+        }, { passive: true });
+
+        this.mobileMenu.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            const diff = currentX - startX;
+            if (diff > 80) {
+                this.closeMobileMenu();
+            } else {
+                this.mobileMenu.style.transform = '';
+            }
+            startX = 0;
+            currentX = 0;
+        }, { passive: true });
     }
 
-    /**
-     * Setup keyboard navigation for accessibility
-     */
     setupKeyboardNavigation() {
-        // Handle arrow key navigation in dropdowns
         const profileMenu = document.getElementById('profile-menu');
         if (profileMenu) {
             profileMenu.addEventListener('keydown', (e) => {
@@ -111,119 +110,88 @@ class NavbarDropdown {
         }
     }
 
-    /**
-     * Toggle profile dropdown
-     * @param {HTMLButtonElement} button - Profile button
-     * @param {HTMLElement} menu - Profile menu
-     */
+    toggleMobileMenu() {
+        if (this.mobileMenu.classList.contains('active')) {
+            this.closeMobileMenu();
+        } else {
+            this.openMobileMenu();
+        }
+    }
+
+    openMobileMenu() {
+        this.mobileMenu.classList.remove('hidden');
+        if (this.mobileBackdrop) this.mobileBackdrop.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+            this.mobileMenu.classList.add('active');
+            if (this.mobileBackdrop) this.mobileBackdrop.classList.add('active');
+        });
+
+        this.mobileMenuButton.setAttribute('aria-expanded', 'true');
+        if (this.menuIconClosed && this.menuIconOpen) {
+            this.menuIconClosed.classList.add('hidden');
+            this.menuIconOpen.classList.remove('hidden');
+        }
+
+        document.body.style.overflow = 'hidden';
+
+        const firstLink = this.mobileMenu.querySelector('.mobile-nav-item');
+        if (firstLink) firstLink.focus();
+    }
+
+    closeMobileMenu() {
+        this.mobileMenu.classList.remove('active');
+        this.mobileMenu.style.transform = '';
+        if (this.mobileBackdrop) this.mobileBackdrop.classList.remove('active');
+
+        this.mobileMenuButton.setAttribute('aria-expanded', 'false');
+        if (this.menuIconClosed && this.menuIconOpen) {
+            this.menuIconClosed.classList.remove('hidden');
+            this.menuIconOpen.classList.add('hidden');
+        }
+
+        document.body.style.overflow = '';
+
+        setTimeout(() => {
+            this.mobileMenu.classList.add('hidden');
+            if (this.mobileBackdrop) this.mobileBackdrop.classList.add('hidden');
+        }, 300);
+    }
+
     toggleProfileDropdown(button, menu) {
-        const isHidden = menu.classList.contains('hidden');
-        
-        if (isHidden) {
+        if (menu.classList.contains('hidden')) {
             this.openProfileDropdown(button, menu);
         } else {
             this.closeProfileDropdown(button, menu);
         }
     }
 
-    /**
-     * Open profile dropdown
-     * @param {HTMLButtonElement} button - Profile button
-     * @param {HTMLElement} menu - Profile menu
-     */
     openProfileDropdown(button, menu) {
         menu.classList.remove('hidden');
         button.setAttribute('aria-expanded', 'true');
-        
-        // Focus first menu item for accessibility
         const firstMenuItem = menu.querySelector('[role="menuitem"]');
-        if (firstMenuItem) {
-            firstMenuItem.focus();
-        }
+        if (firstMenuItem) firstMenuItem.focus();
     }
 
-    /**
-     * Close profile dropdown
-     * @param {HTMLButtonElement} button - Profile button
-     * @param {HTMLElement} menu - Profile menu
-     */
     closeProfileDropdown(button, menu) {
         menu.classList.add('hidden');
         button.setAttribute('aria-expanded', 'false');
     }
 
-    /**
-     * Toggle mobile menu
-     * @param {HTMLButtonElement} button - Mobile menu button
-     * @param {HTMLElement} menu - Mobile menu
-     * @param {HTMLElement} iconClosed - Closed menu icon
-     * @param {HTMLElement} iconOpen - Open menu icon
-     */
-    toggleMobileMenu(button, menu, iconClosed, iconOpen) {
-        const isHidden = menu.classList.contains('hidden');
-        
-        if (isHidden) {
-            this.openMobileMenu(button, menu, iconClosed, iconOpen);
-        } else {
-            this.closeMobileMenu(button, menu, iconClosed, iconOpen);
-        }
-    }
-
-    /**
-     * Open mobile menu
-     * @param {HTMLButtonElement} button - Mobile menu button
-     * @param {HTMLElement} menu - Mobile menu
-     * @param {HTMLElement} iconClosed - Closed menu icon
-     * @param {HTMLElement} iconOpen - Open menu icon
-     */
-    openMobileMenu(button, menu, iconClosed, iconOpen) {
-        menu.classList.remove('hidden');
-        button.setAttribute('aria-expanded', 'true');
-        
-        if (iconClosed && iconOpen) {
-            iconClosed.classList.add('hidden');
-            iconOpen.classList.remove('hidden');
-        }
-    }
-
-    /**
-     * Close mobile menu
-     * @param {HTMLButtonElement} button - Mobile menu button
-     * @param {HTMLElement} menu - Mobile menu
-     * @param {HTMLElement} iconClosed - Closed menu icon
-     * @param {HTMLElement} iconOpen - Open menu icon
-     */
-    closeMobileMenu(button, menu, iconClosed, iconOpen) {
-        menu.classList.add('hidden');
-        button.setAttribute('aria-expanded', 'false');
-        
-        if (iconClosed && iconOpen) {
-            iconClosed.classList.remove('hidden');
-            iconOpen.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Setup menu item navigation for accessibility
-     * @param {HTMLElement} menu - Menu element
-     */
     setupMenuItemNavigation(menu) {
         const menuItems = menu.querySelectorAll('[role="menuitem"]');
-        
+
         menuItems.forEach((item, index) => {
             item.setAttribute('tabindex', '-1');
-            
             item.addEventListener('keydown', (e) => {
                 switch (e.key) {
                     case 'ArrowDown':
                         e.preventDefault();
-                        const nextIndex = (index + 1) % menuItems.length;
-                        menuItems[nextIndex].focus();
+                        menuItems[(index + 1) % menuItems.length].focus();
                         break;
                     case 'ArrowUp':
                         e.preventDefault();
-                        const prevIndex = (index - 1 + menuItems.length) % menuItems.length;
-                        menuItems[prevIndex].focus();
+                        menuItems[(index - 1 + menuItems.length) % menuItems.length].focus();
                         break;
                     case 'Home':
                         e.preventDefault();
@@ -238,31 +206,18 @@ class NavbarDropdown {
         });
     }
 
-    /**
-     * Handle keyboard navigation in menus
-     * @param {KeyboardEvent} e - Keyboard event
-     * @param {HTMLElement} menu - Menu element
-     */
     handleMenuKeyNavigation(e, menu) {
         const menuItems = menu.querySelectorAll('[role="menuitem"]');
         const currentIndex = Array.from(menuItems).indexOf(document.activeElement);
-        
+
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                if (currentIndex < menuItems.length - 1) {
-                    menuItems[currentIndex + 1].focus();
-                } else {
-                    menuItems[0].focus();
-                }
+                menuItems[(currentIndex + 1) % menuItems.length].focus();
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                if (currentIndex > 0) {
-                    menuItems[currentIndex - 1].focus();
-                } else {
-                    menuItems[menuItems.length - 1].focus();
-                }
+                menuItems[(currentIndex - 1 + menuItems.length) % menuItems.length].focus();
                 break;
             case 'Home':
                 e.preventDefault();
@@ -276,7 +231,6 @@ class NavbarDropdown {
     }
 }
 
-// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new NavbarDropdown();
 });

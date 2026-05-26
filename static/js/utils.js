@@ -508,98 +508,367 @@ const DOMUtils = {
 };
 
 // ============================================================================
-// Notification Manager (SweetAlert2 Wrapper)
+// Notification Manager (Notyf Wrapper)
 // ============================================================================
 
-const NotificationManager = {
-    /**
-     * Show notification message using SweetAlert2
-     * @param {string} message - Message text
-     * @param {string} type - Message type (success, error, warning, info)
-     * @param {number} duration - Duration in milliseconds (0 for persistent)
-     * @returns {Promise} - SweetAlert2 promise
-     */
-    show(message, type = 'info', duration = 5000) {
-        // Check if SweetAlert2 is loaded
-        if (typeof Swal === 'undefined') {
-            return Promise.resolve();
-        }
+/** Valid notification types accepted by the Notyf wrapper. */
+const NOTIFICATION_VALID_TYPES = ['success', 'error', 'warning', 'info'];
 
-        // Validate parameters
-        if (!message || typeof message !== 'string') {
-            return Promise.resolve();
-        }
+/**
+ * Per-type default durations (ms). 0 means "persistent until dismissed".
+ * Mirrors section 4 of the design and Requirement 5.3.
+ */
+const NOTIFICATION_DEFAULT_DURATIONS = {
+    success: 5000,
+    error: 0,
+    warning: 7000,
+    info: 5000
+};
 
-        if (!['success', 'error', 'warning', 'info'].includes(type)) {
-            type = 'info';
-        }
-
-        if (typeof duration !== 'number' || duration < 0) {
-            duration = 5000;
-        }
-
-        // Base SweetAlert2 toast configuration
-        const config = {
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            icon: type,
-            title: message,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
+/**
+ * Build a `NotificationHandle` wrapping a real `NotyfNotification`.
+ *
+ * The handle exposes:
+ *   - `notyfNotification`: the underlying Notyf object (or `null` for inert).
+ *   - `dismiss()`: dismisses the toast on the given Notyf instance, tolerating
+ *     a missing notification or instance.
+ *   - `then(onFulfilled, onRejected)`: returns `Promise.resolve(undefined)`
+ *     run through the supplied callbacks, so legacy SweetAlert2-style chains
+ *     such as `NotificationManager.success(msg).then(reload)` keep working.
+ *
+ * @param {object} notyfNotification - The `NotyfNotification` returned by
+ *   `instance.open(...)`.
+ * @param {object} instance - The Notyf instance backing this handle.
+ * @returns {NotificationHandle}
+ */
+function _createNotificationHandle(notyfNotification, instance) {
+    return {
+        notyfNotification: notyfNotification,
+        dismiss() {
+            if (notyfNotification && instance && typeof instance.dismiss === 'function') {
+                instance.dismiss(notyfNotification);
             }
-        };
-
-        // Handle duration (0 means persistent)
-        if (duration > 0) {
-            config.timer = duration;
-        } else {
-            config.showCloseButton = true;
+        },
+        then(onFulfilled, onRejected) {
+            return Promise.resolve(undefined).then(onFulfilled, onRejected);
         }
+    };
+}
 
-        return Swal.fire(config);
+/**
+ * Build an inert `NotificationHandle` used when no toast was actually opened
+ * (invalid message, or Notyf not yet loaded so the call was queued).
+ *
+ * The inert handle's `dismiss()` is a no-op and its `then(...)` resolves
+ * immediately so callers cannot tell the difference from a real handle.
+ *
+ * @returns {NotificationHandle}
+ */
+function _createInertNotificationHandle() {
+    return {
+        notyfNotification: null,
+        dismiss() { /* no-op */ },
+        then(onFulfilled, onRejected) {
+            return Promise.resolve(undefined).then(onFulfilled, onRejected);
+        }
+    };
+}
+
+/**
+ * Notification Manager — thin wrapper around a single lazy Notyf instance.
+ *
+ * Public API (preserved from the prior SweetAlert2-backed wrapper):
+ *   show(message, type, duration), success(...), error(...),
+ *   warning(...), info(...).
+ *
+ * Per-type default durations live on the Notyf instance's type config and are
+ * applied automatically when `duration` is omitted: success/info = 5000ms,
+ * warning = 7000ms, error = 0 (persistent).
+ *
+ * Skeleton wiring (subtask 2.1):
+ *   - `_instance` is constructed lazily on first call via `_ensureInstance()`.
+ *   - If `Notyf` has not yet loaded (script load race), calls are pushed onto
+ *     `_queue` and replayed once `window` fires `load`. If `Notyf` is still
+ *     undefined after `load`, queued entries are warned and dropped.
+ *   - Exactly one Notyf instance is constructed and reused for every toast.
+ *
+ * Input normalization (subtask 2.2):
+ *   - `message` is required to be a non-empty string after `String(...).trim()`;
+ *     anything else returns an inert handle without calling `notyf.open`.
+ *   - `type` outside `{success, error, warning, info}` becomes `'info'`.
+ *   - `duration` that is not a finite non-negative `Number` becomes the
+ *     per-type default from `NOTIFICATION_DEFAULT_DURATIONS`.
+ *   - The returned `NotificationHandle` exposes `notyfNotification`,
+ *     `dismiss()`, and a thenable `then(...)` that resolves to `undefined`.
+ *
+ * Subtask 2.3 fills in:
+ *   - `dismiss(handle)`, `dismissAll()`, and the `showError` alias.
+ */
+const NotificationManager = {
+    /** Lazy-constructed Notyf instance. Built once on first use. */
+    _instance: null,
+
+    /** Pending entries buffered while `window.Notyf` is undefined. */
+    _queue: [],
+
+    /** Whether the one-shot `load` listener has already been registered. */
+    _loadListenerRegistered: false,
+
+    /**
+     * Construct (or return) the single Notyf instance with the design's full
+     * type configuration: top-right position, dismissible + ripple, the four
+     * type definitions with their backgrounds, icons, and per-type durations.
+     *
+     * @returns {object|null} The Notyf instance, or `null` if `Notyf` is not
+     *   yet loaded. Callers must queue and register the load listener in that
+     *   case.
+     */
+    _ensureInstance() {
+        if (this._instance) {
+            return this._instance;
+        }
+        if (typeof Notyf === 'undefined') {
+            return null;
+        }
+        this._instance = new Notyf({
+            duration: 5000,
+            position: { x: 'right', y: 'top' },
+            dismissible: true,
+            ripple: true,
+            types: [
+                {
+                    type: 'success',
+                    background: '#16a34a',
+                    duration: 5000,
+                    dismissible: true,
+                    icon: { className: 'notyf__icon--success', tagName: 'span' }
+                },
+                {
+                    type: 'error',
+                    background: '#dc2626',
+                    duration: 0,
+                    dismissible: true,
+                    icon: { className: 'notyf__icon--error', tagName: 'span' }
+                },
+                {
+                    type: 'warning',
+                    background: '#d97706',
+                    duration: 7000,
+                    dismissible: true,
+                    icon: { className: 'notyf__icon--warning', tagName: 'span' },
+                    className: 'notyf__toast--warning'
+                },
+                {
+                    type: 'info',
+                    background: '#2563eb',
+                    duration: 5000,
+                    dismissible: true,
+                    icon: { className: 'notyf__icon--info', tagName: 'span' },
+                    className: 'notyf__toast--info'
+                }
+            ]
+        });
+        return this._instance;
     },
 
     /**
-     * Show success notification
-     * @param {string} message - Message text
-     * @param {number} duration - Duration in milliseconds
-     * @returns {Promise} - SweetAlert2 promise
+     * Register a single one-shot `load` listener that flushes the queue once
+     * Notyf becomes available. Subsequent registrations are no-ops.
      */
-    success(message, duration = 5000) {
+    _registerLoadListener() {
+        if (this._loadListenerRegistered) {
+            return;
+        }
+        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+            return;
+        }
+        this._loadListenerRegistered = true;
+        const self = this;
+        window.addEventListener('load', function flushOnLoad() {
+            self._flushQueue();
+        }, { once: true });
+    },
+
+    /**
+     * Replay every queued entry through the Notyf instance in arrival order.
+     * If Notyf is still unavailable, log a warning and drop each entry.
+     *
+     * Each queued entry has already been input-normalized by `show(...)` so
+     * `type` is a member of `NOTIFICATION_VALID_TYPES` and `duration` is a
+     * finite non-negative `Number`.
+     */
+    _flushQueue() {
+        const queued = this._queue;
+        this._queue = [];
+        const instance = this._ensureInstance();
+        if (!instance) {
+            queued.forEach(entry => {
+                console.warn(
+                    'NotificationManager: Notyf is not available; dropping queued message:',
+                    entry && entry.message
+                );
+            });
+            return;
+        }
+        queued.forEach(entry => {
+            instance.open({
+                type: entry.type,
+                message: entry.message,
+                duration: entry.duration
+            });
+        });
+    },
+
+    /**
+     * Show a toast.
+     *
+     * Input normalization (Requirements 2.2, 2.3, 2.5):
+     *   - `message` must be a non-empty string. Non-strings drop with an
+     *     inert handle (Requirement 2.4 / Property 2). Strings that are
+     *     empty or contain only whitespace after `.trim()` are also dropped.
+     *     Non-empty strings (including multi-line) are passed through to
+     *     `notyf.open` verbatim — `.trim()` is used only as the empty check,
+     *     not to reformat the rendered text.
+     *   - `type` is normalized to `'info'` if it is not one of
+     *     `{success, error, warning, info}` (Requirement 2.3).
+     *   - `duration` is normalized to the per-type default from the design's
+     *     section 4 table if it is not a finite non-negative `Number`
+     *     (Requirement 2.5).
+     *
+     * Output (Requirement 2.6):
+     *   - Returns a `NotificationHandle` exposing `notyfNotification`,
+     *     `dismiss()`, and a thenable `then(...)` that resolves to
+     *     `undefined`. Legacy `NotificationManager.success(msg).then(...)`
+     *     chains keep working.
+     *   - When Notyf is not yet loaded, the call is queued (with normalized
+     *     values) and an inert handle is returned whose `dismiss()` is a
+     *     no-op and whose `then(...)` resolves immediately (Requirement 2.7).
+     *
+     * @param {string} message
+     * @param {string} [type='info']
+     * @param {number} [duration]
+     * @returns {NotificationHandle}
+     */
+    show(message, type, duration) {
+        // Coerce + validate message. Per Requirement 2.4 / Property 2, both
+        // non-strings and empty strings drop. We additionally apply a
+        // defensive `String(...)` and `.trim()` to detect whitespace-only
+        // strings (e.g. '   ') as empty.
+        if (typeof message !== 'string') {
+            return _createInertNotificationHandle();
+        }
+        let coercedMessage;
+        try {
+            coercedMessage = String(message);
+        } catch (err) {
+            return _createInertNotificationHandle();
+        }
+        if (coercedMessage.trim() === '') {
+            return _createInertNotificationHandle();
+        }
+
+        // Normalize type: anything outside the valid set becomes 'info'.
+        const resolvedType = NOTIFICATION_VALID_TYPES.indexOf(type) !== -1
+            ? type
+            : 'info';
+
+        // Normalize duration: anything that is not a finite non-negative
+        // Number becomes the per-type default. `Number.isFinite` rejects
+        // strings, NaN, and ±Infinity without coercion.
+        const resolvedDuration =
+            typeof duration === 'number' && Number.isFinite(duration) && duration >= 0
+                ? duration
+                : NOTIFICATION_DEFAULT_DURATIONS[resolvedType];
+
+        const instance = this._ensureInstance();
+        if (!instance) {
+            this._queue.push({
+                message: coercedMessage,
+                type: resolvedType,
+                duration: resolvedDuration
+            });
+            this._registerLoadListener();
+            return _createInertNotificationHandle();
+        }
+
+        const notyfNotification = instance.open({
+            type: resolvedType,
+            message: coercedMessage,
+            duration: resolvedDuration
+        });
+        return _createNotificationHandle(notyfNotification, instance);
+    },
+
+    /**
+     * Show a success toast. Default duration is the per-type default (5000ms)
+     * applied by Notyf's type config when `duration` is omitted.
+     */
+    success(message, duration) {
         return this.show(message, 'success', duration);
     },
 
     /**
-     * Show error notification
-     * @param {string} message - Message text
-     * @param {number} duration - Duration in milliseconds
-     * @returns {Promise} - SweetAlert2 promise
+     * Show an error toast. Default duration is 0 (persistent) per the per-type
+     * configuration; the user must dismiss it manually.
      */
-    error(message, duration = 5000) {
+    error(message, duration) {
         return this.show(message, 'error', duration);
     },
 
-    /**
-     * Show warning notification
-     * @param {string} message - Message text
-     * @param {number} duration - Duration in milliseconds
-     * @returns {Promise} - SweetAlert2 promise
-     */
-    warning(message, duration = 5000) {
+    /** Show a warning toast. Default duration is 7000ms. */
+    warning(message, duration) {
         return this.show(message, 'warning', duration);
     },
 
-    /**
-     * Show info notification
-     * @param {string} message - Message text
-     * @param {number} duration - Duration in milliseconds
-     * @returns {Promise} - SweetAlert2 promise
-     */
-    info(message, duration = 5000) {
+    /** Show an info toast. Default duration is 5000ms. */
+    info(message, duration) {
         return this.show(message, 'info', duration);
+    },
+
+    /**
+     * Alias of `error(message, duration)`. Kept to absorb existing typo call
+     * sites (`NotificationManager.showError(...)`) in `pages/exam-form.js` and
+     * `pages/student-profile.js` without rewriting every caller.
+     *
+     * Validates: Requirement 7.4.
+     */
+    showError(message, duration) {
+        return this.error(message, duration);
+    },
+
+    /**
+     * Dismiss a single toast given its handle.
+     *
+     * Tolerates `null`, `undefined`, and inert handles (whose own `dismiss()`
+     * is a no-op because the toast was queued before Notyf loaded). Any
+     * non-handle value with no `dismiss` method is silently ignored.
+     *
+     * Validates: Requirement 5.6.
+     *
+     * @param {NotificationHandle|null|undefined} handle
+     */
+    dismiss(handle) {
+        if (handle && typeof handle.dismiss === 'function') {
+            handle.dismiss();
+        }
+    },
+
+    /**
+     * Dismiss every visible toast.
+     *
+     * If the Notyf instance has been built, delegate to `notyf.dismissAll()`.
+     * Otherwise the only "visible" toasts are the entries still pending in
+     * `_queue` (Notyf has not loaded yet); empty the queue so nothing replays
+     * once `load` fires.
+     *
+     * Validates: Requirement 5.6.
+     */
+    dismissAll() {
+        if (this._instance && typeof this._instance.dismissAll === 'function') {
+            this._instance.dismissAll();
+            return;
+        }
+        this._queue = [];
     }
 };
 

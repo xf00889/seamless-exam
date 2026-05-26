@@ -4,32 +4,28 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if we have Django messages data
     const messagesElement = document.getElementById('django-messages-data');
     if (!messagesElement) {
         return;
     }
 
+    // If MessageHandler is already loaded (from base.html), it auto-processes
+    // messages in its own DOMContentLoaded handler — skip to avoid duplicates.
+    if (window.MessageHandler) {
+        return;
+    }
+
     try {
-        // Parse Django messages from JSON script tag
         const djangoMessages = JSON.parse(messagesElement.textContent);
-        
-        // Make messages available globally for MessageHandler
         window.djangoMessages = djangoMessages;
-        
-        // Load message handler component if not already loaded
-        if (!window.MessageHandler) {
-            const script = document.createElement('script');
-            script.src = document.querySelector('[data-static-url]')?.dataset.staticUrl + 'js/components/message-handler.js';
-            script.onload = function() {
-                // Process messages after MessageHandler is loaded
-                processDjangoMessages(djangoMessages);
-            };
-            document.head.appendChild(script);
-        } else {
-            // If already loaded, process messages immediately
+
+        // Dynamically load message handler as fallback
+        const script = document.createElement('script');
+        script.src = document.querySelector('[data-static-url]')?.dataset.staticUrl + 'js/components/message-handler.js';
+        script.onload = function() {
             processDjangoMessages(djangoMessages);
-        }
+        };
+        document.head.appendChild(script);
     } catch (error) {
         console.error('Error processing Django messages:', error);
     }
@@ -45,7 +41,6 @@ function processDjangoMessages(messages) {
     }
 
     messages.forEach(message => {
-        // Use the message type directly since our custom filter provides the correct format
         window.MessageHandler.show(message.text, message.type);
     });
 }

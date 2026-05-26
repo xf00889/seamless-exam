@@ -195,99 +195,15 @@ class ComponentRegistry {
     }
 }
 
-/**
- * DOM Utilities
- */
-class DOMUtils {
-    /**
-     * Wait for DOM to be ready
-     * @param {Function} callback - Callback function
-     */
-    static ready(callback) {
+// Extend the global DOMUtils (from utils.js) with a ready() helper if not present
+if (typeof DOMUtils !== 'undefined' && !DOMUtils.ready) {
+    DOMUtils.ready = function(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback);
         } else {
             callback();
         }
-    }
-    
-    /**
-     * Create element with attributes
-     * @param {string} tag - HTML tag
-     * @param {Object} attributes - Element attributes
-     * @param {string} content - Element content
-     * @returns {HTMLElement} Created element
-     */
-    static createElement(tag, attributes = {}, content = '') {
-        const element = document.createElement(tag);
-        
-        Object.entries(attributes).forEach(([key, value]) => {
-            if (key === 'className') {
-                element.className = value;
-            } else if (key === 'dataset') {
-                Object.entries(value).forEach(([dataKey, dataValue]) => {
-                    element.dataset[dataKey] = dataValue;
-                });
-            } else {
-                element.setAttribute(key, value);
-            }
-        });
-        
-        if (content) {
-            element.innerHTML = content;
-        }
-        
-        return element;
-    }
-    
-    /**
-     * Find closest parent element matching selector
-     * @param {HTMLElement} element - Starting element
-     * @param {string} selector - CSS selector
-     * @returns {HTMLElement|null} Matching parent or null
-     */
-    static closest(element, selector) {
-        if (!element || !element.closest) {
-            return null;
-        }
-        return element.closest(selector);
-    }
-    
-    /**
-     * Show element with optional animation
-     * @param {HTMLElement} element - Element to show
-     * @param {string} display - Display style
-     */
-    static show(element, display = 'block') {
-        if (!element) return;
-        element.style.display = display;
-        element.classList.remove('d-none');
-    }
-    
-    /**
-     * Hide element
-     * @param {HTMLElement} element - Element to hide
-     */
-    static hide(element) {
-        if (!element) return;
-        element.style.display = 'none';
-        element.classList.add('d-none');
-    }
-    
-    /**
-     * Toggle element visibility
-     * @param {HTMLElement} element - Element to toggle
-     * @param {string} display - Display style when shown
-     */
-    static toggle(element, display = 'block') {
-        if (!element) return;
-        
-        if (element.style.display === 'none' || element.classList.contains('d-none')) {
-            this.show(element, display);
-        } else {
-            this.hide(element);
-        }
-    }
+    };
 }
 
 /**

@@ -56,20 +56,56 @@ class MessageHandler {
      * @param {number} duration - Display duration in milliseconds
      */
     displayMessage(text, type = 'info', duration = 5000) {
-        // Use NotificationManager if available
-        if (window.NotificationManager) {
-            window.NotificationManager.show(text, type, duration);
+        if (window.Notyf) {
+            this.displayWithNotyf(text, type, duration);
             return;
         }
 
-        // Use SweetAlert2 directly if available
         if (window.Swal) {
             this.displayWithSweetAlert(text, type);
             return;
         }
 
-        // Fallback to console and browser notification
         this.displayFallback(text, type);
+    }
+
+    /**
+     * Display message using Notyf
+     * @param {string} text - Message text
+     * @param {string} type - Message type
+     * @param {number} duration - Display duration in milliseconds
+     */
+    displayWithNotyf(text, type, duration = 5000) {
+        if (!this._notyf) {
+            this._notyf = new Notyf({
+                duration: duration,
+                position: { x: 'right', y: 'top' },
+                dismissible: true,
+                ripple: true,
+                types: [
+                    {
+                        type: 'info',
+                        background: '#3b82f6',
+                        icon: { className: 'notyf__icon--info', tagName: 'i' }
+                    },
+                    {
+                        type: 'warning',
+                        background: '#f59e0b',
+                        icon: { className: 'notyf__icon--warning', tagName: 'i' }
+                    }
+                ]
+            });
+        }
+
+        const notyfType = (type === 'danger') ? 'error' : type;
+
+        if (notyfType === 'success') {
+            this._notyf.success(text);
+        } else if (notyfType === 'error') {
+            this._notyf.error(text);
+        } else {
+            this._notyf.open({ type: notyfType, message: text });
+        }
     }
 
     /**

@@ -27,24 +27,23 @@ def to_json(value):
 @register.filter(name='messages_to_json')
 def messages_to_json(messages):
     """
-    Convert Django messages to JSON string.
-    Handles the FallbackStorage serialization issue.
+    Convert Django messages to a Python list for use with json_script filter.
+    Returns a list of dicts (not a JSON string) so json_script can serialize it once.
     """
     if not messages:
-        return 'null'
-    
+        return []
+
     try:
-        # Convert messages to a list of dictionaries
         messages_list = []
         for message in messages:
             messages_list.append({
-                'text': str(message),  # JavaScript expects 'text' not 'message'
-                'type': message.level_tag,  # JavaScript expects 'type' not 'tags'
+                'text': str(message),
+                'type': message.level_tag,
                 'tags': message.tags,
                 'level': message.level,
                 'level_tag': message.level_tag,
             })
-        
-        return mark_safe(json.dumps(messages_list))
+
+        return messages_list
     except (TypeError, ValueError, AttributeError):
-        return 'null'
+        return []

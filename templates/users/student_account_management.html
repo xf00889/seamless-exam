@@ -45,7 +45,7 @@
             Password will be auto-generated: <strong>First 4 digits of ID + First 4 letters of Last Name (uppercase)</strong>
         </p>
         
-        <form method="post" id="create-student-form" class="space-y-4" data-validate data-ajax>
+        <form method="post" id="create-student-form" class="space-y-4" data-validate>
             {% csrf_token %}
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -114,6 +114,11 @@
                         ⚠️ Please save this password and provide it to the student. It cannot be retrieved later.
                     </p>
                 </div>
+                <button id="close-success-message" type="button" class="ml-auto flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none" title="Close">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -205,16 +210,5 @@
 <script src="{% static 'js/components/base.js' %}"></script>
 <script src="{% static 'js/utils/csrf-helper.js' %}"></script>
 <script src="{% static 'js/components/form-validator.js' %}"></script>
-<script src="{% static 'js/pages/student-account-management.js' %}"></script>
-
-<!-- Form Configuration Data -->
-{{ form_config|json_script:"form-config-data" }}
-
-<script>
-// Pass form configuration to JavaScript using JSON data
-document.addEventListener('DOMContentLoaded', function() {
-    // Load form configuration and apply to validators
-    JsonDataLoader.applyConfiguration('form-config-data', window.FormValidator, 'setGlobalConfig');
-});
-</script>
+<script src="{% static 'js/pages/student-account-management.js' %}?v=2"></script>
 {% endblock %}
