@@ -59,7 +59,6 @@ urlpatterns = [
     path('superadmin/', include('users.urls_superadmin')),
     path('exams/', include('exams.urls')),
     path('attempts/', include('attempts.urls')),
-    path('uploads/', include('uploads.urls')),
 ]
 
 # Serve media files in development

@@ -155,12 +155,8 @@ def exam_create_view(request):
                 f'Exam assigned to {len(assigned_classes)} class(es)'
             )
         
-        # Route to appropriate service based on generation method (Requirement 1.5)
-        if generation_method == 'upload':
-            # Handle file upload and automatic extraction
-            return _handle_file_upload(request, exam, form)
-
-        elif generation_method == 'ai_generate':
+        # Route to appropriate service based on generation method
+        if generation_method == 'ai_generate':
             # AI generation - start background task
             import threading
             is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -351,101 +347,6 @@ def exam_create_test_view(request):
         'classes': classes
     })
 
-
-
-def _handle_file_upload(request, exam, form):
-    """
-    Handle file upload and automatic question extraction.
-    
-    This function maintains the existing file upload functionality
-    while integrating with the new generation method routing.
-    
-    Args:
-        request: HTTP request
-        exam: Created Exam instance
-        form: Validated ExamForm
-    
-    Returns:
-        HTTP response (redirect)
-    """
-    questionnaire_file = form.cleaned_data.get('questionnaire_file')
-    answer_key_file = form.cleaned_data.get('answer_key_file')
-    
-    if questionnaire_file or answer_key_file:
-        # Save files to exam
-        if questionnaire_file:
-            exam.questionnaire_file = questionnaire_file
-        if answer_key_file:
-            exam.answer_key_file = answer_key_file
-        exam.save()
-        
-        # Attempt automatic extraction
-        try:
-            from services.exam_extraction_service import ExamExtractionService
-            extraction_service = ExamExtractionService()
-            
-            extracted_questions = []
-            answers = {}
-            
-            # Extract questions from questionnaire
-            if questionnaire_file:
-                text_result = extraction_service.extract_text_from_file(questionnaire_file)
-                if text_result.is_success():
-                    extracted_text = text_result.value
-                    extracted_questions = extraction_service.parse_questions_from_text(extracted_text)
-                    
-                    if len(extracted_questions) == 0:
-                        # Show debug info if no questions found
-                        debug_text = extraction_service.debug_extracted_text(extracted_text, 20)
-                        logger.warning(f"No questions extracted. First 20 lines:\n{debug_text}")
-                        messages.warning(
-                            request,
-                            f'No questions found in questionnaire. Please check the format. '
-                            f'Questions should be numbered (1., 2., 3., etc.)'
-                        )
-                    else:
-                        messages.info(request, f'Extracted {len(extracted_questions)} questions from questionnaire')
-                else:
-                    messages.warning(request, f'Could not extract questions: {text_result.error.message}')
-            
-            # Extract answers from answer key
-            if answer_key_file:
-                text_result = extraction_service.extract_text_from_file(answer_key_file)
-                if text_result.is_success():
-                    answers = extraction_service.parse_answers_from_text(text_result.value)
-                    messages.info(request, f'Extracted {len(answers)} answers from answer key')
-                else:
-                    messages.warning(request, f'Could not extract answers: {text_result.error.message}')
-            
-            # Merge and create questions
-            if extracted_questions:
-                merged_questions = extraction_service.merge_questions_and_answers(
-                    extracted_questions,
-                    answers
-                )
-                created_questions = extraction_service.create_questions_from_extracted_data(
-                    exam,
-                    merged_questions
-                )
-                
-                if created_questions:
-                    exam.auto_extracted = True
-                    exam.save()
-                    messages.success(
-                        request,
-                        f'Successfully created {len(created_questions)} questions automatically. '
-                        f'Please review and edit as needed.'
-                    )
-            
-        except Exception as e:
-            logger.error(f"Error during automatic extraction: {str(e)}")
-            messages.warning(
-                request,
-                'Automatic extraction encountered an error. You can add questions manually.'
-            )
-    
-    messages.success(request, f'Exam "{exam.title}" created successfully')
-    return redirect('exam_edit', exam_id=exam.id)
 
 
 @teacher_required

@@ -39,10 +39,6 @@
                         <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
-                        {% elif link.label == 'Documents' %}
-                        <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
                         {% elif link.label == 'Students' or link.label == 'Accounts' %}
                         <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -65,14 +61,9 @@
                             aria-expanded="false"
                             aria-haspopup="true"
                             aria-label="Open user menu for {{ navbar_student_name }}">
-                        {% if navbar_profile_picture_url %}
-                        <img class="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition-colors duration-200"
-                             src="{{ navbar_profile_picture_url }}"
-                             alt="Profile picture of {{ navbar_student_name }}">
-                        {% else %}
                         <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full {% if navbar_teacher %}bg-gradient-to-br from-purple-400 to-purple-600{% else %}bg-blue-500{% endif %} flex items-center justify-center border-2 border-gray-200 hover:border-blue-500 transition-colors duration-200"
                              role="img"
-                             aria-label="Default avatar for {{ navbar_student_name }}">
+                             aria-label="Avatar for {{ navbar_student_name }}">
                             <span class="text-white font-semibold text-xs sm:text-sm" aria-hidden="true">
                                 {% if navbar_student %}
                                     {{ navbar_student.first_name.0|upper }}{{ navbar_student.last_name.0|upper }}
@@ -81,7 +72,6 @@
                                 {% endif %}
                             </span>
                         </div>
-                        {% endif %}
 
                         <span class="ml-2 text-gray-700 text-sm font-medium hidden lg:block">{{ navbar_student_name }}</span>
 
@@ -239,10 +229,6 @@
                         {% elif link.label == 'Grading' %}
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                        {% elif link.label == 'Documents' %}
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                         {% elif link.label == 'Students' or link.label == 'Accounts' %}
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

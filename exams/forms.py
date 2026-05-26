@@ -24,7 +24,6 @@ class ExamForm(forms.ModelForm):
     GENERATION_METHOD_CHOICES = [
         ('manual', 'Manual Entry'),
         ('ai_generate', 'AI Generate'),
-        ('upload', 'File Upload'),
     ]
     
     generation_method = forms.ChoiceField(
@@ -123,7 +122,12 @@ class ExamForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         teacher = kwargs.pop('teacher', None)
         super().__init__(*args, **kwargs)
-        
+
+        if self.instance and self.instance.pk:
+            for field_name in ['generation_method', 'ai_topic', 'ai_subject', 'ai_num_questions', 'ai_difficulty', 'ai_question_types']:
+                if field_name in self.fields:
+                    del self.fields[field_name]
+
         # Set queryset for assigned_classes based on teacher
         if teacher:
             self.fields['assigned_classes'].queryset = Class.objects.filter(
@@ -132,7 +136,7 @@ class ExamForm(forms.ModelForm):
     
     class Meta:
         model = Exam
-        fields = ['title', 'subject', 'description', 'duration_minutes', 'questionnaire_file', 'answer_key_file']
+        fields = ['title', 'subject', 'description', 'duration_minutes']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
@@ -159,16 +163,6 @@ class ExamForm(forms.ModelForm):
                 'max': '480',
                 'data-field-name': 'Duration'
             }),
-            'questionnaire_file': forms.FileInput(attrs={
-                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100',
-                'accept': '.pdf,.docx,.doc',
-                'data-field-name': 'Questionnaire File'
-            }),
-            'answer_key_file': forms.FileInput(attrs={
-                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100',
-                'accept': '.pdf,.docx,.doc,.txt',
-                'data-field-name': 'Answer Key File'
-            })
         }
         error_messages = {
             'title': {
@@ -210,41 +204,7 @@ class ExamForm(forms.ModelForm):
             raise ValidationError('Duration cannot exceed 480 minutes (8 hours)')
         
         return duration
-    
-    def clean_questionnaire_file(self):
-        """Validate questionnaire file upload."""
-        file = self.cleaned_data.get('questionnaire_file')
-        
-        if file:
-            # Check file size (max 10MB)
-            if file.size > 10 * 1024 * 1024:
-                raise ValidationError('Questionnaire file size must be less than 10MB')
-            
-            # Check file extension
-            allowed_extensions = ['.pdf', '.docx', '.doc']
-            file_ext = file.name.lower().split('.')[-1]
-            if f'.{file_ext}' not in allowed_extensions:
-                raise ValidationError('Only PDF and DOCX files are allowed for questionnaire')
-        
-        return file
-    
-    def clean_answer_key_file(self):
-        """Validate answer key file upload."""
-        file = self.cleaned_data.get('answer_key_file')
-        
-        if file:
-            # Check file size (max 5MB)
-            if file.size > 5 * 1024 * 1024:
-                raise ValidationError('Answer key file size must be less than 5MB')
-            
-            # Check file extension
-            allowed_extensions = ['.pdf', '.docx', '.doc', '.txt']
-            file_ext = file.name.lower().split('.')[-1]
-            if f'.{file_ext}' not in allowed_extensions:
-                raise ValidationError('Only PDF, DOCX, and TXT files are allowed for answer key')
-        
-        return file
-    
+
     def clean_ai_topic(self):
         """Validate and clean AI topic field."""
         topic = self.cleaned_data.get('ai_topic', '').strip()
@@ -297,21 +257,8 @@ class ExamForm(forms.ModelForm):
     def clean(self):
         """
         Conditional validation based on generation method.
-        Requirements: 1.3, 1.4
         """
         cleaned_data = super().clean()
-        generation_method = cleaned_data.get('generation_method')
-        
-        # Validate based on generation method
-        if generation_method == 'upload':
-            # File upload requires questionnaire file (Requirement 1.3)
-            questionnaire_file = cleaned_data.get('questionnaire_file')
-            
-            if not questionnaire_file:
-                self.add_error('questionnaire_file', 'Questionnaire file is required for file upload method')
-        
-        # Manual entry doesn't require additional validation
-        
         return cleaned_data
 
 

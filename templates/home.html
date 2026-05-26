@@ -26,6 +26,7 @@
             {% if dashboard_url %}
             <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
             {% else %}
+            <a href="#tutorial" class="nav-link">Tutorial</a>
             <a href="#get-started" class="nav-link">Get Started</a>
             <a href="#features" class="nav-link">Features</a>
             <a href="{% url 'teacher_login' %}" class="btn-nav">Login</a>
@@ -232,6 +233,81 @@
                     </div>
                     <h3 class="step-card-title">Instant Results & Reports</h3>
                     <p class="step-card-desc">Objective questions are graded automatically. Teachers review essays, leave feedback, and see class-wide performance at a glance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="video-tutorial" id="tutorial">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">Watch It In Action</span>
+                <h2 class="section-title">See How Simple It Is</h2>
+                <p class="section-subtitle">A quick walkthrough for teachers and students — from class setup to checking scores</p>
+            </div>
+            <div class="video-wrapper">
+                <div class="video-container" id="videoContainer">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        <div class="video-play-btn" id="videoPlayBtn" role="button" aria-label="Play tutorial video" tabindex="0">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M9.5 8.5L16 12L9.5 15.5V8.5Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <div class="video-placeholder-text">
+                            <span class="video-duration">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                ~1 min
+                            </span>
+                        </div>
+                    </div>
+                    <video id="tutorialVideo" preload="metadata" playsinline>
+                        <source src="{% static 'video/tutorial.mp4' %}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+            <div class="video-highlights">
+                <div class="highlight-item">
+                    <div class="highlight-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="highlight-text">
+                        <strong>For Teachers</strong>
+                        <span>Create classes, manage students, build exams with AI</span>
+                    </div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <div class="highlight-text">
+                        <strong>For Students</strong>
+                        <span>Log in, take exams, and check scores instantly</span>
+                    </div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <div class="highlight-text">
+                        <strong>AI-Powered</strong>
+                        <span>Generate exam questions from any topic in seconds</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -595,5 +671,41 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// Video tutorial player
+(function() {
+    const placeholder = document.getElementById('videoPlaceholder');
+    const video = document.getElementById('tutorialVideo');
+    const playBtn = document.getElementById('videoPlayBtn');
+
+    if (!placeholder || !video) return;
+
+    function startVideo() {
+        placeholder.classList.add('hidden');
+        video.classList.add('playing');
+        video.play();
+    }
+
+    placeholder.addEventListener('click', startVideo);
+    playBtn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            startVideo();
+        }
+    });
+
+    video.addEventListener('ended', function() {
+        video.classList.remove('playing');
+        placeholder.classList.remove('hidden');
+    });
+
+    video.addEventListener('click', function() {
+        if (video.paused) {
+            video.play();
+        } else {
+            video.pause();
+        }
+    });
+})();
 </script>
 {% endblock %}

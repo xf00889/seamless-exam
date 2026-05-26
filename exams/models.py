@@ -31,7 +31,7 @@ class Exam(models.Model):
         help_text="Duration of the exam in minutes"
     )
     is_active = models.BooleanField(
-        default=False,
+        default=True,
         db_index=True,
         help_text="Whether the exam is visible to students"
     )

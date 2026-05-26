@@ -34,9 +34,6 @@ def navbar_context(request):
             teacher_obj.user.get_full_name() or teacher_obj.user.username
         )
 
-        if teacher_obj.profile_picture:
-            context['navbar_profile_picture_url'] = teacher_obj.profile_picture.url
-
         current_path = request.path
         context['navbar_nav_links'] = [
             {
@@ -64,11 +61,6 @@ def navbar_context(request):
                 'url': '/users/teacher/accounts/',
                 'active': current_path.startswith('/users/teacher/accounts/')
             },
-            {
-                'label': 'Documents',
-                'url': '/uploads/list/',
-                'active': current_path.startswith('/uploads/')
-            },
         ]
 
     if auth_service.require_student(request):
@@ -77,11 +69,7 @@ def navbar_context(request):
         if student:
             context['navbar_student'] = student
             context['navbar_student_name'] = student.get_full_name()
-            
-            # Get profile picture URL
-            if student.profile_picture:
-                context['navbar_profile_picture_url'] = student.profile_picture.url
-            
+
             # Define navigation links for students
             current_path = request.path
             context['navbar_nav_links'] = [

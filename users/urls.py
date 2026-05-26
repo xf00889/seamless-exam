@@ -1,11 +1,10 @@
 from django.urls import path
 from .views import (
-    TeacherLoginView, 
-    StudentLoginView, 
+    TeacherLoginView,
+    StudentLoginView,
     LogoutView,
     StudentProfileView,
     StudentProfileEditView,
-    ProfilePictureUploadView,
     ChangePasswordView,
     StudentDashboardView,
     StudentHistoryView,
@@ -13,7 +12,6 @@ from .views import (
     TeacherProfileView,
     TeacherProfileEditView,
     TeacherChangePasswordView,
-    TeacherProfilePictureUploadView,
     ClassListView,
     ClassCreateView,
     ClassUpdateView,
@@ -42,7 +40,6 @@ urlpatterns = [
     # Student profile management routes
     path('student/profile/', StudentProfileView.as_view(), name='student_profile'),
     path('student/profile/edit/', StudentProfileEditView.as_view(), name='student_profile_edit'),
-    path('student/profile/picture/', ProfilePictureUploadView.as_view(), name='profile_picture_upload'),
     path('student/profile/password/', ChangePasswordView.as_view(), name='change_password'),
     
     # Student dashboard and history routes
@@ -53,7 +50,6 @@ urlpatterns = [
     # Teacher profile management routes
     path('teacher/profile/', TeacherProfileView.as_view(), name='teacher_profile'),
     path('teacher/profile/edit/', TeacherProfileEditView.as_view(), name='teacher_profile_edit'),
-    path('teacher/profile/picture/', TeacherProfilePictureUploadView.as_view(), name='teacher_profile_picture_upload'),
     path('teacher/profile/password/', TeacherChangePasswordView.as_view(), name='teacher_change_password'),
     
     # Class management routes

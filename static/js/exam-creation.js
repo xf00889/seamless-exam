@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('submitBtn');
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
-    const uploadSection = document.getElementById('uploadSection');
 
     let currentStep = 1;
     const totalSteps = 4;
@@ -94,23 +93,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         methodInputs.forEach(function(input) {
             input.addEventListener('change', function() {
-                if (this.value === 'upload') {
-                    uploadSection.classList.remove('hidden');
-                    if (aiSection) aiSection.classList.add('hidden');
-                } else if (this.value === 'ai_generate') {
+                if (this.value === 'ai_generate') {
                     if (aiSection) aiSection.classList.remove('hidden');
-                    uploadSection.classList.add('hidden');
                 } else {
-                    uploadSection.classList.add('hidden');
                     if (aiSection) aiSection.classList.add('hidden');
                 }
             });
         });
 
         var selectedMethod = document.querySelector('input[name="generation_method"]:checked');
-        if (selectedMethod && selectedMethod.value === 'upload') {
-            uploadSection.classList.remove('hidden');
-        } else if (selectedMethod && selectedMethod.value === 'ai_generate') {
+        if (selectedMethod && selectedMethod.value === 'ai_generate') {
             if (aiSection) aiSection.classList.remove('hidden');
         }
     }
@@ -129,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var methodText = 'Manual Entry';
         if (method) {
             if (method.value === 'ai_generate') methodText = 'AI Generate';
-            else if (method.value === 'upload') methodText = 'File Upload';
         }
         document.getElementById('summary-method').textContent = methodText;
         document.getElementById('summary-classes').textContent = classes.length > 0 ? classes.length + ' selected' : 'None selected';
