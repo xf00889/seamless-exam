@@ -20,7 +20,9 @@ from .views import (
     StudentAssignView,
     StudentRemoveView,
     BulkStudentAssignView,
-    StudentAccountManagementView
+    StudentAccountManagementView,
+    StudentDetailView,
+    StudentResetPasswordView,
 )
 from .views_setup import FirstTimeSetupView
 from .views_request import RequestAccessView
@@ -66,4 +68,6 @@ urlpatterns = [
     
     # Student account management
     path('teacher/accounts/', StudentAccountManagementView.as_view(), name='student_account_management'),
+    path('teacher/accounts/<int:student_id>/', StudentDetailView.as_view(), name='student_detail'),
+    path('teacher/accounts/<int:student_id>/reset-password/', StudentResetPasswordView.as_view(), name='student_reset_password'),
 ]

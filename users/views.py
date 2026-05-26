@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
@@ -1988,14 +1988,14 @@ class StudentAccountManagementView(View):
                 })
             
             messages.error(request, f'Failed to create student account: {str(e)}')
-            
+
             # Re-render page with form
             students = Student.objects.all().select_related('class_assigned').order_by('last_name', 'first_name')
-            
+
             from django.core.paginator import Paginator
             paginator = Paginator(students, 20)
             students_page = paginator.page(1)
-            
+
             context = {
                 'teacher': teacher,
                 'form': form,
@@ -2005,3 +2005,57 @@ class StudentAccountManagementView(View):
                 'total_students': Student.objects.count()
             }
             return render(request, 'users/student_account_management.html', context)
+
+
+class StudentDetailView(View):
+    """View student account details including default password."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthenticationService()
+
+    def get(self, request, student_id):
+        teacher = self.auth_service.get_current_teacher(request)
+        if not teacher:
+            messages.error(request, 'Teacher profile not found')
+            return redirect('teacher_login')
+
+        from users.models import Student
+        from users.forms import StudentCreationForm
+
+        student = get_object_or_404(Student, pk=student_id)
+        default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
+
+        context = {
+            'teacher': teacher,
+            'student': student,
+            'default_password': default_password,
+        }
+        return render(request, 'users/student_detail.html', context)
+
+
+class StudentResetPasswordView(View):
+    """Reset a student's password to the default."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthenticationService()
+
+    def post(self, request, student_id):
+        teacher = self.auth_service.get_current_teacher(request)
+        if not teacher:
+            return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+
+        from users.models import Student
+        from users.forms import StudentCreationForm
+
+        student = get_object_or_404(Student, pk=student_id)
+        default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
+        student.set_password(default_password)
+        student.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Password reset to default successfully'})
+
+        messages.success(request, f'Password for {student.get_full_name()} has been reset to default.')
+        return redirect('student_detail', student_id=student_id)

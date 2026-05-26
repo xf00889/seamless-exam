@@ -86,10 +86,7 @@
                 <p class="text-xs text-gray-600 mt-2">This password will be assigned to the student account</p>
             </div>
             
-            <div class="flex items-center justify-between pt-4">
-                <button type="button" id="preview-btn" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                    Preview Password
-                </button>
+            <div class="flex items-center justify-end pt-4">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
                     Create Student Account
                 </button>
@@ -157,6 +154,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -179,6 +177,12 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-500">{{ student.created_at|date:"M d, Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a href="{% url 'student_detail' student.id %}"
+                               class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                                View Details
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
