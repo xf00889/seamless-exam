@@ -217,6 +217,11 @@ CSRF_COOKIE_SECURE = False  # Set to False for local network (no HTTPS)
 CSRF_COOKIE_NAME = 'exam_csrftoken'  # Custom name to avoid fingerprinting
 CSRF_USE_SESSIONS = False  # Store CSRF token in cookie (not session)
 CSRF_COOKIE_AGE = 7200  # Match session age
+CSRF_TRUSTED_ORIGINS = [
+    'https://seamless.dpdns.org',
+    'https://www.seamless.dpdns.org',
+    'https://localexammaker.onrender.com',
+]
 
 # XSS Prevention (Requirement 1.4)
 # Django templates have auto-escaping enabled by default

@@ -10,15 +10,13 @@
 {% block content %}
 <div class="login-page">
     <div class="login-container">
-        <div class="login-brand">
-            <a href="{% url 'home' %}" class="brand-link">
-                <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
-                <div class="brand-text">
-                    <span class="brand-title">Seamless</span>
-                    <span class="brand-subtitle">School Examination System</span>
-                </div>
-            </a>
-        </div>
+        <a href="{% url 'home' %}" class="brand-link">
+            <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
+            <div class="brand-text">
+                <span class="brand-title">Seamless</span>
+                <span class="brand-subtitle">School Examination System</span>
+            </div>
+        </a>
 
         <div class="login-content">
             <div class="login-header">
