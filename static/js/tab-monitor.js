@@ -11,22 +11,32 @@ class TabMonitor {
         this.gracePeriod = options.gracePeriod || 1000; // 1 second to detect tab switches quickly
         this.gracePeriodTimer = null;
         this.lastVisibilityChange = Date.now();
-        
+
+        // Split-screen detection
+        this.initialWidth = window.innerWidth;
+        this.splitScreenThreshold = 0.7; // Flag if window is less than 70% of screen width
+        this.splitScreenDetected = false;
+        this.splitScreenGraceTimer = null;
+        this.blurWithoutHidden = false;
+
         // AJAX client for server communication
-        this.ajaxClient = new AjaxClient({ 
-            maxRetries: 3, 
-            retryDelay: 1000 
+        this.ajaxClient = new AjaxClient({
+            maxRetries: 3,
+            retryDelay: 1000
         });
-        
+
         // Queue for offline violation events
         this.violationQueue = [];
         this.isOnline = navigator.onLine;
-        
+
         // Bind methods to maintain context
         this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
         this.handleOnline = this.handleOnline.bind(this);
         this.handleOffline = this.handleOffline.bind(this);
-        
+        this.handleResize = this.handleResize.bind(this);
+        this.handleWindowBlur = this.handleWindowBlur.bind(this);
+        this.handleWindowFocus = this.handleWindowFocus.bind(this);
+
         // Load saved state
         this.loadViolationState();
     }
@@ -40,26 +50,34 @@ class TabMonitor {
             console.warn('Tab monitoring already started');
             return;
         }
-        
+
         // Check if Page Visibility API is supported
         if (typeof document.hidden === 'undefined') {
             console.error('Page Visibility API not supported. Tab monitoring disabled.');
             this.showUnsupportedBrowserNotice();
             return;
         }
-        
+
         // Add visibility change listener
         document.addEventListener('visibilitychange', this.handleVisibilityChange);
-        
+
         // Add online/offline listeners for network handling
         window.addEventListener('online', this.handleOnline);
         window.addEventListener('offline', this.handleOffline);
-        
+
+        // Split-screen detection listeners
+        window.addEventListener('resize', this.handleResize);
+        window.addEventListener('blur', this.handleWindowBlur);
+        window.addEventListener('focus', this.handleWindowFocus);
+
+        // Store initial window width for comparison
+        this.initialWidth = window.screen.availWidth || window.innerWidth;
+
         this.isMonitoring = true;
-        
+
         // Sync state with server on start
         this.syncWithServer();
-        
+
         // Update warning display
         this.updateWarningDisplay();
     }
@@ -71,15 +89,21 @@ class TabMonitor {
         if (!this.isMonitoring) {
             return;
         }
-        
+
         document.removeEventListener('visibilitychange', this.handleVisibilityChange);
         window.removeEventListener('online', this.handleOnline);
         window.removeEventListener('offline', this.handleOffline);
-        
+        window.removeEventListener('resize', this.handleResize);
+        window.removeEventListener('blur', this.handleWindowBlur);
+        window.removeEventListener('focus', this.handleWindowFocus);
+
         if (this.gracePeriodTimer) {
             clearTimeout(this.gracePeriodTimer);
         }
-        
+        if (this.splitScreenGraceTimer) {
+            clearTimeout(this.splitScreenGraceTimer);
+        }
+
         this.isMonitoring = false;
     }
     
@@ -121,7 +145,51 @@ class TabMonitor {
             }
         }
     }
-    
+
+    handleResize() {
+        const screenWidth = window.screen.availWidth || window.screen.width;
+        const windowWidth = window.outerWidth || window.innerWidth;
+        const ratio = windowWidth / screenWidth;
+
+        if (ratio < this.splitScreenThreshold && !this.splitScreenDetected) {
+            // Window is significantly smaller than screen — likely split view
+            this.splitScreenGraceTimer = setTimeout(() => {
+                // Re-check after grace period to avoid false positives from transient resizes
+                const currentRatio = (window.outerWidth || window.innerWidth) / screenWidth;
+                if (currentRatio < this.splitScreenThreshold) {
+                    this.splitScreenDetected = true;
+                    this.recordViolation();
+                }
+            }, 2000);
+        } else if (ratio >= this.splitScreenThreshold && this.splitScreenDetected) {
+            this.splitScreenDetected = false;
+            if (this.splitScreenGraceTimer) {
+                clearTimeout(this.splitScreenGraceTimer);
+                this.splitScreenGraceTimer = null;
+            }
+        }
+    }
+
+    handleWindowBlur() {
+        // Window lost focus but tab is still visible — another app is in split view
+        if (!document.hidden) {
+            this.blurWithoutHidden = true;
+            this.splitScreenGraceTimer = setTimeout(() => {
+                if (this.blurWithoutHidden && !document.hidden) {
+                    this.recordViolation();
+                }
+            }, 2000);
+        }
+    }
+
+    handleWindowFocus() {
+        this.blurWithoutHidden = false;
+        if (this.splitScreenGraceTimer) {
+            clearTimeout(this.splitScreenGraceTimer);
+            this.splitScreenGraceTimer = null;
+        }
+    }
+
     /**
      * Record a tab switch violation
      * Requirements: 2.1, 3.1, 3.4, 8.1, 8.2, 8.5
