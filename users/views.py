@@ -413,71 +413,40 @@ class ChangePasswordView(View):
         self.profile_service = ProfileService()
     
     def get(self, request):
-        """Display password change form."""
-        # Get current student (authentication already checked by decorator)
-        student = self.auth_service.get_current_student(request)
-        if not student:
-            messages.error(request, 'Student profile not found')
-            return redirect('student_login')
-        
-        form = PasswordChangeForm()
-        
-        context = {
-            'form': form,
-            'student': student,
-            'page_title': 'Change Password'
-        }
-        
-        return render(request, 'users/change_password.html', context)
-    
+        """Redirect to profile page where password change form lives."""
+        return redirect('student_profile')
+
     def post(self, request):
         """Process password change with security checks and rate limiting."""
-        # Get current student (authentication already checked by decorator)
         student = self.auth_service.get_current_student(request)
         if not student:
             messages.error(request, 'Student profile not found')
             return redirect('student_login')
-        
-        # Validate form (Requirements 5.2, 5.4)
+
         form = PasswordChangeForm(request.POST)
-        
+
         if not form.is_valid():
-            # Display field-specific error messages
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
-            
-            context = {
-                'form': form,
-                'student': student,
-                'page_title': 'Change Password'
-            }
-            return render(request, 'users/change_password.html', context)
-        
-        # Change password using service (Requirement 5.2 - verifies current password)
+            return redirect('student_profile')
+
         current_password = form.cleaned_data['current_password']
         new_password = form.cleaned_data['new_password']
-        
+
         result = self.profile_service.change_password(
             student.id,
             current_password,
             new_password
         )
-        
+
         if result.is_success():
             messages.success(request, 'Password changed successfully')
-            return redirect('student_profile')
         else:
-            # Display error from service
             error_message = str(result.error.message) if hasattr(result.error, 'message') else str(result.error)
             messages.error(request, error_message)
-            
-            context = {
-                'form': form,
-                'student': student,
-                'page_title': 'Change Password'
-            }
-            return render(request, 'users/change_password.html', context)
+
+        return redirect('student_profile')
 
 
 @method_decorator(student_required, name='dispatch')
@@ -878,69 +847,46 @@ class TeacherChangePasswordView(View):
         self.auth_service = AuthenticationService()
     
     def get(self, request):
-        """Display password change form."""
-        teacher = self.auth_service.get_current_teacher(request)
-        
-        if not teacher:
-            messages.error(request, 'Teacher profile not found')
-            return redirect('teacher_login')
-        
-        form = PasswordChangeForm()
-        
-        context = {
-            'teacher': teacher,
-            'form': form,
-        }
-        
-        return render(request, 'users/teacher_change_password.html', context)
-    
+        """Redirect to profile page where password change form lives."""
+        return redirect('teacher_profile')
+
     def post(self, request):
         """Process password change."""
         teacher = self.auth_service.get_current_teacher(request)
-        
+
         if not teacher:
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
-        
+
         form = PasswordChangeForm(request.POST)
-        
+
         if form.is_valid():
             current_password = form.cleaned_data['current_password']
             new_password = form.cleaned_data['new_password']
-            
-            # Verify current password
+
             from django.contrib.auth import authenticate
             user = authenticate(
                 request,
                 username=teacher.user.username,
                 password=current_password
             )
-            
+
             if user is None:
                 messages.error(request, 'Current password is incorrect')
             else:
-                # Update password
                 user.set_password(new_password)
                 user.save()
-                
-                # Update session to prevent logout
+
                 from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
-                
+
                 messages.success(request, 'Password changed successfully!')
-                return redirect('teacher_profile')
         else:
-            # Display validation errors
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
-        
-        context = {
-            'teacher': teacher,
-            'form': form,
-        }
-        
-        return render(request, 'users/teacher_change_password.html', context)
+
+        return redirect('teacher_profile')
 
 
 @method_decorator(teacher_required, name='dispatch')
