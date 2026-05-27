@@ -25,6 +25,8 @@ urlpatterns = [
     
     # Teacher dashboard and analytics URLs
     path('teacher/dashboard/', views.teacher_dashboard_view, name='teacher_dashboard'),
+    path('teacher/dashboard/export/', views.export_scores_excel_view, name='export_scores_excel'),
+    path('teacher/dashboard/export-accounts/', views.export_accounts_excel_view, name='export_accounts_excel'),
     path('teacher/attempts/<int:attempt_id>/', views.teacher_attempt_detail_view, name='teacher_attempt_detail'),
     path('teacher/attempts/<int:attempt_id>/activity/', views.view_activity_log_view, name='view_activity_log'),
 ]

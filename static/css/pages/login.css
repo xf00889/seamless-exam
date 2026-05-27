@@ -81,8 +81,8 @@ body:has(.login-page) main {
 }
 
 .brand-logo {
-    width: 36px;
-    height: 36px;
+    height: 48px;
+    width: auto;
     border-radius: 8px;
     border: 1px solid var(--border-light);
 }

@@ -1650,3 +1650,262 @@ def view_activity_log_view(request, attempt_id):
         )
         messages.error(request, 'Failed to display activity log. Please try again.')
         return redirect('teacher_grading_list')
+
+
+@require_http_methods(["GET"])
+def export_scores_excel_view(request):
+    """
+    Export student scores to Excel with each exam on a separate worksheet.
+    Includes brand logo header on each sheet.
+    """
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please log in as a teacher')
+        return redirect('teacher_login')
+
+    import os
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XlImage
+    from users.models import Student
+    from exams.models import Exam
+
+    exams = Exam.objects.filter(
+        attempts__status=AttemptStatus.GRADED
+    ).distinct().prefetch_related('questions')
+
+    if not exams.exists():
+        messages.warning(request, 'No graded exams to export')
+        return redirect('teacher_dashboard')
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
+    has_brand = os.path.isfile(brand_path)
+
+    header_font = Font(name='Calibri', bold=True, size=12)
+    title_font = Font(name='Calibri', bold=True, size=14)
+    header_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    header_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    for exam in exams:
+        title = exam.title[:31].replace('/', '-').replace('\\', '-').replace('*', '').replace('?', '').replace('[', '').replace(']', '')
+        ws = wb.create_sheet(title=title)
+
+        row = 1
+        if has_brand:
+            img = XlImage(brand_path)
+            img.width = 120
+            img.height = 60
+            ws.add_image(img, 'A1')
+            row = 5
+
+        ws.cell(row=row, column=1, value='Seamless Exam System - Score Report')
+        ws.cell(row=row, column=1).font = title_font
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        row += 1
+
+        ws.cell(row=row, column=1, value=f'Exam: {exam.title}')
+        ws.cell(row=row, column=1).font = header_font
+        row += 1
+
+        total_possible = sum(float(q.points) for q in exam.questions.all())
+        ws.cell(row=row, column=1, value=f'Total Possible Points: {total_possible}')
+        row += 2
+
+        headers = ['#', 'Student Name', 'School ID', 'Class', 'Score', 'Percentage', 'Status', 'Submitted At']
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col_idx, value=header)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        row += 1
+
+        attempts = Attempt.objects.filter(
+            exam=exam,
+            status=AttemptStatus.GRADED
+        ).select_related('student', 'student__class_assigned').order_by(
+            'student__last_name', 'student__first_name'
+        )
+
+        for idx, attempt in enumerate(attempts, 1):
+            student = attempt.student
+            score = float(attempt.total_score)
+            percentage = (score / total_possible * 100) if total_possible > 0 else 0
+            class_name = student.class_assigned.name if student.class_assigned else 'N/A'
+
+            row_data = [
+                idx,
+                f'{student.last_name}, {student.first_name}',
+                student.school_id,
+                class_name,
+                score,
+                round(percentage, 1),
+                'Passed' if percentage >= 60 else 'Failed',
+                attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else ''
+            ]
+
+            for col_idx, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell.border = thin_border
+                if col_idx in (5, 6):
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 7:
+                    cell.alignment = Alignment(horizontal='center')
+                    if value == 'Passed':
+                        cell.font = Font(color='006100')
+                    else:
+                        cell.font = Font(color='9C0006')
+            row += 1
+
+        row += 1
+        ws.cell(row=row, column=1, value=f'Total Students: {attempts.count()}')
+        ws.cell(row=row, column=1).font = Font(bold=True)
+
+        col_widths = [5, 30, 15, 20, 10, 12, 10, 18]
+        for i, width in enumerate(col_widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="student_scores_report.xlsx"'
+    return response
+
+
+@require_http_methods(["GET"])
+def export_accounts_excel_view(request):
+    """
+    Export student accounts to Excel with each class on a separate worksheet.
+    Includes brand logo header, class name, and student credentials.
+    """
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please log in as a teacher')
+        return redirect('teacher_login')
+
+    import os
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XlImage
+    from users.models import Student, Class
+
+    classes = Class.objects.filter(teacher=request.user.teacher_profile).prefetch_related('students').order_by('grade_level', 'strand', 'section')
+
+    if not classes.exists():
+        messages.warning(request, 'No classes found to export')
+        return redirect('teacher_dashboard')
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
+    has_brand = os.path.isfile(brand_path)
+
+    header_font = Font(name='Calibri', bold=True, size=12)
+    title_font = Font(name='Calibri', bold=True, size=14)
+    header_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    header_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    def generate_default_password(school_id, last_name):
+        digits = ''.join(filter(str.isdigit, school_id))[:4]
+        if len(digits) < 4:
+            digits = digits.ljust(4, '0')
+        letters = ''.join(filter(str.isalpha, last_name))[:4].upper()
+        if len(letters) < 4:
+            letters = letters.ljust(4, 'X')
+        return digits + letters
+
+    for cls in classes:
+        sheet_title = f"{cls.grade_level} {cls.strand} {cls.section}"[:31]
+        sheet_title = sheet_title.replace('/', '-').replace('\\', '-').replace('*', '').replace('?', '').replace('[', '').replace(']', '')
+        ws = wb.create_sheet(title=sheet_title)
+
+        row = 1
+        if has_brand:
+            img = XlImage(brand_path)
+            img.width = 120
+            img.height = 60
+            ws.add_image(img, 'A1')
+            row = 5
+
+        ws.cell(row=row, column=1, value='Seamless Exam System - Student Accounts')
+        ws.cell(row=row, column=1).font = title_font
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+        row += 1
+
+        ws.cell(row=row, column=1, value=f'Class: {cls.grade_level} - {cls.strand} - {cls.section}')
+        ws.cell(row=row, column=1).font = header_font
+        row += 2
+
+        headers = ['#', 'First Name', 'Last Name', 'Username (School ID)', 'Default Password']
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col_idx, value=header)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        row += 1
+
+        students = cls.students.all().order_by('last_name', 'first_name')
+
+        for idx, student in enumerate(students, 1):
+            password = generate_default_password(student.school_id, student.last_name)
+            row_data = [
+                idx,
+                student.first_name,
+                student.last_name,
+                student.school_id,
+                password
+            ]
+
+            for col_idx, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell.border = thin_border
+                if col_idx == 1:
+                    cell.alignment = Alignment(horizontal='center')
+            row += 1
+
+        row += 1
+        ws.cell(row=row, column=1, value=f'Total Students: {students.count()}')
+        ws.cell(row=row, column=1).font = Font(bold=True)
+
+        col_widths = [5, 20, 20, 25, 20]
+        for i, width in enumerate(col_widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="student_accounts.xlsx"'
+    return response
