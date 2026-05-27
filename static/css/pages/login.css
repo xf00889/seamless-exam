@@ -83,7 +83,7 @@ body:has(.login-page) main {
 }
 
 .brand-logo {
-    height: 80px;
+    height: 100px;
     width: auto;
     border-radius: 0;
     border: none;
@@ -92,11 +92,12 @@ body:has(.login-page) main {
 .brand-text {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.125rem;
 }
 
 .brand-title {
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     font-weight: 700;
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -104,11 +105,11 @@ body:has(.login-page) main {
 }
 
 .brand-subtitle {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
 }
 
 /* Login Content */

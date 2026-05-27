@@ -3,12 +3,10 @@
     <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <!-- Left section: Logo -->
-            <div class="flex items-center flex-shrink-0">
-                <a href="/" class="flex items-center space-x-2">
-                    <img src="{% static 'img/brand.png' %}" alt="Seamless Logo" class="h-8 sm:h-10 w-auto max-w-[120px] sm:max-w-[150px] object-contain">
-                    <h1 class="text-lg sm:text-xl font-bold text-gray-900 hidden xs:block">Seamless</h1>
-                </a>
-            </div>
+            <a href="/" class="flex items-center space-x-2 flex-shrink-0">
+                <img src="{% static 'img/brand.png' %}" alt="Seamless Logo" class="h-8 sm:h-10 w-auto max-w-[120px] sm:max-w-[150px] object-contain">
+                <h1 class="text-lg sm:text-xl font-bold text-gray-900 hidden xs:block">Seamless</h1>
+            </a>
 
             <!-- Center section: Desktop navigation links -->
             {% if navbar_nav_links %}
