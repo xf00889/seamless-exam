@@ -657,29 +657,13 @@ body:has(.landing) main {
     aspect-ratio: 16 / 9;
 }
 
-.video-container video {
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    display: none;
-    border-radius: 16px;
-}
-
-.video-container video.playing {
-    display: block;
-}
-
-.video-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    cursor: pointer;
-    transition: all 0.3s ease;
+    border: none;
 }
 
 .video-placeholder:hover {

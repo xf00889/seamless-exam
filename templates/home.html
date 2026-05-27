@@ -235,28 +235,14 @@
                 <p class="section-subtitle">A quick walkthrough for teachers and students</p>
             </div>
             <div class="video-wrapper">
-                <div class="video-container" id="videoContainer">
-                    <div class="video-placeholder" id="videoPlaceholder">
-                        <div class="video-play-btn" id="videoPlayBtn" role="button" aria-label="Play tutorial video" tabindex="0">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M9.5 8.5L16 12L9.5 15.5V8.5Z" fill="currentColor"/>
-                            </svg>
-                        </div>
-                        <div class="video-placeholder-text">
-                            <span class="video-duration">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                                ~1 min
-                            </span>
-                        </div>
-                    </div>
-                    <video id="tutorialVideo" preload="metadata" playsinline>
-                        <source src="{% static 'video/tutorial.mp4' %}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
+                <div class="video-container">
+                    <iframe
+                        src="https://www.youtube-nocookie.com/embed/6soAwo1fE1U?rel=0"
+                        title="Seamless Exam System Tutorial"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
                 </div>
             </div>
             <div class="video-highlights">
@@ -387,33 +373,5 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
-
-// Video tutorial player
-(function() {
-    const placeholder = document.getElementById('videoPlaceholder');
-    const video = document.getElementById('tutorialVideo');
-    const playBtn = document.getElementById('videoPlayBtn');
-
-    if (!placeholder || !video) return;
-
-    function startVideo() {
-        placeholder.classList.add('hidden');
-        video.classList.add('playing');
-        video.play();
-    }
-
-    placeholder.addEventListener('click', startVideo);
-    playBtn.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            startVideo();
-        }
-    });
-
-    video.addEventListener('ended', function() {
-        placeholder.classList.remove('hidden');
-        video.classList.remove('playing');
-    });
-})();
 </script>
 {% endblock %}
