@@ -87,8 +87,8 @@ body:has(.landing) main {
 .nav-logo {
     height: 40px;
     width: auto;
-    border-radius: 10px;
-    border: 2px solid var(--border-light);
+    border-radius: 0;
+    border: none;
 }
 
 .brand-text {
