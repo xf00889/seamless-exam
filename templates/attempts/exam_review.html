@@ -228,6 +228,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% csrf_token %}
 <script src="{% static 'js/exam-timer.js' %}"></script>
 <script src="{% static 'js/tab-monitor.js' %}"></script>
 <script>

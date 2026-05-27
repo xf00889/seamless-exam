@@ -100,7 +100,7 @@ class ExamReviewSubmit {
         const cookies = document.cookie.split(';');
         for (let cookie of cookies) {
             const [name, value] = cookie.trim().split('=');
-            if (name === 'csrftoken') {
+            if (name === 'exam_csrftoken' || name === 'csrftoken') {
                 return value;
             }
         }
