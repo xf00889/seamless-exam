@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Seamless | Open-Source Offline Examination System{% endblock %}
+{% block title %}Seamless | School Examination System{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
@@ -14,7 +14,7 @@
             <img src="{% static 'img/brand.png' %}" alt="Seamless Logo" class="nav-logo">
             <div class="brand-text">
                 <span class="nav-title">Seamless</span>
-                <span class="nav-subtitle">Open-Source Exam System</span>
+                <span class="nav-subtitle">Exam System</span>
             </div>
         </div>
         <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
@@ -27,8 +27,8 @@
             <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
             {% else %}
             <a href="#tutorial" class="nav-link">Tutorial</a>
-            <a href="#get-started" class="nav-link">Get Started</a>
             <a href="#features" class="nav-link">Features</a>
+            <a href="#how-it-works" class="nav-link">How It Works</a>
             <a href="{% url 'teacher_login' %}" class="btn-nav">Login</a>
             {% endif %}
         </div>
@@ -36,49 +36,42 @@
 
     <section class="hero">
         <div class="hero-content">
-            <div class="hero-badge">
-                <span class="badge-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="2" y1="12" x2="22" y2="12"/>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                    </svg>
-                </span>
-                100% Offline &middot; No Cloud Required
-            </div>
-            <h1 class="hero-title">The Open-Source Examination System for Schools</h1>
-            <p class="hero-subtitle">Create, administer, and grade exams entirely offline. Built with Django and designed for schools that need a reliable, self-hosted assessment platform with zero internet dependency.</p>
+            <h1 class="hero-title">A Smarter Way to Manage School Exams</h1>
+            <p class="hero-subtitle">Create, administer, and grade exams with ease. Built for teachers who want to spend less time on paperwork and more time teaching.</p>
             <div class="hero-buttons">
-                <a href="#get-started" class="btn btn-primary">
-                    <span>Get Started</span>
+                {% if dashboard_url %}
+                <a href="{{ dashboard_url }}" class="btn btn-primary">
+                    <span>{{ dashboard_label }}</span>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </a>
-                {% if dashboard_url %}
-                <a href="{{ dashboard_url }}" class="btn btn-outline">
-                    <span>{{ dashboard_label }}</span>
-                </a>
                 {% else %}
-                <a href="{% url 'teacher_login' %}" class="btn btn-outline">
-                    <span>Login to Dashboard</span>
+                <a href="{% url 'teacher_login' %}" class="btn btn-primary">
+                    <span>Teacher Login</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <a href="{% url 'student_login' %}" class="btn btn-outline">
+                    <span>Student Login</span>
                 </a>
                 {% endif %}
             </div>
-            <div class="hero-terminal">
-                <div class="terminal-header">
-                    <span class="terminal-dot dot-red"></span>
-                    <span class="terminal-dot dot-yellow"></span>
-                    <span class="terminal-dot dot-green"></span>
-                    <span class="terminal-title">Terminal</span>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">5</span>
+                    <span class="stat-label">Question Types</span>
                 </div>
-                <div class="terminal-body">
-                    <code><span class="terminal-prompt">$</span> git clone https://github.com/seamless-exam/seamless.git</code>
-                    <code><span class="terminal-prompt">$</span> cd seamless</code>
-                    <code><span class="terminal-prompt">$</span> pip install -r requirements.txt</code>
-                    <code><span class="terminal-prompt">$</span> python manage.py migrate</code>
-                    <code><span class="terminal-prompt">$</span> python manage.py runserver</code>
-                    <code class="terminal-output">Starting development server at http://127.0.0.1:8000/</code>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">Auto</span>
+                    <span class="stat-label">Grading</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">Real-time</span>
+                    <span class="stat-label">Analytics</span>
                 </div>
             </div>
         </div>
@@ -87,43 +80,11 @@
     <section class="features" id="features">
         <div class="container">
             <div class="section-header">
-                <span class="section-label">Why Seamless</span>
-                <h2 class="section-title">Everything You Need, Nothing You Don't</h2>
-                <p class="section-subtitle">A focused examination tool built for schools that value simplicity, privacy, and reliability</p>
+                <span class="section-label">Features</span>
+                <h2 class="section-title">Everything You Need to Run Exams</h2>
+                <p class="section-subtitle">A focused examination tool built for schools that value simplicity and reliability</p>
             </div>
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon icon-offline">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-                            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-                            <line x1="12" y1="20" x2="12.01" y2="20"/>
-                            <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Fully Offline</h3>
-                    <p class="feature-desc">No internet required. All assets, fonts, and dependencies are bundled locally. Perfect for schools with limited connectivity.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-secure">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Self-Hosted & Private</h3>
-                    <p class="feature-desc">Your data stays on your server. No third-party services, no telemetry, no student data leaving your network.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-fast">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Quick Setup</h3>
-                    <p class="feature-desc">Up and running in under 5 minutes. SQLite by default — no database server configuration needed.</p>
-                </div>
                 <div class="feature-card">
                     <div class="feature-icon icon-exam">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -134,7 +95,7 @@
                         </svg>
                     </div>
                     <h3 class="feature-title">Multiple Question Types</h3>
-                    <p class="feature-desc">Multiple choice, true/false, short answer, and essay questions with flexible scoring and time limits.</p>
+                    <p class="feature-desc">Multiple choice, true/false, identification, enumeration, and essay questions with flexible scoring and time limits.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon icon-grade">
@@ -148,6 +109,16 @@
                     <p class="feature-desc">Automatic scoring for objective questions with performance dashboards and detailed student analytics.</p>
                 </div>
                 <div class="feature-card">
+                    <div class="feature-icon icon-secure">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Anti-Cheating Measures</h3>
+                    <p class="feature-desc">Tab-switch detection, automatic flagging, and timed submissions keep exams fair and secure.</p>
+                </div>
+                <div class="feature-card">
                     <div class="feature-icon icon-users">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -156,19 +127,37 @@
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
                     </div>
-                    <h3 class="feature-title">Multi-Role Access</h3>
-                    <p class="feature-desc">Separate portals for administrators, teachers, and students with class management and bulk enrollment.</p>
+                    <h3 class="feature-title">Class Management</h3>
+                    <p class="feature-desc">Organize students by class and section. Bulk enrollment, easy assignment, and per-class performance tracking.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-fast">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">AI-Powered Exam Creation</h3>
+                    <p class="feature-desc">Generate exam questions from any topic in seconds. Upload documents and let AI create questions for you.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-offline">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Export Reports</h3>
+                    <p class="feature-desc">Download student scores and account credentials as Excel files. Each class and exam on its own worksheet.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="how-it-works">
+    <section class="how-it-works" id="how-it-works">
         <div class="container">
             <div class="section-header">
                 <span class="section-label">How It Works</span>
                 <h2 class="section-title">From Setup to Results in 4 Steps</h2>
-                <p class="section-subtitle">Once Seamless is running, here's how teachers and students use it day-to-day</p>
+                <p class="section-subtitle">A simple workflow for teachers and students</p>
             </div>
             <div class="steps-grid">
                 <div class="step-card">
@@ -179,8 +168,8 @@
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
                     </div>
-                    <h3 class="step-card-title">Teacher Creates an Exam</h3>
-                    <p class="step-card-desc">Add questions using the simple form builder. Choose from multiple choice, true/false, short answer, or essay. Set a time limit and point values.</p>
+                    <h3 class="step-card-title">Create an Exam</h3>
+                    <p class="step-card-desc">Build exams with the form builder or generate questions with AI. Set time limits and point values.</p>
                 </div>
                 <div class="step-connector">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -198,7 +187,7 @@
                         </svg>
                     </div>
                     <h3 class="step-card-title">Assign to a Class</h3>
-                    <p class="step-card-desc">Publish the exam to specific classes or individual students. Set when it becomes available and when it closes.</p>
+                    <p class="step-card-desc">Publish the exam to specific classes. Students see it on their dashboard when it's available.</p>
                 </div>
                 <div class="step-connector">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -215,7 +204,7 @@
                         </svg>
                     </div>
                     <h3 class="step-card-title">Students Take the Exam</h3>
-                    <p class="step-card-desc">Students log in from any device on the school network, answer questions at their own pace, and submit when ready. A timer keeps them on track.</p>
+                    <p class="step-card-desc">Students log in, answer questions at their own pace, and submit when ready. A timer keeps them on track.</p>
                 </div>
                 <div class="step-connector">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -231,8 +220,8 @@
                             <line x1="6" y1="20" x2="6" y2="14"/>
                         </svg>
                     </div>
-                    <h3 class="step-card-title">Instant Results & Reports</h3>
-                    <p class="step-card-desc">Objective questions are graded automatically. Teachers review essays, leave feedback, and see class-wide performance at a glance.</p>
+                    <h3 class="step-card-title">Instant Results</h3>
+                    <p class="step-card-desc">Objective questions are graded automatically. Teachers review essays and see class-wide performance at a glance.</p>
                 </div>
             </div>
         </div>
@@ -243,7 +232,7 @@
             <div class="section-header">
                 <span class="section-label">Watch It In Action</span>
                 <h2 class="section-title">See How Simple It Is</h2>
-                <p class="section-subtitle">A quick walkthrough for teachers and students — from class setup to checking scores</p>
+                <p class="section-subtitle">A quick walkthrough for teachers and students</p>
             </div>
             <div class="video-wrapper">
                 <div class="video-container" id="videoContainer">
@@ -313,268 +302,11 @@
         </div>
     </section>
 
-    <section class="getting-started" id="get-started">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-label">Get Started</span>
-                <h2 class="section-title">Up and Running in Minutes</h2>
-                <p class="section-subtitle">Follow these steps to set up Seamless on your local machine or school server</p>
-            </div>
-
-            <div class="prerequisites">
-                <h3 class="prereq-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 11l3 3L22 4"/>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                    </svg>
-                    What You'll Need to Install First
-                </h3>
-                <p class="prereq-intro">Before setting up Seamless, you'll need these free programs installed on your computer. Click each one to download it.</p>
-                <div class="prereq-grid">
-                    <a href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer" class="prereq-item prereq-link">
-                        <div class="prereq-top">
-                            <div class="prereq-icon icon-python">
-                                <svg width="24" height="24" viewBox="0 0 256 255" fill="none">
-                                    <path d="M126.916.072c-64.832 0-60.784 28.115-60.784 28.115l.072 29.128h61.868v8.745H41.631S.145 61.355.145 126.77c0 65.417 36.21 63.097 36.21 63.097h21.61v-30.356s-1.165-36.21 35.632-36.21h61.362s34.475.557 34.475-33.319V33.97S194.67.072 126.916.072zM92.802 19.66a11.12 11.12 0 1 1 0 22.24 11.12 11.12 0 0 1 0-22.24z" fill="#366A96"/>
-                                    <path d="M128.757 254.126c64.832 0 60.784-28.115 60.784-28.115l-.072-29.127H127.6v-8.745h86.441s41.486 4.705 41.486-60.712c0-65.416-36.21-63.096-36.21-63.096h-21.61v30.355s1.165 36.21-35.632 36.21h-61.362s-34.475-.557-34.475 33.32v56.013s-5.235 33.897 62.519 33.897zm34.114-19.586a11.12 11.12 0 1 1 0-22.24 11.12 11.12 0 0 1 0 22.24z" fill="#FFC331"/>
-                                </svg>
-                            </div>
-                            <span class="prereq-badge">Required</span>
-                        </div>
-                        <span class="prereq-name">Python</span>
-                        <span class="prereq-desc">The programming language that powers Seamless. Download version 3.10 or newer.</span>
-                        <span class="prereq-download">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                            python.org/downloads
-                        </span>
-                    </a>
-                    <a href="https://git-scm.com/downloads" target="_blank" rel="noopener noreferrer" class="prereq-item prereq-link">
-                        <div class="prereq-top">
-                            <div class="prereq-icon icon-git">
-                                <svg width="24" height="24" viewBox="0 0 256 256" fill="none">
-                                    <path d="M251.172 116.594L139.4 4.828c-6.433-6.437-16.873-6.437-23.314 0l-23.21 23.21 29.443 29.443c6.842-2.312 14.688-.761 20.142 4.693 5.48 5.489 7.02 13.402 4.652 20.266l28.375 28.376c6.865-2.365 14.786-.835 20.269 4.657 7.663 7.66 7.663 20.075 0 27.74-7.665 7.666-20.08 7.666-27.749 0-5.764-5.77-7.222-14.27-4.394-21.345l-26.467-26.47v69.636c1.873.935 3.61 2.11 5.14 3.64 7.661 7.66 7.661 20.076 0 27.747-7.665 7.662-20.086 7.662-27.74 0-7.663-7.671-7.663-20.086 0-27.746 1.906-1.908 4.07-3.396 6.387-4.47V105.95c-2.316-1.07-4.48-2.558-6.387-4.468-5.853-5.855-7.257-14.459-4.25-21.586L78.182 50.47 4.828 123.827c-6.437 6.44-6.437 16.887 0 23.315L116.594 259.91c6.437 6.433 16.873 6.433 23.314 0l111.264-111.262c6.44-6.44 6.44-16.88 0-23.313" fill="#F05133"/>
-                                </svg>
-                            </div>
-                            <span class="prereq-badge">Required</span>
-                        </div>
-                        <span class="prereq-name">Git</span>
-                        <span class="prereq-desc">A tool to download and update the Seamless code. Just install it with default settings.</span>
-                        <span class="prereq-download">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                            git-scm.com/downloads
-                        </span>
-                    </a>
-                    <a href="https://nodejs.org/en/download/" target="_blank" rel="noopener noreferrer" class="prereq-item prereq-link">
-                        <div class="prereq-top">
-                            <div class="prereq-icon icon-node">
-                                <svg width="24" height="24" viewBox="0 0 256 289" fill="none">
-                                    <path d="M128 288.464c-3.975 0-7.685-1.06-11.13-2.915l-35.247-20.936c-5.3-2.915-2.65-3.975-1.06-4.505 7.155-2.385 8.48-2.915 15.9-7.155.795-.53 1.855-.265 2.65.265l27.032 16.166c1.06.53 2.385.53 3.18 0l105.74-61.217c1.06-.53 1.59-1.59 1.59-2.915V83.08c0-1.325-.53-2.385-1.59-2.915L129.325 19.213c-1.06-.53-2.385-.53-3.18 0L20.405 80.165c-1.06.53-1.59 1.855-1.59 2.915v122.17c0 1.06.53 2.385 1.59 2.915l28.887 16.695c15.635 7.95 25.44-1.325 25.44-10.6V93.68c0-1.59 1.325-3.18 3.18-3.18h13.25c1.59 0 3.18 1.325 3.18 3.18v120.58c0 20.936-11.395 33.126-31.27 33.126-6.095 0-10.865 0-24.38-6.625l-27.827-15.9C4.24 221.41 0 214.52 0 207.1V84.93c0-7.42 4.24-14.31 11.13-17.755L116.87 5.957c6.625-3.71 15.635-3.71 22.26 0l105.74 61.218c6.89 3.975 11.13 10.6 11.13 17.755v122.17c0 7.42-4.24 14.045-11.13 17.755L139.13 286.073c-3.445 1.59-7.42 2.385-11.13 2.385v.006z" fill="#539E43"/>
-                                </svg>
-                            </div>
-                            <span class="prereq-badge">Required</span>
-                        </div>
-                        <span class="prereq-name">Node.js</span>
-                        <span class="prereq-desc">Needed to build the visual styling. Download the LTS (long-term support) version.</span>
-                        <span class="prereq-download">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                            nodejs.org/download
-                        </span>
-                    </a>
-                    <a href="https://laragon.org/download/" target="_blank" rel="noopener noreferrer" class="prereq-item prereq-link">
-                        <div class="prereq-top">
-                            <div class="prereq-icon icon-server">
-                                <svg width="24" height="24" viewBox="0 0 256 256" fill="none">
-                                    <rect width="256" height="256" rx="40" fill="#0078D4"/>
-                                    <rect x="48" y="56" width="160" height="48" rx="8" fill="#fff"/>
-                                    <circle cx="80" cy="80" r="8" fill="#0078D4"/>
-                                    <circle cx="104" cy="80" r="8" fill="#0078D4"/>
-                                    <rect x="48" y="120" width="160" height="48" rx="8" fill="#fff"/>
-                                    <circle cx="80" cy="144" r="8" fill="#0078D4"/>
-                                    <circle cx="104" cy="144" r="8" fill="#0078D4"/>
-                                    <rect x="48" y="184" width="160" height="20" rx="4" fill="rgba(255,255,255,0.4)"/>
-                                </svg>
-                            </div>
-                            <span class="prereq-badge">Required</span>
-                        </div>
-                        <span class="prereq-name">Local Server (MySQL)</span>
-                        <span class="prereq-desc">A local server with MySQL database. Use Laragon (recommended for Windows), XAMPP, or WampServer.</span>
-                        <span class="prereq-download">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
-                            laragon.org/download
-                        </span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="install-steps">
-                <div class="install-step">
-                    <div class="install-step-number">1</div>
-                    <div class="install-step-content">
-                        <h4 class="install-step-title">Clone the repository</h4>
-                        <div class="code-block">
-                            <code>git clone https://github.com/seamless-exam/seamless.git && cd seamless</code>
-                            <button class="copy-btn" data-code="git clone https://github.com/seamless-exam/seamless.git && cd seamless" aria-label="Copy command">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="install-step-number">2</div>
-                    <div class="install-step-content">
-                        <h4 class="install-step-title">Create a virtual environment</h4>
-                        <div class="code-block">
-                            <code>python -m venv venv && venv\Scripts\activate</code>
-                            <button class="copy-btn" data-code="python -m venv venv && venv\Scripts\activate" aria-label="Copy command">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="install-step-note">On macOS/Linux use: <code>source venv/bin/activate</code></p>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="install-step-number">3</div>
-                    <div class="install-step-content">
-                        <h4 class="install-step-title">Install dependencies</h4>
-                        <div class="code-block">
-                            <code>pip install -r requirements.txt</code>
-                            <button class="copy-btn" data-code="pip install -r requirements.txt" aria-label="Copy command">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="install-step-number">4</div>
-                    <div class="install-step-content">
-                        <h4 class="install-step-title">Set up the database & create admin</h4>
-                        <div class="code-block">
-                            <code>python manage.py migrate && python manage.py createsuperuser</code>
-                            <button class="copy-btn" data-code="python manage.py migrate && python manage.py createsuperuser" aria-label="Copy command">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="install-step-note">Uses SQLite by default. No database server required.</p>
-                    </div>
-                </div>
-                <div class="install-step">
-                    <div class="install-step-number">5</div>
-                    <div class="install-step-content">
-                        <h4 class="install-step-title">Start the server</h4>
-                        <div class="code-block">
-                            <code>python manage.py runserver</code>
-                            <button class="copy-btn" data-code="python manage.py runserver" aria-label="Copy command">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="install-step-note">Open <strong>http://localhost:8000</strong> in your browser. That's it!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="tech-stack">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-label">Built With</span>
-                <h2 class="section-title">Modern, Proven Technologies</h2>
-            </div>
-            <div class="tech-grid">
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#092E20">
-                            <path d="M11.146 0h3.924v18.166c-2.013.382-3.491.535-5.096.535-4.791 0-7.288-2.166-7.288-6.32 0-4.002 2.65-6.6 6.753-6.6.637 0 1.121.05 1.707.203zm0 9.143a3.894 3.894 0 00-1.325-.204c-1.988 0-3.134 1.223-3.134 3.365 0 2.09 1.096 3.236 3.109 3.236.433 0 .79-.025 1.35-.102V9.142zM21.314 6.06v9.098c0 3.134-.229 4.638-.917 5.937-.637 1.249-1.478 2.039-3.211 2.905l-3.644-1.733c1.733-.815 2.574-1.53 3.109-2.625.561-1.121.739-2.421.739-5.835V6.059h3.924zM17.39.021h3.924v4.026H17.39z"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">Django 4.2</span>
-                    <span class="tech-role">Backend Framework</span>
-                </div>
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#06B6D4">
-                            <path d="M12.001,4.8c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 C13.666,10.618,15.027,12,18.001,12c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C16.337,6.182,14.976,4.8,12.001,4.8z M6.001,12c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 c1.177,1.194,2.538,2.576,5.512,2.576c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C10.337,13.382,8.976,12,6.001,12z"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">Tailwind CSS</span>
-                    <span class="tech-role">Styling</span>
-                </div>
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#4479A1">
-                            <path d="M16.405 5.501c-.115 0-.193.014-.274.033v.013h.014c.054.104.146.18.214.273.054.107.1.214.154.32l.014-.015c.094-.066.14-.172.14-.333-.04-.047-.046-.094-.08-.14-.04-.067-.126-.1-.18-.153zM5.77 18.695h-.927a50.854 50.854 0 00-.27-4.41h-.008l-1.41 4.41H2.45l-1.4-4.41h-.01a72.892 72.892 0 00-.195 4.41H0c.055-1.966.192-3.81.41-5.53h1.15l1.335 4.064h.008l1.347-4.064h1.095c.242 2.015.384 3.86.428 5.53zm4.017-4.08c-.378 2.045-.876 3.533-1.492 4.46-.482.716-1.01 1.073-1.583 1.073-.153 0-.34-.046-.566-.138v-.494c.11.017.24.026.386.026.268 0 .483-.075.647-.222.197-.18.295-.382.295-.605 0-.155-.077-.47-.23-.944L6.23 14.615h.91l.727 2.36c.164.536.233.91.205 1.123.4-1.064.678-2.227.835-3.483zm12.325 4.08h-2.63v-5.53h.885v4.85h1.745zm-3.32.135l-1.016-.5c.09-.076.177-.158.255-.25.433-.506.648-1.258.648-2.253 0-1.83-.718-2.746-2.155-2.746-.704 0-1.254.232-1.65.697-.43.508-.646 1.256-.646 2.245 0 .972.19 1.686.574 2.14.35.41.877.615 1.583.615.264 0 .506-.033.725-.098l1.325.772.36-.622zM15.5 17.588c-.225-.36-.337-.94-.337-1.736 0-1.393.424-2.09 1.27-2.09.443 0 .77.167.977.5.224.362.336.936.336 1.723 0 1.404-.424 2.108-1.27 2.108-.445 0-.77-.167-.978-.5zm-1.658-.425c0 .47-.172.856-.516 1.156-.344.3-.803.45-1.384.45-.543 0-1.064-.172-1.573-.515l.237-.476c.438.22.833.328 1.19.328.332 0 .593-.073.783-.22a.754.754 0 00.3-.615c0-.33-.23-.61-.648-.845-.388-.213-1.163-.657-1.163-.657-.422-.307-.632-.636-.632-1.177 0-.45.157-.81.47-1.085.315-.278.72-.415 1.22-.415.512 0 .98.136 1.4.41l-.213.476a2.726 2.726 0 00-1.064-.23c-.283 0-.502.068-.654.206a.685.685 0 00-.248.524c0 .328.234.61.666.85.393.215 1.187.67 1.187.67.433.305.648.63.648 1.168zm9.382-5.852c-.535-.014-.95.04-1.297.188-.1.04-.26.04-.274.167.055.053.063.14.11.214.08.134.218.313.346.407.14.11.28.216.427.31.26.16.555.255.81.416.145.094.293.213.44.313.073.05.12.14.214.172v-.02c-.046-.06-.06-.147-.105-.214-.067-.067-.134-.127-.2-.193a3.223 3.223 0 00-.695-.675c-.214-.146-.682-.35-.77-.595l-.013-.014c.146-.013.32-.066.46-.106.227-.06.435-.047.67-.106.106-.027.213-.06.32-.094v-.06c-.12-.12-.21-.283-.334-.395a8.867 8.867 0 00-1.104-.823c-.21-.134-.476-.22-.697-.334-.08-.04-.214-.06-.26-.127-.12-.146-.19-.34-.275-.514a17.69 17.69 0 01-.547-1.163c-.12-.262-.193-.523-.34-.763-.69-1.137-1.437-1.826-2.586-2.5-.247-.14-.543-.2-.856-.274-.167-.008-.334-.02-.5-.027-.11-.047-.216-.174-.31-.235-.38-.24-1.364-.76-1.644-.072-.18.434.267.862.422 1.082.115.153.26.328.34.5.047.116.06.235.107.356.106.294.207.622.347.897.073.14.153.287.247.413.054.073.146.107.167.227-.094.136-.1.334-.154.5-.24.757-.146 1.693.194 2.25.107.166.362.534.703.393.3-.12.234-.5.32-.835.02-.08.007-.133.048-.187v.015c.094.188.188.367.274.555.206.328.566.668.867.895.16.12.287.328.487.402v-.02h-.015c-.043-.058-.1-.086-.154-.133a3.445 3.445 0 01-.35-.4 8.76 8.76 0 01-.747-1.218c-.11-.21-.202-.436-.29-.643-.04-.08-.04-.2-.107-.24-.1.146-.247.273-.32.453-.127.288-.14.642-.188 1.01-.027.007-.014 0-.027.014-.214-.052-.287-.274-.367-.46-.2-.475-.233-1.238-.06-1.785.047-.14.247-.582.167-.716-.042-.127-.174-.2-.247-.303a2.478 2.478 0 01-.24-.427c-.16-.374-.24-.788-.414-1.162-.08-.173-.22-.354-.334-.513-.127-.18-.267-.307-.368-.52-.033-.073-.08-.194-.027-.274.014-.054.042-.075.094-.09.088-.072.335.022.422.062.247.1.455.194.662.334.094.066.195.193.315.226h.14c.214.047.455.014.655.073.355.114.675.28.962.46a5.953 5.953 0 012.085 2.286c.08.154.115.295.188.455.14.33.313.663.455.982.14.315.275.636.476.897.1.14.502.213.682.286.133.06.34.115.46.188.23.14.454.3.67.454.11.076.443.243.463.378z"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">MySQL</span>
-                    <span class="tech-role">Database</span>
-                </div>
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#09A3D5">
-                            <path d="M3.001 11.213c-.55-.065-.591-.803-1.297-.738-.342 0-.66.143-.66.457 0 .473.73.517 1.17.636.75.228 1.476.383 1.476 1.199 0 1.035-.811 1.394-1.884 1.394-.897 0-1.806-.318-1.806-1.142 0-.228.22-.407.432-.407.269 0 .363.114.457.301.208.367.44.563 1.019.563.367 0 .742-.139.742-.457 0-.452-.46-.55-.937-.66C.869 12.122.143 12 .057 11.062c-.09-1.598 3.242-1.659 3.433-.257-.004.253-.24.408-.489.408zM6.964 9.81c1.171 0 1.835.979 1.835 2.186 0 1.211-.644 2.185-1.835 2.185-.66 0-1.072-.281-1.37-.713v1.598c0 .481-.155.714-.505.714-.428 0-.506-.273-.506-.714v-4.648c0-.379.159-.612.506-.612.326 0 .505.257.505.612v.13c.331-.416.71-.738 1.37-.738zm-.277 3.54c.685 0 .991-.632.991-1.37 0-.722-.31-1.37-.991-1.37-.714 0-1.044.587-1.044 1.37 0 .762.335 1.37 1.044 1.37zm2.907-2.398c0-.84.967-1.142 1.904-1.142 1.317 0 1.86.384 1.86 1.656v1.223c0 .29.179.869.179 1.044 0 .265-.244.432-.505.432-.29 0-.506-.342-.661-.587-.428.342-.881.587-1.574.587-.766 0-1.37-.453-1.37-1.199 0-.66.473-1.039 1.044-1.17 0 .004 1.835-.432 1.835-.436 0-.563-.2-.812-.791-.812-.522 0-.787.143-.991.457-.163.237-.143.379-.457.379-.253-.004-.473-.175-.473-.432zm1.566 2.524c.803 0 1.142-.424 1.142-1.268v-.18c-.216.074-1.089.29-1.325.327-.253.049-.506.236-.506.534.008.326.342.587.689.587zm5.9-5.26c1.134 0 2.361.677 2.361 1.753a.49.49 0 01-.481.506c-.371 0-.424-.2-.587-.481-.273-.502-.596-.836-1.297-.836-1.085-.008-1.57.921-1.57 2.079 0 1.167.404 2.007 1.525 2.007.746 0 1.158-.433 1.37-.991.086-.257.241-.506.563-.506.253 0 .506.257.506.534 0 1.142-1.167 1.933-2.365 1.933-1.313 0-2.055-.555-2.463-1.476a3.48 3.48 0 01-.326-1.525c-.009-1.77 1.023-2.997 2.764-2.997zm6.483 1.594c.29 0 .457.188.457.481 0 .119-.094.355-.13.482l-1.395 3.665c-.31.795-.542 1.346-1.598 1.346-.502 0-.938-.045-.938-.481 0-.253.191-.38.457-.38.048 0 .13.025.179.025.077 0 .13.024.179.024.53 0 .604-.542.791-.917L20.2 10.724c-.078-.18-.131-.302-.131-.408 0-.294.229-.506.534-.506.343 0 .478.269.563.563l.889 2.642.889-2.442c.134-.379.147-.763.599-.763z"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">spaCy & NLTK</span>
-                    <span class="tech-role">NLP Grading</span>
-                </div>
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#475569">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">WhiteNoise</span>
-                    <span class="tech-role">Static Files</span>
-                </div>
-                <div class="tech-item">
-                    <div class="tech-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="#499848">
-                            <path d="M10.145 20.014c-.266-.085-.267-.122-.022-.865.244-.743.132-1.432-.32-1.974-.617-.737-.914-1.366-1.009-2.135-.08-.66-.107-.713-.376-.764-.18-.035-.43.034-1.023.281-.864.36-1.07.52-1.273.98-.108.242-.12.387-.06.667.075.342.378.892.494.893.03 0 .196.114.368.252.287.23.307.27.225.458-.176.408-.595.902-.764.902-.095 0-.482-.272-.91-.637-.836-.717-.872-.79-.96-1.965-.1-1.403.244-2.058 1.78-3.375l.964-.827.062-.5c.063-.518-.026-1.748-.177-2.427-.09-.4-.382-.783-.66-.86-.303-.084-.48.09-.712.694-.25.654-.486.882-.92.882-.27 0-.52-.173-.694-.477C4.033 9 3.96 7.691 4.035 7.002c.036-.33.038-.666.005-.745-.054-.128-.52-.405-1.62-.962a4.343 4.343 0 01-.518-.303 3.053 3.053 0 00-.49-.267C.994 4.54-.095 3.903.007 3.903c.193 0 1.01.252 1.446.445.266.118.52.215.565.215.045 0 .558.165 1.14.366.58.202 1.111.367 1.18.367.16 0 .185-.14.134-.746-.024-.275-.023-.5.002-.5s.132.053.238.118c.324.198 1.02.32 1.84.32.783.002 1.806.157 2.196.335.56.254 1.211 1.05 2.036 2.49.574 1.002 1.19 1.426 2.073 1.427.357 0 1.31-.147 2.6-.4 1.063-.21 2.467-.259 3.012-.103.665.19 1.545.7 2.27 1.314.68.576.786.704 1.204 1.468.5.912 1.05 2.207 1.54 3.622.07.202.216.54.326.753.294.568.28.603-.255.603-.58 0-.853-.092-1.233-.415-.365-.31-.46-.5-1.032-2.05-.292-.796-.577-1.273-.76-1.273-.124 0-.376.852-.376 1.273 0 .3.187.702.67 1.447.788 1.21 1.202 2.922 1.036 4.28l-.07.586-.526.022c-.825.034-.817.046-.817-1.135 0-1.257-.085-1.529-.64-2.035-.23-.21-.748-.81-1.149-1.33-.402-.52-.786-.946-.854-.946-.158 0-.236.428-.244 1.332-.006.595-.03.696-.205.88-.476.497-.81 1.403-1.016 2.754-.046.3-.085.355-.279.398-.285.064-1.075.075-1.143.015-.059-.05.044-.863.278-2.19.088-.504.185-1.18.214-1.503.053-.574-.065-1.65-.204-1.867-.058-.09-.353-.11-1.732-.116-.915-.003-1.918-.033-2.23-.066l-.565-.06v.25c0 .27.07.506.53 1.822.162.464.397 1.17.523 1.57l.227.728-.192.592a6.11 6.11 0 01-.348.867c-.152.266-.17.274-.595.27a2.97 2.97 0 01-.677-.083z"/>
-                        </svg>
-                    </div>
-                    <span class="tech-name">Gunicorn</span>
-                    <span class="tech-role">Production Server</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="cta">
         <div class="container">
             <div class="cta-content">
-                <h2 class="cta-title">Ready to Get Started?</h2>
-                <p class="cta-subtitle">Deploy Seamless on your school network in minutes. Free, open-source, and built for educators.</p>
+                <h2 class="cta-title">Ready to Simplify Your Exams?</h2>
+                <p class="cta-subtitle">Start creating and managing exams today. Built for educators who value their time.</p>
                 <div class="cta-buttons">
                     {% if dashboard_url %}
                     <a href="{{ dashboard_url }}" class="btn btn-primary btn-large">
@@ -584,14 +316,14 @@
                         </svg>
                     </a>
                     {% else %}
-                    <a href="#get-started" class="btn btn-primary btn-large">
-                        <span>Installation Guide</span>
+                    <a href="{% url 'teacher_login' %}" class="btn btn-primary btn-large">
+                        <span>Teacher Login</span>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                             <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </a>
-                    <a href="{% url 'teacher_login' %}" class="btn btn-secondary btn-large">
-                        <span>Teacher Login</span>
+                    <a href="{% url 'student_login' %}" class="btn btn-secondary btn-large">
+                        <span>Student Login</span>
                     </a>
                     {% endif %}
                 </div>
@@ -606,18 +338,17 @@
                     <img src="{% static 'img/brand.png' %}" alt="Seamless Logo" class="footer-logo">
                     <div class="footer-brand-text">
                         <span class="footer-title">Seamless</span>
-                        <span class="footer-subtitle">Open-Source Exam System</span>
+                        <span class="footer-subtitle">School Examination System</span>
                     </div>
                 </div>
                 <div class="footer-links">
-                    <a href="#get-started" class="footer-link">Get Started</a>
                     <a href="#features" class="footer-link">Features</a>
+                    <a href="#how-it-works" class="footer-link">How It Works</a>
                     <a href="{% url 'teacher_login' %}" class="footer-link">Teacher Login</a>
                     <a href="{% url 'student_login' %}" class="footer-link">Student Login</a>
                 </div>
                 <div class="footer-info">
-                    <p>Released under the MIT License</p>
-                    <p class="footer-note">Made with care for educators worldwide</p>
+                    <p>Made with care for educators</p>
                 </div>
             </div>
         </div>
@@ -645,21 +376,6 @@
         });
     });
 })();
-
-// Copy button functionality
-document.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const code = btn.dataset.code;
-        navigator.clipboard.writeText(code).then(() => {
-            btn.classList.add('copied');
-            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
-            setTimeout(() => {
-                btn.classList.remove('copied');
-                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-            }, 2000);
-        });
-    });
-});
 
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -695,16 +411,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 
     video.addEventListener('ended', function() {
-        video.classList.remove('playing');
         placeholder.classList.remove('hidden');
-    });
-
-    video.addEventListener('click', function() {
-        if (video.paused) {
-            video.play();
-        } else {
-            video.pause();
-        }
+        video.classList.remove('playing');
     });
 })();
 </script>
