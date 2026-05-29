@@ -239,8 +239,8 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="modal-container">
+<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(75,85,99,0.5);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:0.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);width:100%;max-width:24rem;padding:1.5rem;">
         <div class="modal-content">
             <!-- Warning Icon -->
             <div class="modal-warning-icon">
@@ -296,7 +296,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/pages/exam-list.js' %}?v=20260525"></script>
+<script src="{% static 'js/pages/exam-list.js' %}?v=20260529"></script>
 
 <!-- Modal Configuration Data -->
 {{ modal_config|json_script:"modal-config-data" }}

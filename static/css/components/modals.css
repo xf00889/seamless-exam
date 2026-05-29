@@ -9,6 +9,40 @@
  * Requirements: 10.1, 10.2, 10.4 - Coding standards compliance
  */
 
+/* Delete Confirmation Modal */
+.delete-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(75, 85, 99, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.delete-modal-box {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 24rem;
+    padding: 1.5rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .delete-modal-box {
+        max-width: calc(100% - 2rem);
+        padding: 1.25rem;
+    }
+}
+
 /* Base Modal Styles */
 .hidden {
     display: none !important;

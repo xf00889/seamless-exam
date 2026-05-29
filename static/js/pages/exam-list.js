@@ -11,12 +11,12 @@ function openDeleteModal(examId, examTitle) {
     document.getElementById('examTitle').textContent = examTitle;
     document.getElementById('deletePassword').value = '';
     document.getElementById('passwordError').classList.add('hidden');
-    document.getElementById('deleteModal').classList.remove('hidden');
+    document.getElementById('deleteModal').style.display = 'flex';
     document.getElementById('deletePassword').focus();
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
+    document.getElementById('deleteModal').style.display = 'none';
     currentExamId = null;
 }
 
