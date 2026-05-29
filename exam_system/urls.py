@@ -23,7 +23,7 @@ from django.shortcuts import render
 from users.views_setup import FirstTimeSetupView
 from users.models import Teacher, Student
 
-from .views import cron_backup, service_worker_view
+from .views import cron_backup
 
 
 def health_check(request):
@@ -51,11 +51,11 @@ def home_view(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('sw.js', service_worker_view, name='service_worker'),
     path('', home_view, name='home'),
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
     path('cron/backup/', cron_backup, name='cron_backup'),
+    path('', include('pwa.urls')),
     path('users/', include('users.urls')),
     path('superadmin/', include('users.urls_superadmin')),
     path('exams/', include('exams.urls')),
