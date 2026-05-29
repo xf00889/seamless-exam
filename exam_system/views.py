@@ -3,10 +3,19 @@ import hmac
 import traceback
 import io
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.management import call_command
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
+from django.conf import settings
+
+
+@require_GET
+def service_worker_view(request):
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    with open(sw_path, 'r') as f:
+        return HttpResponse(f.read(), content_type='application/javascript')
+
 
 
 @csrf_exempt

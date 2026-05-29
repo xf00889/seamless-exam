@@ -23,7 +23,7 @@ from django.shortcuts import render
 from users.views_setup import FirstTimeSetupView
 from users.models import Teacher, Student
 
-from .views import cron_backup
+from .views import cron_backup, service_worker_view
 
 
 def health_check(request):
@@ -42,7 +42,7 @@ def home_view(request):
     if request.session.get('student_id'):
         try:
             student = Student.objects.get(id=request.session['student_id'])
-            context['dashboard_url'] = '/exams/available/'
+            context['dashboard_url'] = '/attempts/student/exams/'
             context['dashboard_label'] = 'Go to Exams'
         except Student.DoesNotExist:
             pass
@@ -51,6 +51,7 @@ def home_view(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('sw.js', service_worker_view, name='service_worker'),
     path('', home_view, name='home'),
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
