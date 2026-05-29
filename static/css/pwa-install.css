@@ -1,0 +1,132 @@
+/* PWA Install Banner */
+#pwa-install-banner {
+  position: fixed;
+  bottom: -100px;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 12px 16px;
+  background: #fff;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, bottom 0.3s ease;
+}
+
+#pwa-install-banner.pwa-banner-visible {
+  bottom: 0;
+}
+
+.pwa-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.pwa-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-banner-text strong {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+}
+
+.pwa-banner-text span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.pwa-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-banner-install {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pwa-banner-install:hover {
+  background: #1d4ed8;
+}
+
+.pwa-banner-dismiss {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.pwa-banner-dismiss:hover {
+  color: #4b5563;
+}
+
+/* iOS Instructions Modal */
+.pwa-ios-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+}
+
+.pwa-ios-content {
+  position: fixed;
+  bottom: 20px;
+  left: 16px;
+  right: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  z-index: 10001;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.pwa-ios-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.pwa-ios-content p {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0 0 12px;
+}
+
+.pwa-ios-content ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.pwa-ios-content li {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}

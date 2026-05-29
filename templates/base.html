@@ -25,6 +25,7 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pwa-install.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -62,6 +63,9 @@
     <script src="{% static 'js/components/message-handler.js' %}"></script>
     
     {% block extra_js %}{% endblock %}
+
+    <!-- PWA Install Banner -->
+    <script src="{% static 'js/pwa-install.js' %}"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
