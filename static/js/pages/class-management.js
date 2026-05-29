@@ -20,6 +20,13 @@
         bulkAssignForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            // Validate student selection before submitting
+            const checkedStudents = bulkAssignForm.querySelectorAll('[name="students"]:checked');
+            if (checkedStudents.length === 0) {
+                showMessage('error', 'Please select at least one student');
+                return;
+            }
+
             const formData = new FormData(bulkAssignForm);
             const submitButton = bulkAssignForm.querySelector('button[type="submit"]');
             const originalButtonText = submitButton.textContent;
@@ -44,24 +51,6 @@
                 if (data.success) {
                     // Show success message
                     showMessage('success', data.message || 'Students assigned successfully');
-                    
-                    // Display summary if available
-                    if (data.summary) {
-                        const summaryHtml = `
-                            <div class="mt-4 p-4 bg-blue-50 rounded-lg">
-                                <h3 class="font-semibold text-blue-900 mb-2">Assignment Summary</h3>
-                                <ul class="text-sm text-blue-800">
-                                    <li>Total: ${data.summary.total}</li>
-                                    <li>Successful: ${data.summary.successful}</li>
-                                    <li>Failed: ${data.summary.failed}</li>
-                                </ul>
-                            </div>
-                        `;
-                        const messageContainer = document.querySelector('.message-container');
-                        if (messageContainer) {
-                            messageContainer.insertAdjacentHTML('beforeend', summaryHtml);
-                        }
-                    }
 
                     // Reset form after short delay
                     setTimeout(() => {
@@ -131,36 +120,7 @@
             });
         }
 
-        // Bulk assignment form validation
-        const bulkAssignForm = document.getElementById('bulk-assign-form');
-        if (bulkAssignForm) {
-            bulkAssignForm.addEventListener('submit', function(e) {
-                const classSelect = bulkAssignForm.querySelector('[name="class_assigned"]');
-                const studentCheckboxes = bulkAssignForm.querySelectorAll('[name="students"]:checked');
-
-                let isValid = true;
-                let errorMessage = '';
-
-                // Validate class selection
-                if (!classSelect || !classSelect.value) {
-                    isValid = false;
-                    errorMessage = 'Please select a class';
-                    highlightField(classSelect);
-                }
-
-                // Validate student selection
-                if (studentCheckboxes.length === 0) {
-                    isValid = false;
-                    errorMessage = 'Please select at least one student';
-                }
-
-                if (!isValid) {
-                    e.preventDefault();
-                    showMessage('error', errorMessage);
-                    return false;
-                }
-            });
-        }
+        // Bulk assignment validation is handled in initBulkAssignment
     }
 
     /**

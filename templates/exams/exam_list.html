@@ -34,26 +34,25 @@
 
 {% if exams %}
 <div class="bg-white shadow overflow-hidden rounded-lg">
-    <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Title
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Duration
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Questions
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Created
                 </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                 </th>
             </tr>
@@ -61,22 +60,22 @@
         <tbody class="bg-white divide-y divide-gray-200">
             {% for exam in exams %}
             <tr>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">{{ exam.title }}</div>
+                <td class="px-3 sm:px-6 py-3 sm:py-4">
+                    <div class="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">{{ exam.title }}</div>
                     {% if exam.subject %}
                     <div class="text-xs text-blue-600 font-medium">{{ exam.subject }}</div>
                     {% endif %}
                     {% if exam.description %}
-                    <div class="text-sm text-gray-500">{{ exam.description|truncatewords:10 }}</div>
+                    <div class="text-xs text-gray-500 hidden sm:block">{{ exam.description|truncatewords:10 }}</div>
                     {% endif %}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
                     {{ exam.duration_minutes }} min
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
                     {{ exam.questions.count }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     {% if exam.is_active %}
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Active
@@ -87,11 +86,11 @@
                     </span>
                     {% endif %}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                     {{ exam.created_at|date:"M d, Y" }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div class="flex justify-end items-center gap-3">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex justify-end items-center gap-2 sm:gap-3">
                         <!-- View Takers -->
                         <a href="{% url 'exam_takers' exam.id %}" 
                            class="text-purple-600 hover:text-purple-900 transition-colors"
@@ -163,7 +162,6 @@
             {% endfor %}
         </tbody>
     </table>
-    </div>
 </div>
 
 <!-- Pagination Component -->
