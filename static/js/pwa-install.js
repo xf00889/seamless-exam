@@ -100,6 +100,10 @@
     return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   }
 
+  function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
@@ -111,9 +115,14 @@
     removeBanner();
   });
 
-  if (isIOS()) {
+  // Show banner for mobile devices that don't fire beforeinstallprompt
+  if (isMobile()) {
     window.addEventListener('load', function() {
-      setTimeout(createBanner, 2000);
+      setTimeout(function() {
+        if (!deferredPrompt) {
+          createBanner();
+        }
+      }, 3000);
     });
   }
 })();
