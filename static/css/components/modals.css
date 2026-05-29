@@ -29,7 +29,6 @@
 
 .modal-container {
     position: relative;
-    top: 5rem; /* top-20 */
     margin: 0 auto;
     padding: 1.25rem; /* p-5 */
     border: 1px solid #e5e7eb;
@@ -379,13 +378,11 @@
     .modal-container {
         width: calc(100% - 2rem);
         margin: 0 1rem;
-        top: 2rem;
     }
-    
+
     .modal-container-wide {
         width: calc(100% - 2rem);
         margin: 0 1rem;
-        top: 2rem;
         max-height: calc(100vh - 4rem);
     }
 }
