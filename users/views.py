@@ -2038,3 +2038,46 @@ class StudentDeleteView(View):
 
         messages.success(request, f'Student "{student_name}" ({student_school_id}) has been permanently deleted.')
         return redirect('student_account_management')
+
+
+@method_decorator(student_required, name='dispatch')
+class StudentActivityLogView(View):
+    """View for students to see their exam activity log."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthenticationService()
+
+    def get(self, request):
+        student = self.auth_service.get_current_student(request)
+        if not student:
+            messages.error(request, 'Student profile not found')
+            return redirect('student_login')
+
+        from attempts.models import Attempt, TabViolation
+
+        attempts = Attempt.objects.filter(student=student).select_related('exam').order_by('-started_at')
+
+        activity_log = []
+        for attempt in attempts:
+            violations = TabViolation.objects.filter(attempt=attempt).order_by('violated_at')
+            activity_log.append({
+                'attempt': attempt,
+                'exam_title': attempt.exam.title,
+                'started_at': attempt.started_at,
+                'submitted_at': attempt.submitted_at,
+                'status': attempt.get_status_display(),
+                'is_flagged': attempt.is_flagged,
+                'flag_reason': attempt.flag_reason,
+                'auto_submitted': attempt.auto_submitted,
+                'violation_count': violations.count(),
+                'violations': violations,
+            })
+
+        context = {
+            'student': student,
+            'activity_log': activity_log,
+            'page_title': 'Activity Log',
+        }
+
+        return render(request, 'users/student_activity_log.html', context)

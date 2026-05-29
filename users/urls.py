@@ -24,6 +24,7 @@ from .views import (
     StudentDetailView,
     StudentResetPasswordView,
     StudentDeleteView,
+    StudentActivityLogView,
 )
 from .views_setup import FirstTimeSetupView
 from .views_request import RequestAccessView
@@ -49,6 +50,7 @@ urlpatterns = [
     path('student/dashboard/', StudentDashboardView.as_view(), name='student_dashboard'),
     path('student/history/', StudentHistoryView.as_view(), name='student_history'),
     path('student/history/export/', ExportHistoryView.as_view(), name='export_history'),
+    path('student/activity-log/', StudentActivityLogView.as_view(), name='student_activity_log'),
     
     # Teacher profile management routes
     path('teacher/profile/', TeacherProfileView.as_view(), name='teacher_profile'),

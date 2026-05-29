@@ -88,6 +88,11 @@ def navbar_context(request):
                     'url': '/users/student/history/',
                     'active': current_path.startswith('/users/student/history/')
                 },
+                {
+                    'label': 'Activity Log',
+                    'url': '/users/student/activity-log/',
+                    'active': current_path.startswith('/users/student/activity-log/')
+                },
             ]
     
     elif auth_service.require_teacher(request):

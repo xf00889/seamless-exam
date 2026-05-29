@@ -1158,6 +1158,7 @@ body:has(.landing) main {
 .footer-logo {
     height: 36px;
     width: auto;
+    mix-blend-mode: screen;
 }
 
 .footer-brand-text {
