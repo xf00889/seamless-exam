@@ -20,6 +20,8 @@ class TabMonitor {
         this.blurWithoutHidden = false;
         this.lastWindowWidth = window.innerWidth;
         this.resizeCheckInterval = null;
+        this.lastViolationTime = 0;
+        this.violationCooldown = 10000; // 10 seconds between violations
 
         // AJAX client for server communication
         this.ajaxClient = new AjaxClient({
@@ -180,10 +182,10 @@ class TabMonitor {
     }
 
     handleWindowBlur() {
-        if (!document.hidden) {
+        if (!document.hidden && !this.splitScreenDetected) {
             this.blurWithoutHidden = true;
             this.splitScreenGraceTimer = setTimeout(() => {
-                if (this.blurWithoutHidden && !document.hidden) {
+                if (this.blurWithoutHidden && !document.hidden && !this.splitScreenDetected) {
                     this.recordViolation('window_blur');
                 }
             }, 1500);
@@ -220,6 +222,13 @@ class TabMonitor {
      * Requirements: 2.1, 3.1, 3.4, 8.1, 8.2, 8.5
      */
     async recordViolation(type = 'tab_switch') {
+
+        // Cooldown: prevent multiple violations from stacking
+        const now = Date.now();
+        if (now - this.lastViolationTime < this.violationCooldown) {
+            return;
+        }
+        this.lastViolationTime = now;
 
         const violationData = {
             violated_at: new Date().toISOString(),
@@ -358,19 +367,19 @@ class TabMonitor {
         let title, text, icon;
 
         if (warningNumber === 1) {
-            title = '⚠️ Warning: Suspicious Activity Detected';
+            title = '⚠️ Potential Cheating Detected';
             text = `A tab switch, split screen, or window change was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nKeep the exam in full screen and do not open other apps or tabs. After ${totalWarnings} warnings, your exam will be automatically submitted and flagged.`;
             icon = 'warning';
         } else if (warningNumber === 2) {
-            title = '⚠️ Second Warning: Suspicious Activity';
-            text = `Another violation was detected (tab switch, split screen, or app switch).\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
+            title = '⚠️ Potential Cheating Detected';
+            text = `Another violation was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
             icon = 'warning';
         } else if (warningNumber === 3) {
-            title = '🚨 Final Warning!';
-            text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further tab switch, split screen usage, or app switching will result in automatic submission and your exam will be flagged for potential cheating.`;
+            title = '🚨 Potential Cheating Detected';
+            text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further violation will result in automatic submission and your exam will be flagged for review.`;
             icon = 'error';
         } else {
-            title = '⚠️ Warning: Suspicious Activity Detected';
+            title = '⚠️ Potential Cheating Detected';
             text = `A violation was detected.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
             icon = 'warning';
         }
