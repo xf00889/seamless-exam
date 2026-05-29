@@ -35,6 +35,9 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') return;
 
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
   if (event.request.url.includes('/static/')) {
     event.respondWith(
       caches.match(event.request).then(function(response) {
@@ -60,7 +63,9 @@ self.addEventListener('fetch', function(event) {
       }
       return response;
     }).catch(function() {
-      return caches.match(event.request);
+      return caches.match(event.request).then(function(cached) {
+        return cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      });
     })
   );
 });
