@@ -14,10 +14,12 @@ class TabMonitor {
 
         // Split-screen detection
         this.initialWidth = window.innerWidth;
-        this.splitScreenThreshold = 0.7; // Flag if window is less than 70% of screen width
+        this.splitScreenThreshold = 0.75; // Flag if window is less than 75% of screen width
         this.splitScreenDetected = false;
         this.splitScreenGraceTimer = null;
         this.blurWithoutHidden = false;
+        this.lastWindowWidth = window.innerWidth;
+        this.resizeCheckInterval = null;
 
         // AJAX client for server communication
         this.ajaxClient = new AjaxClient({
@@ -75,6 +77,9 @@ class TabMonitor {
 
         this.isMonitoring = true;
 
+        // Start periodic split-screen check
+        this.startSplitScreenCheck();
+
         // Sync state with server on start
         this.syncWithServer();
 
@@ -103,6 +108,9 @@ class TabMonitor {
         if (this.splitScreenGraceTimer) {
             clearTimeout(this.splitScreenGraceTimer);
         }
+        if (this.resizeCheckInterval) {
+            clearInterval(this.resizeCheckInterval);
+        }
 
         this.isMonitoring = false;
     }
@@ -127,7 +135,7 @@ class TabMonitor {
             
             // Use grace period to avoid false positives from accidental clicks
             this.gracePeriodTimer = setTimeout(() => {
-                this.recordViolation();
+                this.recordViolation('tab_switch');
             }, this.gracePeriod);
         } else {
             // Student returned to exam tab
@@ -152,15 +160,16 @@ class TabMonitor {
         const ratio = windowWidth / screenWidth;
 
         if (ratio < this.splitScreenThreshold && !this.splitScreenDetected) {
-            // Window is significantly smaller than screen — likely split view
+            if (this.splitScreenGraceTimer) {
+                clearTimeout(this.splitScreenGraceTimer);
+            }
             this.splitScreenGraceTimer = setTimeout(() => {
-                // Re-check after grace period to avoid false positives from transient resizes
                 const currentRatio = (window.outerWidth || window.innerWidth) / screenWidth;
                 if (currentRatio < this.splitScreenThreshold) {
                     this.splitScreenDetected = true;
-                    this.recordViolation();
+                    this.recordViolation('split_screen');
                 }
-            }, 2000);
+            }, 1500);
         } else if (ratio >= this.splitScreenThreshold && this.splitScreenDetected) {
             this.splitScreenDetected = false;
             if (this.splitScreenGraceTimer) {
@@ -171,14 +180,13 @@ class TabMonitor {
     }
 
     handleWindowBlur() {
-        // Window lost focus but tab is still visible — another app is in split view
         if (!document.hidden) {
             this.blurWithoutHidden = true;
             this.splitScreenGraceTimer = setTimeout(() => {
                 if (this.blurWithoutHidden && !document.hidden) {
-                    this.recordViolation();
+                    this.recordViolation('window_blur');
                 }
-            }, 2000);
+            }, 1500);
         }
     }
 
@@ -190,15 +198,33 @@ class TabMonitor {
         }
     }
 
+    startSplitScreenCheck() {
+        this.resizeCheckInterval = setInterval(() => {
+            if (!this.isMonitoring) return;
+
+            const screenWidth = window.screen.availWidth || window.screen.width;
+            const windowWidth = window.outerWidth || window.innerWidth;
+            const ratio = windowWidth / screenWidth;
+
+            if (ratio < this.splitScreenThreshold && !this.splitScreenDetected) {
+                this.splitScreenDetected = true;
+                this.recordViolation('split_screen');
+            } else if (ratio >= this.splitScreenThreshold) {
+                this.splitScreenDetected = false;
+            }
+        }, 5000);
+    }
+
     /**
      * Record a tab switch violation
      * Requirements: 2.1, 3.1, 3.4, 8.1, 8.2, 8.5
      */
-    async recordViolation() {
-        
+    async recordViolation(type = 'tab_switch') {
+
         const violationData = {
             violated_at: new Date().toISOString(),
-            attempt_id: this.attemptId
+            attempt_id: this.attemptId,
+            violation_type: type
         };
         
         // If offline, queue the violation
@@ -325,28 +351,27 @@ class TabMonitor {
      * Requirements: 1.1, 1.2, 1.3, 1.5, 7.1, 7.2, 7.3, 7.4
      */
     showWarning(warningNumber, totalWarnings) {
-        // Check if SweetAlert2 is available
         if (typeof Swal === 'undefined') {
             return;
         }
-        
+
         let title, text, icon;
-        
+
         if (warningNumber === 1) {
-            title = '⚠️ Warning: Tab Switch Detected';
-            text = `You have switched away from the exam page.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nAfter ${totalWarnings} warnings, your exam will be automatically submitted and flagged for review.`;
+            title = '⚠️ Warning: Suspicious Activity Detected';
+            text = `A tab switch, split screen, or window change was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nKeep the exam in full screen and do not open other apps or tabs. After ${totalWarnings} warnings, your exam will be automatically submitted and flagged.`;
             icon = 'warning';
         } else if (warningNumber === 2) {
-            title = '⚠️ Second Warning: Tab Switch Detected';
-            text = `You have switched away from the exam page again.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
+            title = '⚠️ Second Warning: Suspicious Activity';
+            text = `Another violation was detected (tab switch, split screen, or app switch).\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
             icon = 'warning';
         } else if (warningNumber === 3) {
-            title = '🚨 Final Warning: Tab Switch Detected';
-            text = `You have switched away from the exam page for the third time.\n\nThis is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nIf you switch tabs one more time, your exam will be automatically submitted and flagged for potential cheating.`;
+            title = '🚨 Final Warning!';
+            text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further tab switch, split screen usage, or app switching will result in automatic submission and your exam will be flagged for potential cheating.`;
             icon = 'error';
         } else {
-            title = '⚠️ Warning: Tab Switch Detected';
-            text = `You have switched away from the exam page.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
+            title = '⚠️ Warning: Suspicious Activity Detected';
+            text = `A violation was detected.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
             icon = 'warning';
         }
         
