@@ -129,6 +129,29 @@
             </div>
         </div>
     </section>
+
+    <!-- Danger Zone -->
+    <section class="bg-white shadow-sm rounded-lg overflow-hidden mb-6 border border-red-200">
+        <div class="px-6 py-4 border-b border-red-100 bg-red-50">
+            <h2 class="text-base font-semibold text-red-800">Danger Zone</h2>
+        </div>
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-900">Delete Student Account</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Permanently delete this student and all their exam attempts. This action cannot be undone.</p>
+                </div>
+                <form method="post" action="{% url 'student_delete' student.id %}" id="delete-student-form">
+                    {% csrf_token %}
+                    <button type="button"
+                            id="delete-student-btn"
+                            class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors">
+                        Delete Student
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
 </div>
 
 <script>
@@ -156,6 +179,15 @@ document.addEventListener('DOMContentLoaded', function() {
     resetBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to reset this student\'s password to the default? They will need to use the default password to log in.')) {
             resetForm.submit();
+        }
+    });
+
+    var deleteBtn = document.getElementById('delete-student-btn');
+    var deleteForm = document.getElementById('delete-student-form');
+
+    deleteBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to permanently delete this student account? All exam attempts and history will be lost. This cannot be undone.')) {
+            deleteForm.submit();
         }
     });
 });

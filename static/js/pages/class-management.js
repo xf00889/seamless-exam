@@ -135,8 +135,8 @@
         const bulkAssignForm = document.getElementById('bulk-assign-form');
         if (bulkAssignForm) {
             bulkAssignForm.addEventListener('submit', function(e) {
-                const classSelect = bulkAssignForm.querySelector('[name="class_id"]');
-                const studentCheckboxes = bulkAssignForm.querySelectorAll('[name="student_ids"]:checked');
+                const classSelect = bulkAssignForm.querySelector('[name="class_assigned"]');
+                const studentCheckboxes = bulkAssignForm.querySelectorAll('[name="students"]:checked');
 
                 let isValid = true;
                 let errorMessage = '';
@@ -188,7 +188,7 @@
     function initStudentSelection() {
         const selectAllBtn = document.getElementById('select-all-students');
         const deselectAllBtn = document.getElementById('deselect-all-students');
-        const studentCheckboxes = document.querySelectorAll('[name="student_ids"]');
+        const studentCheckboxes = document.querySelectorAll('[name="students"]');
 
         if (selectAllBtn) {
             selectAllBtn.addEventListener('click', function(e) {
@@ -223,7 +223,7 @@
      * Update the count of selected students
      */
     function updateSelectionCount() {
-        const studentCheckboxes = document.querySelectorAll('[name="student_ids"]:checked');
+        const studentCheckboxes = document.querySelectorAll('[name="students"]:checked');
         const countDisplay = document.getElementById('selected-count');
         
         if (countDisplay) {

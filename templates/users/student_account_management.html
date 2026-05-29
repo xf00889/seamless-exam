@@ -180,9 +180,15 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">
                             <a href="{% url 'student_detail' student.id %}"
-                               class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                               class="text-sm font-medium text-blue-600 hover:text-blue-800 mr-3">
                                 View Details
                             </a>
+                            <button type="button"
+                                    class="text-sm font-medium text-red-600 hover:text-red-800 delete-student-btn"
+                                    data-student-id="{{ student.id }}"
+                                    data-student-name="{{ student.get_full_name }}">
+                                Delete
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -215,4 +221,26 @@
 <script src="{% static 'js/utils/csrf-helper.js' %}"></script>
 <script src="{% static 'js/components/form-validator.js' %}"></script>
 <script src="{% static 'js/pages/student-account-management.js' %}?v=2"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-student-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var studentId = this.dataset.studentId;
+            var studentName = this.dataset.studentName;
+            if (confirm('Are you sure you want to permanently delete "' + studentName + '"? All exam attempts and history will be lost. This cannot be undone.')) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/users/teacher/accounts/' + studentId + '/delete/';
+                var csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = 'csrfmiddlewaretoken';
+                csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

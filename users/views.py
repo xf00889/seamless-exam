@@ -2005,3 +2005,36 @@ class StudentResetPasswordView(View):
 
         messages.success(request, f'Password for {student.get_full_name()} has been reset to default.')
         return redirect('student_detail', student_id=student_id)
+
+
+class StudentDeleteView(View):
+    """Permanently delete a student account and all associated data."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthenticationService()
+
+    def post(self, request, student_id):
+        teacher = self.auth_service.get_current_teacher(request)
+        if not teacher:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+            messages.error(request, 'Teacher profile not found')
+            return redirect('teacher_login')
+
+        from users.models import Student
+
+        student = get_object_or_404(Student, pk=student_id)
+        student_name = student.get_full_name()
+        student_school_id = student.school_id
+
+        student.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Student "{student_name}" ({student_school_id}) has been permanently deleted.'
+            })
+
+        messages.success(request, f'Student "{student_name}" ({student_school_id}) has been permanently deleted.')
+        return redirect('student_account_management')

@@ -519,9 +519,12 @@ class BulkStudentAssignmentForm(forms.Form):
         
         # Import here to avoid circular imports
         from users.models import Student, Class
-        
-        # Set students queryset (all students)
-        self.fields['students'].queryset = Student.objects.all().order_by('last_name', 'first_name')
+
+        # Set students queryset - exclude students already in the target class
+        students_qs = Student.objects.all().order_by('last_name', 'first_name')
+        if initial_class_id:
+            students_qs = students_qs.exclude(class_assigned_id=initial_class_id)
+        self.fields['students'].queryset = students_qs
         
         # Set class queryset (only classes belonging to the teacher)
         if teacher:
