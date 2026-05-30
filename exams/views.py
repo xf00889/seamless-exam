@@ -1131,3 +1131,307 @@ def item_summary_ai_analyze_view(request, exam_id):
         }, status=503)
 
     return JsonResponse({'success': True, 'analysis': analysis})
+
+
+@teacher_required
+def mps_report_view(request, exam_id):
+    """
+    Display DepEd-style MPS (Mean Percentage Score) report for an exam.
+    Shows overall MPS and per-class/section breakdown.
+    """
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to view this exam')
+        return redirect('exam_list')
+
+    service = ItemAnalysisService()
+    summary_data = service.get_item_summary(exam_id)
+
+    if summary_data is None:
+        messages.error(request, 'Exam not found')
+        return redirect('exam_list')
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('My Exams', reverse('exam_list')),
+        (exam.title, reverse('exam_takers', args=[exam_id])),
+        'MPS Report'
+    )
+
+    mps_gauge_offset = 377
+    if summary_data.get('has_data') and summary_data.get('mps_data'):
+        mps_gauge_offset = round(377 - (377 * summary_data['mps_data']['overall_mps'] / 100))
+
+    context = {
+        'exam': exam,
+        'summary': summary_data,
+        'mps_gauge_offset': mps_gauge_offset,
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'exams/mps_report.html', context)
+
+
+@teacher_required
+@require_http_methods(["GET"])
+def mps_export_excel_view(request, exam_id):
+    """
+    Export MPS report to Excel with DepEd-style formatting.
+    Includes overall MPS, per-class breakdown, and item-level data.
+    """
+    import os
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XlImage
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'Permission denied')
+        return redirect('exam_list')
+
+    service = ItemAnalysisService()
+    summary_data = service.get_item_summary(exam_id)
+
+    if not summary_data or not summary_data.get('has_data'):
+        messages.warning(request, 'No graded attempts to export')
+        return redirect('mps_report', exam_id=exam_id)
+
+    mps_data = summary_data['mps_data']
+    items = summary_data['items']
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
+    has_brand = os.path.isfile(brand_path)
+
+    title_font = Font(name='Calibri', bold=True, size=14)
+    header_font = Font(name='Calibri', bold=True, size=12)
+    subheader_font = Font(name='Calibri', bold=True, size=11)
+    header_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    header_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+    green_font = Font(name='Calibri', bold=True, color='006100')
+    yellow_font = Font(name='Calibri', bold=True, color='7F6000')
+    red_font = Font(name='Calibri', bold=True, color='9C0006')
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    def get_mps_font(mps_val):
+        if mps_val >= 75:
+            return green_font
+        elif mps_val >= 50:
+            return yellow_font
+        return red_font
+
+    def get_performance_level(mps_val):
+        if mps_val >= 75:
+            return 'Mastered'
+        elif mps_val >= 50:
+            return 'Nearing Mastery'
+        return 'Low Mastery'
+
+    # --- Sheet 1: MPS Summary ---
+    ws = wb.create_sheet(title='MPS Summary')
+    row = 1
+
+    if has_brand:
+        img = XlImage(brand_path)
+        img.width = 120
+        img.height = 60
+        ws.add_image(img, 'A1')
+        row = 5
+
+    ws.cell(row=row, column=1, value='MEAN PERCENTAGE SCORE (MPS) REPORT')
+    ws.cell(row=row, column=1).font = title_font
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    row += 2
+
+    info_labels = [
+        ('Exam:', exam.title),
+        ('Subject:', exam.subject or 'Not specified'),
+        ('Teacher:', exam.created_by.user.get_full_name()),
+        ('No. of Learners:', str(mps_data['total_learners'])),
+        ('No. of Items:', str(mps_data['total_items'])),
+    ]
+    for label, value in info_labels:
+        ws.cell(row=row, column=1, value=label)
+        ws.cell(row=row, column=1).font = Font(bold=True)
+        ws.cell(row=row, column=2, value=value)
+        row += 1
+
+    row += 1
+    ws.cell(row=row, column=1, value='OVERALL MPS')
+    ws.cell(row=row, column=1).font = header_font
+    row += 1
+
+    ws.cell(row=row, column=1, value='Total Correct Answers:')
+    ws.cell(row=row, column=2, value=mps_data['total_correct'])
+    row += 1
+    ws.cell(row=row, column=1, value='Total Possible Answers:')
+    ws.cell(row=row, column=2, value=mps_data['total_possible_answers'])
+    row += 1
+    ws.cell(row=row, column=1, value='MPS:')
+    ws.cell(row=row, column=1).font = Font(bold=True)
+    mps_cell = ws.cell(row=row, column=2, value=f"{mps_data['overall_mps']}%")
+    mps_cell.font = get_mps_font(mps_data['overall_mps'])
+    row += 1
+    ws.cell(row=row, column=1, value='Performance Level:')
+    ws.cell(row=row, column=2, value=get_performance_level(mps_data['overall_mps']))
+    row += 2
+
+    # Per-class breakdown
+    if mps_data['per_class']:
+        ws.cell(row=row, column=1, value='MPS BY CLASS / SECTION')
+        ws.cell(row=row, column=1).font = header_font
+        row += 1
+
+        class_headers = ['Class / Section', 'No. of Learners', 'Total Correct', 'Total Possible', 'MPS', 'Performance Level']
+        for col_idx, h in enumerate(class_headers, 1):
+            cell = ws.cell(row=row, column=col_idx, value=h)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        row += 1
+
+        for cls in mps_data['per_class']:
+            row_data = [
+                cls['class_name'],
+                cls['learners'],
+                cls['total_correct'],
+                cls['total_possible'],
+                f"{cls['mps']}%",
+                get_performance_level(cls['mps']),
+            ]
+            for col_idx, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell.border = thin_border
+                if col_idx in (2, 3, 4):
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 5:
+                    cell.font = get_mps_font(cls['mps'])
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 6:
+                    cell.alignment = Alignment(horizontal='center')
+            row += 1
+
+        # Overall row
+        overall_row_data = [
+            'OVERALL',
+            mps_data['total_learners'],
+            mps_data['total_correct'],
+            mps_data['total_possible_answers'],
+            f"{mps_data['overall_mps']}%",
+            get_performance_level(mps_data['overall_mps']),
+        ]
+        for col_idx, value in enumerate(overall_row_data, 1):
+            cell = ws.cell(row=row, column=col_idx, value=value)
+            cell.border = thin_border
+            cell.font = Font(bold=True)
+            if col_idx in (2, 3, 4, 5, 6):
+                cell.alignment = Alignment(horizontal='center')
+            if col_idx == 5:
+                cell.font = Font(bold=True, color='1F4E79')
+        row += 1
+
+    col_widths = [25, 15, 15, 15, 12, 18]
+    for i, width in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    # --- Sheet 2: Item Analysis ---
+    ws2 = wb.create_sheet(title='Item Analysis')
+    row = 1
+
+    if has_brand:
+        img2 = XlImage(brand_path)
+        img2.width = 120
+        img2.height = 60
+        ws2.add_image(img2, 'A1')
+        row = 5
+
+    ws2.cell(row=row, column=1, value='ITEM ANALYSIS - CONTRIBUTION TO MPS')
+    ws2.cell(row=row, column=1).font = title_font
+    ws2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    row += 1
+
+    ws2.cell(row=row, column=1, value=f'Exam: {exam.title}')
+    ws2.cell(row=row, column=1).font = subheader_font
+    row += 1
+    ws2.cell(row=row, column=1, value=f'No. of Learners: {mps_data["total_learners"]}')
+    row += 2
+
+    item_headers = ['Item No.', 'Question Type', 'No. Correct', 'No. Wrong', 'Skipped', '% Correct', 'Difficulty Level']
+    for col_idx, h in enumerate(item_headers, 1):
+        cell = ws2.cell(row=row, column=col_idx, value=h)
+        cell.font = header_text
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+        cell.border = thin_border
+    row += 1
+
+    for item in items:
+        item_row_data = [
+            item['item_no'],
+            item['question_type'],
+            item['num_correct'],
+            item['num_wrong'],
+            item['num_skipped'],
+            f"{item['percent_correct']}%",
+            item['difficulty_level'],
+        ]
+        for col_idx, value in enumerate(item_row_data, 1):
+            cell = ws2.cell(row=row, column=col_idx, value=value)
+            cell.border = thin_border
+            if col_idx in (1, 3, 4, 5, 6):
+                cell.alignment = Alignment(horizontal='center')
+            if col_idx == 6:
+                pct = item['percent_correct']
+                if pct >= 81:
+                    cell.font = green_font
+                elif pct <= 40:
+                    cell.font = red_font
+        row += 1
+
+    # Totals row
+    row += 1
+    ws2.cell(row=row, column=1, value='TOTAL')
+    ws2.cell(row=row, column=1).font = Font(bold=True)
+    ws2.cell(row=row, column=3, value=mps_data['total_correct'])
+    ws2.cell(row=row, column=3).font = Font(bold=True)
+    ws2.cell(row=row, column=3).alignment = Alignment(horizontal='center')
+    row += 1
+    ws2.cell(row=row, column=1, value=f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%')
+    ws2.cell(row=row, column=1).font = Font(bold=True, size=12)
+    ws2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+
+    item_col_widths = [10, 22, 12, 12, 10, 12, 18]
+    for i, width in enumerate(item_col_widths, 1):
+        ws2.column_dimensions[get_column_letter(i)].width = width
+
+    # Write to response
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    safe_title = exam.title.replace(' ', '_')[:30]
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="MPS_Report_{safe_title}.xlsx"'
+    return response

@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MPS Report - {{ exam.title }} - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    body { background: white; font-size: 11pt; }
+    main { padding: 0; max-width: 100%; }
+    .shadow-md, .shadow-sm { box-shadow: none !important; }
+    .rounded-lg { border-radius: 0 !important; }
+}
+.print-only { display: none; }
+.mps-gauge { position: relative; width: 140px; height: 140px; }
+.mps-gauge-circle { transform: rotate(-90deg); }
+.mps-gauge-bg { fill: none; stroke: #e5e7eb; stroke-width: 10; }
+.mps-gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-0">
+
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-indigo-500 border-t border-r border-b border-gray-200 p-6 mb-6 no-print">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 mr-3">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">MPS Report</h1>
+                    <p class="text-gray-600">{{ exam.title }}</p>
+                </div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <a href="{% url 'mps_export_excel' exam.id %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Excel
+                </a>
+                <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                </button>
+                <a href="{% url 'item_summary' exam.id %}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Item Summary
+                </a>
+                <a href="{% url 'exam_takers' exam.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if not summary.has_data %}
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Graded Attempts Yet</h3>
+        <p class="text-gray-500">MPS will be available once students have taken and been graded on this exam.</p>
+    </div>
+    {% else %}
+
+    <!-- Print Header -->
+    <div class="print-only bg-white p-6 mb-4 border-b-2 border-gray-300">
+        <div class="text-center mb-4">
+            <h2 class="text-xl font-bold uppercase">MEAN PERCENTAGE SCORE (MPS) REPORT</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><strong>School:</strong> _________________________</div>
+            <div><strong>Teacher:</strong> {{ exam.created_by.user.get_full_name }}</div>
+            <div><strong>Subject:</strong> {{ exam.subject|default:"_________________" }}</div>
+            <div><strong>No. of Learners:</strong> {{ summary.total_learners }}</div>
+            <div><strong>Exam:</strong> {{ exam.title }}</div>
+            <div><strong>No. of Items:</strong> {{ summary.mps_data.total_items }}</div>
+        </div>
+    </div>
+
+    <!-- Exam Info -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div><span class="font-semibold text-gray-700">Exam:</span> <span class="text-gray-900 ml-1">{{ exam.title }}</span></div>
+            <div><span class="font-semibold text-gray-700">Subject:</span> <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span></div>
+            <div><span class="font-semibold text-gray-700">Teacher:</span> <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span></div>
+            <div><span class="font-semibold text-gray-700">No. of Learners:</span> <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span></div>
+            <div><span class="font-semibold text-gray-700">No. of Items:</span> <span class="text-gray-900 ml-1">{{ summary.mps_data.total_items }}</span></div>
+            <div><span class="font-semibold text-gray-700">Total Points:</span> <span class="text-gray-900 ml-1">{{ summary.total_possible }}</span></div>
+        </div>
+    </div>
+
+    <!-- Overall MPS Display -->
+    {% if summary.mps_data %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Overall MPS</h3>
+        <div class="flex flex-col md:flex-row items-center gap-8">
+            <!-- Gauge -->
+            <div class="mps-gauge flex-shrink-0">
+                <svg class="mps-gauge-circle" width="140" height="140" viewBox="0 0 140 140">
+                    <circle class="mps-gauge-bg" cx="70" cy="70" r="60"></circle>
+                    <circle class="mps-gauge-fill {% if summary.mps_data.overall_mps >= 75 %}stroke-green-500{% elif summary.mps_data.overall_mps >= 50 %}stroke-yellow-500{% else %}stroke-red-500{% endif %}" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="{{ mps_gauge_offset }}"></circle>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center" style="position:absolute; top:0; left:0; width:140px; height:140px; display:flex; align-items:center; justify-content:center;">
+                    <span class="text-2xl font-bold {% if summary.mps_data.overall_mps >= 75 %}text-green-600{% elif summary.mps_data.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.mps_data.overall_mps }}%</span>
+                </div>
+            </div>
+
+            <!-- MPS Details -->
+            <div class="flex-1 w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Formula</div>
+                        <div class="text-sm text-gray-800 font-mono">
+                            MPS = (Total Correct / Total Possible) x 100
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Computation</div>
+                        <div class="text-sm text-gray-800 font-mono">
+                            MPS = ({{ summary.mps_data.total_correct }} / {{ summary.mps_data.total_possible_answers }}) x 100 = <strong>{{ summary.mps_data.overall_mps }}%</strong>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Correct Answers</div>
+                        <div class="text-xl font-bold text-green-700">{{ summary.mps_data.total_correct }}</div>
+                        <div class="text-xs text-gray-500">sum of all correct responses across all items</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Possible Answers</div>
+                        <div class="text-xl font-bold text-gray-700">{{ summary.mps_data.total_possible_answers }}</div>
+                        <div class="text-xs text-gray-500">{{ summary.mps_data.total_learners }} learners x {{ summary.mps_data.total_items }} items</div>
+                    </div>
+                </div>
+
+                <!-- MPS Interpretation -->
+                <div class="mt-4 p-4 rounded-lg border {% if summary.mps_data.overall_mps >= 75 %}bg-green-50 border-green-200{% elif summary.mps_data.overall_mps >= 50 %}bg-yellow-50 border-yellow-200{% else %}bg-red-50 border-red-200{% endif %}">
+                    <div class="flex items-center gap-2">
+                        {% if summary.mps_data.overall_mps >= 75 %}
+                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        <span class="text-sm font-medium text-green-800">Performance Level: Mastered (75% and above)</span>
+                        {% elif summary.mps_data.overall_mps >= 50 %}
+                        <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        <span class="text-sm font-medium text-yellow-800">Performance Level: Nearing Mastery (50-74%)</span>
+                        {% else %}
+                        <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                        <span class="text-sm font-medium text-red-800">Performance Level: Low Mastery (below 50%)</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Class MPS Breakdown -->
+    {% if summary.mps_data.per_class %}
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">MPS by Class / Section</h3>
+            <p class="text-xs text-gray-500 mt-1">Breakdown of Mean Percentage Score per class section</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class / Section</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Learners</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Correct</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Possible</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width: 220px">MPS</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for cls in summary.mps_data.per_class %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ cls.class_name }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.learners }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-green-700 font-medium">{{ cls.total_correct }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_possible }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full {% if cls.mps >= 75 %}bg-green-500{% elif cls.mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.mps }}%"></div>
+                                </div>
+                                <span class="text-sm font-bold w-16 text-right {% if cls.mps >= 75 %}text-green-700{% elif cls.mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ cls.mps }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if cls.mps >= 75 %}bg-green-100 text-green-800
+                                {% elif cls.mps >= 50 %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if cls.mps >= 75 %}Mastered{% elif cls.mps >= 50 %}Nearing{% else %}Low{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-indigo-50">
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-900">Overall</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.mps_data.total_learners }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-green-700">{{ summary.mps_data.total_correct }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.mps_data.total_possible_answers }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 h-4 bg-gray-300 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full bg-indigo-500" style="width: {{ summary.mps_data.overall_mps }}%"></div>
+                                </div>
+                                <span class="text-sm font-bold w-16 text-right text-indigo-700">{{ summary.mps_data.overall_mps }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">Overall</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- MPS Interpretation Guide -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">MPS Interpretation Guide</h3>
+        </div>
+        <div class="p-4">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b">
+                        <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">MPS Range</th>
+                        <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Performance Level</th>
+                        <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Interpretation</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr>
+                        <td class="py-3 text-sm text-gray-700">75% - 100%</td>
+                        <td class="py-3 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>Mastered</span></td>
+                        <td class="py-3 text-sm text-gray-600">Learners have achieved mastery. Proceed to enrichment activities.</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 text-sm text-gray-700">50% - 74%</td>
+                        <td class="py-3 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Nearing Mastery</span></td>
+                        <td class="py-3 text-sm text-gray-600">Learners are developing. Provide reinforcement and additional practice.</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 text-sm text-gray-700">Below 50%</td>
+                        <td class="py-3 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>Low Mastery</span></td>
+                        <td class="py-3 text-sm text-gray-600">Learners need intensive remediation and reteaching of competencies.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
