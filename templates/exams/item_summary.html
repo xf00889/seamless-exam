@@ -9,15 +9,31 @@
 @media print {
     .no-print { display: none !important; }
     .print-only { display: block !important; }
-    body { background: white; }
+    body { background: white; font-size: 11pt; }
     main { padding: 0; max-width: 100%; }
     .shadow-md, .shadow-sm { box-shadow: none !important; }
+    .print-break { page-break-before: always; }
+    .rounded-lg { border-radius: 0 !important; }
 }
 .print-only { display: none; }
+.progress-bar { height: 8px; border-radius: 4px; background: #e5e7eb; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+.item-row { transition: background-color 0.15s; }
+.item-row:hover .question-preview { max-height: 60px; opacity: 1; }
+.question-preview { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.2s ease; }
+.difficulty-filter { cursor: pointer; transition: all 0.2s; }
+.difficulty-filter:hover { transform: scale(1.05); }
+.difficulty-filter.active { ring: 2px; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5); }
+.card-layout { display: none; }
+@media (max-width: 768px) {
+    .table-layout { display: none; }
+    .card-layout { display: block; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
+{% csrf_token %}
 {% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="container mx-auto px-4 py-0">
 
@@ -35,15 +51,7 @@
                     <p class="text-gray-600">{{ exam.title }}</p>
                 </div>
             </div>
-            <div class="flex gap-2">
-                {% if summary.has_data and not ai_analysis %}
-                <a href="?analyze=1" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    AI Analysis
-                </a>
-                {% endif %}
+            <div class="flex gap-2 flex-wrap">
                 <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -71,75 +79,158 @@
     </div>
     {% else %}
 
-    <!-- Exam Info Header (Print-friendly) -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">ITEM SUMMARY SHEET</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div>
-                <span class="font-semibold text-gray-700">Exam:</span>
-                <span class="text-gray-900 ml-1">{{ exam.title }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">Subject:</span>
-                <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">Teacher:</span>
-                <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">No. of Learners:</span>
-                <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">Total Items:</span>
-                <span class="text-gray-900 ml-1">{{ summary.items|length }}</span>
-            </div>
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-only bg-white p-6 mb-4 border-b-2 border-gray-300">
+        <div class="text-center mb-4">
+            <h2 class="text-xl font-bold uppercase">ITEM SUMMARY SHEET</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+            <div><strong>School:</strong> _________________________</div>
+            <div><strong>Teacher:</strong> {{ exam.created_by.user.get_full_name }}</div>
+            <div><strong>Subject:</strong> {{ exam.subject|default:"_________________" }}</div>
+            <div><strong>No. of Learners:</strong> {{ summary.total_learners }}</div>
+            <div><strong>Exam:</strong> {{ exam.title }}</div>
+            <div><strong>Date:</strong> _________________________</div>
         </div>
     </div>
 
-    <!-- Item Analysis Table -->
-    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-        <div class="p-4 border-b bg-gray-50">
+    <!-- Exam Info Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">ITEM SUMMARY SHEET</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div><span class="font-semibold text-gray-700">Exam:</span> <span class="text-gray-900 ml-1">{{ exam.title }}</span></div>
+            <div><span class="font-semibold text-gray-700">Subject:</span> <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span></div>
+            <div><span class="font-semibold text-gray-700">Teacher:</span> <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span></div>
+            <div><span class="font-semibold text-gray-700">No. of Learners:</span> <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span></div>
+            <div><span class="font-semibold text-gray-700">Total Items:</span> <span class="text-gray-900 ml-1">{{ summary.items|length }}</span></div>
+            <div><span class="font-semibold text-gray-700">Total Points:</span> <span class="text-gray-900 ml-1">{{ summary.total_possible }}</span></div>
+        </div>
+    </div>
+
+    <!-- Overall Statistics Cards -->
+    {% if summary.overall_stats %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Avg Score</div>
+            <div class="text-xl font-bold text-gray-900">{{ summary.overall_stats.avg_percent }}%</div>
+            <div class="text-xs text-gray-500">{{ summary.overall_stats.avg_score }}/{{ summary.overall_stats.total_possible }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Passing Rate</div>
+            <div class="text-xl font-bold {% if summary.overall_stats.passing_rate >= 75 %}text-green-600{% elif summary.overall_stats.passing_rate >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.overall_stats.passing_rate }}%</div>
+            <div class="text-xs text-gray-500">{{ summary.overall_stats.passing_count }} of {{ summary.total_learners }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Highest</div>
+            <div class="text-xl font-bold text-green-600">{{ summary.overall_stats.highest_score }}</div>
+            <div class="text-xs text-gray-500">out of {{ summary.overall_stats.total_possible }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Lowest</div>
+            <div class="text-xl font-bold text-red-600">{{ summary.overall_stats.lowest_score }}</div>
+            <div class="text-xs text-gray-500">out of {{ summary.overall_stats.total_possible }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Std Dev</div>
+            <div class="text-xl font-bold text-gray-700">{{ summary.overall_stats.std_dev }}</div>
+            <div class="text-xs text-gray-500">score spread</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Failed</div>
+            <div class="text-xl font-bold text-red-600">{{ summary.overall_stats.failing_count }}</div>
+            <div class="text-xs text-gray-500">below 60%</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Difficulty Distribution Chart -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Difficulty Distribution</h3>
+            <p class="text-xs text-gray-500 mt-1 sm:mt-0">Click a bar to filter the table below</p>
+        </div>
+        <div class="space-y-3" id="difficultyChart">
+            {% for level, data in summary.difficulty_distribution.items %}
+            <div class="difficulty-filter flex items-center gap-3" data-level="{{ level }}" onclick="filterByDifficulty('{{ level }}')">
+                <div class="w-28 sm:w-36 text-xs font-medium text-gray-700 flex items-center gap-1">
+                    {% if level == 'Easy' %}<svg class="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    {% elif level == 'Moderately Easy' %}<svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    {% elif level == 'Average' %}<svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    {% elif level == 'Difficult' %}<svg class="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    {% else %}<svg class="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                    {% endif %}
+                    {{ level }}
+                </div>
+                <div class="flex-1">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill {% if level == 'Easy' %}bg-green-400{% elif level == 'Moderately Easy' %}bg-blue-400{% elif level == 'Average' %}bg-yellow-400{% elif level == 'Difficult' %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {{ data.percent }}%"></div>
+                    </div>
+                </div>
+                <div class="w-16 text-right text-xs text-gray-600">{{ data.count }} item{{ data.count|pluralize:"s" }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Item Analysis Table (Desktop) -->
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden table-layout">
+        <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <h3 class="text-lg font-semibold text-gray-900">Item Analysis</h3>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-500">Sort by:</label>
+                <select id="sortSelect" onchange="sortTable(this.value)" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <option value="item_no">Item No.</option>
+                    <option value="percent_asc">% Correct (Low to High)</option>
+                    <option value="percent_desc">% Correct (High to Low)</option>
+                </select>
+                <button onclick="filterByDifficulty('all')" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded transition-colors">Show All</button>
+            </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200" id="itemTable">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item No.</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question Type</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. Correct</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. Wrong</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Correct</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty Level</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action Needed</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Correct</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Wrong</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Skipped</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="min-width:180px">% Correct</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200" id="itemTableBody">
                     {% for item in summary.items %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="item-row hover:bg-gray-50" data-difficulty="{{ item.difficulty_level }}" data-percent="{{ item.percent_correct }}" data-item="{{ item.item_no }}">
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.item_no }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ item.question_type }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-900">{{ item.num_correct }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-900">{{ item.num_wrong }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if item.percent_correct >= 81 %}bg-green-100 text-green-800
-                                {% elif item.percent_correct >= 61 %}bg-blue-100 text-blue-800
-                                {% elif item.percent_correct >= 41 %}bg-yellow-100 text-yellow-800
-                                {% elif item.percent_correct >= 21 %}bg-orange-100 text-orange-800
-                                {% else %}bg-red-100 text-red-800{% endif %}">
-                                {{ item.percent_correct }}%
-                            </span>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-green-700 font-medium">{{ item.num_correct }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-red-700 font-medium">{{ item.num_wrong }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-400">{% if item.num_skipped > 0 %}{{ item.num_skipped }}{% else %}-{% endif %}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="progress-bar flex-1">
+                                    <div class="progress-bar-fill {% if item.percent_correct >= 81 %}bg-green-400{% elif item.percent_correct >= 61 %}bg-blue-400{% elif item.percent_correct >= 41 %}bg-yellow-400{% elif item.percent_correct >= 21 %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {{ item.percent_correct }}%"></div>
+                                </div>
+                                <span class="text-xs font-medium w-10 text-right">{{ item.percent_correct }}%</span>
+                            </div>
+                            <!-- Question preview on hover -->
+                            <div class="question-preview text-xs text-gray-500 mt-1 leading-tight">{{ item.question_text|truncatewords:20 }}</div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
                                 {% if item.difficulty_level == 'Easy' %}bg-green-100 text-green-800
                                 {% elif item.difficulty_level == 'Moderately Easy' %}bg-blue-100 text-blue-800
                                 {% elif item.difficulty_level == 'Average' %}bg-yellow-100 text-yellow-800
                                 {% elif item.difficulty_level == 'Difficult' %}bg-orange-100 text-orange-800
                                 {% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if item.difficulty_level == 'Easy' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                {% elif item.difficulty_level == 'Moderately Easy' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                {% elif item.difficulty_level == 'Average' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                {% elif item.difficulty_level == 'Difficult' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                {% else %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                                {% endif %}
                                 {{ item.difficulty_level }}
                             </span>
                         </td>
@@ -151,48 +242,45 @@
         </div>
     </div>
 
-    <!-- Difficulty Index Guide -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="p-4 border-b bg-gray-50">
-                <h3 class="text-lg font-semibold text-gray-900">Difficulty Index Guide</h3>
+    <!-- Item Analysis Cards (Mobile) -->
+    <div class="card-layout mb-6 space-y-3">
+        {% for item in summary.items %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 item-card" data-difficulty="{{ item.difficulty_level }}">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="text-sm font-bold text-gray-900">Item {{ item.item_no }}</span>
+                    <span class="text-xs text-gray-500 ml-2">{{ item.question_type }}</span>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                    {% if item.difficulty_level == 'Easy' %}bg-green-100 text-green-800
+                    {% elif item.difficulty_level == 'Moderately Easy' %}bg-blue-100 text-blue-800
+                    {% elif item.difficulty_level == 'Average' %}bg-yellow-100 text-yellow-800
+                    {% elif item.difficulty_level == 'Difficult' %}bg-orange-100 text-orange-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ item.difficulty_level }}
+                </span>
             </div>
-            <div class="p-4">
-                <table class="min-w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">% Correct</th>
-                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Interpretation</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <tr>
-                            <td class="py-2 text-sm text-gray-700">81-100%</td>
-                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Easy</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-sm text-gray-700">61-80%</td>
-                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Moderately Easy</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-sm text-gray-700">41-60%</td>
-                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-sm text-gray-700">21-40%</td>
-                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Difficult</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-sm text-gray-700">0-20%</td>
-                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Very Difficult</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <p class="text-xs text-gray-500 mb-2 line-clamp-2">{{ item.question_text|truncatewords:15 }}</p>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="progress-bar flex-1">
+                    <div class="progress-bar-fill {% if item.percent_correct >= 81 %}bg-green-400{% elif item.percent_correct >= 61 %}bg-blue-400{% elif item.percent_correct >= 41 %}bg-yellow-400{% elif item.percent_correct >= 21 %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {{ item.percent_correct }}%"></div>
+                </div>
+                <span class="text-sm font-bold">{{ item.percent_correct }}%</span>
             </div>
+            <div class="flex justify-between text-xs text-gray-500">
+                <span class="text-green-700">{{ item.num_correct }} correct</span>
+                <span class="text-red-700">{{ item.num_wrong }} wrong</span>
+                {% if item.num_skipped > 0 %}<span class="text-gray-400">{{ item.num_skipped }} skipped</span>{% endif %}
+            </div>
+            <div class="mt-2 text-xs font-medium text-gray-700 border-t pt-2">{{ item.action_needed }}</div>
         </div>
+        {% endfor %}
+    </div>
 
-        <!-- Competency Summary -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <!-- Competency Summary & Difficulty Guide -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Competency Summary (takes 2 cols) -->
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-4 border-b bg-gray-50">
                 <h3 class="text-lg font-semibold text-gray-900">Competency Summary</h3>
             </div>
@@ -210,133 +298,364 @@
                     <tbody class="divide-y divide-gray-100">
                         {% for comp in summary.competency_summary %}
                         <tr>
-                            <td class="px-4 py-2 text-sm font-medium text-gray-900">{{ comp.competency }}</td>
-                            <td class="px-4 py-2 text-sm text-center text-gray-600">{{ comp.items }}</td>
-                            <td class="px-4 py-2 text-sm text-center">
-                                <span class="font-medium
-                                    {% if comp.avg_percent >= 76 %}text-green-700
-                                    {% elif comp.avg_percent >= 51 %}text-yellow-700
-                                    {% elif comp.avg_percent >= 26 %}text-orange-700
-                                    {% else %}text-red-700{% endif %}">
-                                    {{ comp.avg_percent }}%
-                                </span>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ comp.competency }}</td>
+                            <td class="px-4 py-3 text-sm text-center text-gray-600">{{ comp.items }}</td>
+                            <td class="px-4 py-3 text-sm text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-bar-fill {% if comp.avg_percent >= 76 %}bg-green-400{% elif comp.avg_percent >= 51 %}bg-yellow-400{% elif comp.avg_percent >= 26 %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {{ comp.avg_percent }}%"></div>
+                                    </div>
+                                    <span class="font-medium text-xs {% if comp.avg_percent >= 76 %}text-green-700{% elif comp.avg_percent >= 51 %}text-yellow-700{% elif comp.avg_percent >= 26 %}text-orange-700{% else %}text-red-700{% endif %}">{{ comp.avg_percent }}%</span>
+                                </div>
                             </td>
-                            <td class="px-4 py-2 text-sm text-center">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            <td class="px-4 py-3 text-sm text-center">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
                                     {% if comp.mastery_level == 'Mastered' %}bg-green-100 text-green-800
                                     {% elif comp.mastery_level == 'Developing' %}bg-yellow-100 text-yellow-800
                                     {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if comp.mastery_level == 'Mastered' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                    {% elif comp.mastery_level == 'Developing' %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                    {% else %}<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                                    {% endif %}
                                     {{ comp.mastery_level }}
                                 </span>
                             </td>
-                            <td class="px-4 py-2 text-sm text-gray-700">{{ comp.intervention }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-700">{{ comp.intervention }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Difficulty Index Guide (collapsible) -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <button onclick="toggleGuide()" class="w-full p-4 border-b bg-gray-50 flex justify-between items-center hover:bg-gray-100 transition-colors">
+                <h3 class="text-lg font-semibold text-gray-900">Difficulty Guide</h3>
+                <svg id="guideChevron" class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <div id="guideContent" class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">% Correct</th>
+                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">81-100%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>Easy</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">61-80%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>Mod. Easy</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">41-60%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Average</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">21-40%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Difficult</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">0-20%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>Very Difficult</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- AI Analysis Section -->
-    {% if ai_analysis %}
-    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden border-l-4 border-l-purple-500">
+    <!-- AI Analysis CTA Card -->
+    <div id="aiCtaCard" class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6 border border-purple-200">
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="flex items-center justify-center h-14 w-14 rounded-full bg-purple-100 flex-shrink-0">
+                <svg class="h-7 w-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div class="flex-1 text-center sm:text-left">
+                <h3 class="text-lg font-semibold text-purple-900">Generate AI Teacher's Analysis</h3>
+                <p class="text-sm text-purple-700 mt-1">Get AI-powered insights including strengths, areas for improvement, intervention plans, and item revision recommendations based on DepEd assessment practices.</p>
+            </div>
+            <button onclick="generateAiAnalysis()" id="aiGenerateBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center text-sm whitespace-nowrap">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate Analysis
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Loading State -->
+    <div id="aiLoadingState" class="hidden bg-white rounded-lg shadow-md mb-6 overflow-hidden border-l-4 border-l-purple-500">
+        <div class="p-4 border-b bg-purple-50">
+            <div class="flex items-center">
+                <svg class="h-5 w-5 text-purple-600 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <h3 class="text-lg font-semibold text-purple-900">Generating Teacher's Analysis...</h3>
+            </div>
+        </div>
+        <div class="p-8">
+            <div class="flex flex-col items-center justify-center">
+                <div class="relative mb-6">
+                    <div class="w-16 h-16 border-4 border-purple-200 rounded-full"></div>
+                    <div class="w-16 h-16 border-4 border-purple-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                </div>
+                <p class="text-gray-700 font-medium mb-2">AI is analyzing your item summary data</p>
+                <p class="text-sm text-gray-500 text-center max-w-md">This may take 15-45 seconds depending on the AI model. The analysis will include strengths, areas for improvement, and intervention recommendations.</p>
+                <div class="mt-4 flex items-center gap-2">
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                    <span class="text-xs text-gray-400" id="aiTimer">0s elapsed</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Analysis Result (populated via JS) -->
+    <div id="aiAnalysisResult" class="hidden mb-6"></div>
+
+    <!-- AI Error State -->
+    <div id="aiErrorState" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p class="text-sm text-yellow-800" id="aiErrorMessage"></p>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let aiTimerInterval = null;
+
+function generateAiAnalysis() {
+    const ctaCard = document.getElementById('aiCtaCard');
+    const loadingState = document.getElementById('aiLoadingState');
+    const resultContainer = document.getElementById('aiAnalysisResult');
+    const errorState = document.getElementById('aiErrorState');
+    const generateBtn = document.getElementById('aiGenerateBtn');
+
+    ctaCard.classList.add('hidden');
+    loadingState.classList.remove('hidden');
+    errorState.classList.add('hidden');
+    resultContainer.classList.add('hidden');
+
+    let seconds = 0;
+    const timerEl = document.getElementById('aiTimer');
+    aiTimerInterval = setInterval(() => {
+        seconds++;
+        timerEl.textContent = seconds + 's elapsed';
+    }, 1000);
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                      document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+
+    fetch('{% url "item_summary_analyze" exam.id %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => { throw new Error(data.error || 'Analysis failed'); });
+        }
+        return response.json();
+    })
+    .then(data => {
+        clearInterval(aiTimerInterval);
+        loadingState.classList.add('hidden');
+
+        if (data.success && data.analysis) {
+            renderAnalysis(data.analysis);
+            resultContainer.classList.remove('hidden');
+        } else {
+            showAiError(data.error || 'Unexpected response from AI service');
+        }
+    })
+    .catch(error => {
+        clearInterval(aiTimerInterval);
+        loadingState.classList.add('hidden');
+        showAiError(error.message || 'Failed to connect to AI service. Please try again.');
+    });
+}
+
+function showAiError(message) {
+    const errorState = document.getElementById('aiErrorState');
+    const ctaCard = document.getElementById('aiCtaCard');
+    document.getElementById('aiErrorMessage').textContent = message;
+    errorState.classList.remove('hidden');
+    ctaCard.classList.remove('hidden');
+}
+
+function renderAnalysis(analysis) {
+    const container = document.getElementById('aiAnalysisResult');
+
+    let overallHtml = '';
+    if (analysis.overall_assessment) {
+        overallHtml = `<div class="mb-6 p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+            <p class="text-gray-800 italic">${escapeHtml(analysis.overall_assessment)}</p>
+        </div>`;
+    }
+
+    let strengthsHtml = '';
+    if (analysis.strengths && analysis.strengths.length) {
+        strengthsHtml = analysis.strengths.map(s =>
+            `<li class="text-sm text-gray-700 flex items-start">
+                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                ${escapeHtml(s)}
+            </li>`
+        ).join('');
+    }
+
+    let areasHtml = '';
+    if (analysis.areas_for_improvement && analysis.areas_for_improvement.length) {
+        areasHtml = analysis.areas_for_improvement.map(a =>
+            `<li class="text-sm text-gray-700 flex items-start">
+                <svg class="w-4 h-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                ${escapeHtml(a)}
+            </li>`
+        ).join('');
+    }
+
+    let interventionHtml = '';
+    if (analysis.intervention_plan && analysis.intervention_plan.length) {
+        interventionHtml = analysis.intervention_plan.map((step, i) =>
+            `<li class="text-sm text-gray-700 flex items-start">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-200 text-blue-800 text-xs font-bold mr-2 mt-0.5 flex-shrink-0">${i + 1}</span>
+                ${escapeHtml(step)}
+            </li>`
+        ).join('');
+    }
+
+    let reviseHtml = '';
+    if (analysis.items_to_revise && analysis.items_to_revise.length) {
+        const badges = analysis.items_to_revise.map(item =>
+            `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-300">${escapeHtml(String(item))}</span>`
+        ).join('');
+        reviseHtml = `<div class="mt-6 bg-red-50 rounded-lg p-4 border border-red-200">
+            <h4 class="font-semibold text-red-800 mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Items Recommended for Revision
+            </h4>
+            <div class="flex flex-wrap gap-2 mt-2">${badges}</div>
+        </div>`;
+    }
+
+    container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-l-purple-500 print-break">
         <div class="p-4 border-b bg-purple-50">
             <div class="flex items-center">
                 <svg class="h-5 w-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
                 <h3 class="text-lg font-semibold text-purple-900">Teacher's Analysis (AI-Generated)</h3>
             </div>
         </div>
         <div class="p-6">
-            {% if ai_analysis.overall_assessment %}
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p class="text-gray-800 italic">{{ ai_analysis.overall_assessment }}</p>
-            </div>
-            {% endif %}
-
+            ${overallHtml}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Strengths -->
-                <div>
-                    <h4 class="font-semibold text-green-800 mb-2 flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <h4 class="font-semibold text-green-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Strengths
                     </h4>
-                    <ul class="space-y-1">
-                        {% for strength in ai_analysis.strengths %}
-                        <li class="text-sm text-gray-700 flex items-start">
-                            <span class="text-green-500 mr-2 mt-0.5">&#8226;</span>
-                            {{ strength }}
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    <ul class="space-y-2">${strengthsHtml}</ul>
                 </div>
-
-                <!-- Areas for Improvement -->
-                <div>
-                    <h4 class="font-semibold text-orange-800 mb-2 flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
+                <div class="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                    <h4 class="font-semibold text-orange-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
                         Areas for Improvement
                     </h4>
-                    <ul class="space-y-1">
-                        {% for area in ai_analysis.areas_for_improvement %}
-                        <li class="text-sm text-gray-700 flex items-start">
-                            <span class="text-orange-500 mr-2 mt-0.5">&#8226;</span>
-                            {{ area }}
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    <ul class="space-y-2">${areasHtml}</ul>
                 </div>
             </div>
-
-            <!-- Intervention Plan -->
-            <div class="mt-6">
-                <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
+            <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                     Intervention Plan
                 </h4>
-                <ul class="space-y-1">
-                    {% for step in ai_analysis.intervention_plan %}
-                    <li class="text-sm text-gray-700 flex items-start">
-                        <span class="text-blue-500 mr-2 mt-0.5">&#8226;</span>
-                        {{ step }}
-                    </li>
-                    {% endfor %}
-                </ul>
+                <ul class="space-y-2">${interventionHtml}</ul>
             </div>
-
-            {% if ai_analysis.items_to_revise %}
-            <div class="mt-6 p-3 bg-red-50 rounded-lg">
-                <h4 class="font-semibold text-red-800 mb-1 text-sm">Items Recommended for Revision</h4>
-                <p class="text-sm text-red-700">
-                    {% for item_ref in ai_analysis.items_to_revise %}
-                        {{ item_ref }}{% if not forloop.last %}, {% endif %}
-                    {% endfor %}
-                </p>
-            </div>
-            {% endif %}
+            ${reviseHtml}
         </div>
-    </div>
-    {% endif %}
+    </div>`;
+}
 
-    {% if ai_error %}
-    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-            <svg class="h-5 w-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <p class="text-sm text-yellow-800">{{ ai_error }}</p>
-        </div>
-    </div>
-    {% endif %}
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-    {% endif %}
-</div>
+function filterByDifficulty(level) {
+    const rows = document.querySelectorAll('.item-row');
+    const cards = document.querySelectorAll('.item-card');
+    const filters = document.querySelectorAll('.difficulty-filter');
+
+    filters.forEach(f => f.classList.remove('active'));
+
+    if (level === 'all') {
+        rows.forEach(r => r.style.display = '');
+        cards.forEach(c => c.style.display = '');
+    } else {
+        rows.forEach(r => {
+            r.style.display = r.dataset.difficulty === level ? '' : 'none';
+        });
+        cards.forEach(c => {
+            c.style.display = c.dataset.difficulty === level ? '' : 'none';
+        });
+        const activeFilter = document.querySelector(`[data-level="${level}"]`);
+        if (activeFilter) activeFilter.classList.add('active');
+    }
+}
+
+function sortTable(criteria) {
+    const tbody = document.getElementById('itemTableBody');
+    const rows = Array.from(tbody.querySelectorAll('.item-row'));
+
+    rows.sort((a, b) => {
+        if (criteria === 'percent_asc') {
+            return parseInt(a.dataset.percent) - parseInt(b.dataset.percent);
+        } else if (criteria === 'percent_desc') {
+            return parseInt(b.dataset.percent) - parseInt(a.dataset.percent);
+        } else {
+            return parseInt(a.dataset.item) - parseInt(b.dataset.item);
+        }
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function toggleGuide() {
+    const content = document.getElementById('guideContent');
+    const chevron = document.getElementById('guideChevron');
+    if (content.style.display === 'none') {
+        content.style.display = '';
+        chevron.style.transform = '';
+    } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(180deg)';
+    }
+}
+</script>
 {% endblock %}

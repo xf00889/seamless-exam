@@ -1,7 +1,8 @@
 import json
 import logging
+import math
 from decimal import Decimal
-from django.db.models import Count, Q, Sum, Avg
+from django.db.models import Count, Q, Sum, Avg, StdDev
 
 from exams.models import Exam, Question
 from attempts.models import Attempt, Answer, AttemptStatus
@@ -75,10 +76,14 @@ class ItemAnalysisService:
                 'total_learners': 0,
                 'items': [],
                 'competency_summary': [],
+                'overall_stats': {},
+                'difficulty_distribution': {},
                 'has_data': False,
             }
 
         attempt_ids = list(graded_attempts.values_list('id', flat=True))
+
+        total_possible = float(sum(q.points for q in questions))
 
         items = []
         for idx, question in enumerate(questions, start=1):
@@ -88,7 +93,8 @@ class ItemAnalysisService:
             )
             total_answered = answers.count()
             num_correct = answers.filter(is_correct=True).count()
-            num_wrong = total_answered - num_correct
+            num_wrong = answers.filter(is_correct=False).count()
+            num_skipped = total_learners - total_answered
 
             percent_correct = round((num_correct / total_learners) * 100) if total_learners > 0 else 0
             difficulty = get_difficulty_level(percent_correct)
@@ -103,6 +109,7 @@ class ItemAnalysisService:
                 'points': float(question.points),
                 'num_correct': num_correct,
                 'num_wrong': num_wrong,
+                'num_skipped': num_skipped,
                 'total_answered': total_answered,
                 'percent_correct': percent_correct,
                 'difficulty_level': difficulty,
@@ -110,14 +117,77 @@ class ItemAnalysisService:
             })
 
         competency_summary = self._build_competency_summary(items)
+        overall_stats = self._compute_overall_stats(graded_attempts, total_possible, total_learners)
+        difficulty_distribution = self._compute_difficulty_distribution(items)
 
         return {
             'exam': exam,
             'total_learners': total_learners,
+            'total_possible': total_possible,
             'items': items,
             'competency_summary': competency_summary,
+            'overall_stats': overall_stats,
+            'difficulty_distribution': difficulty_distribution,
             'has_data': True,
         }
+
+    def _compute_overall_stats(self, graded_attempts, total_possible, total_learners):
+        """Compute overall exam statistics: average, passing rate, std deviation."""
+        scores = list(graded_attempts.values_list('total_score', flat=True))
+        float_scores = [float(s) for s in scores]
+
+        if not float_scores:
+            return {}
+
+        avg_score = sum(float_scores) / len(float_scores)
+        avg_percent = (avg_score / total_possible * 100) if total_possible > 0 else 0
+
+        passing_count = sum(1 for s in float_scores if (s / total_possible * 100) >= 60) if total_possible > 0 else 0
+        passing_rate = (passing_count / total_learners * 100) if total_learners > 0 else 0
+
+        if len(float_scores) > 1:
+            mean = avg_score
+            variance = sum((x - mean) ** 2 for x in float_scores) / (len(float_scores) - 1)
+            std_dev = math.sqrt(variance)
+        else:
+            std_dev = 0
+
+        highest = max(float_scores)
+        lowest = min(float_scores)
+
+        return {
+            'avg_score': round(avg_score, 2),
+            'avg_percent': round(avg_percent, 1),
+            'passing_count': passing_count,
+            'failing_count': total_learners - passing_count,
+            'passing_rate': round(passing_rate, 1),
+            'std_dev': round(std_dev, 2),
+            'highest_score': round(highest, 2),
+            'lowest_score': round(lowest, 2),
+            'total_possible': round(total_possible, 2),
+        }
+
+    def _compute_difficulty_distribution(self, items):
+        """Count items per difficulty level."""
+        dist = {
+            'Easy': 0,
+            'Moderately Easy': 0,
+            'Average': 0,
+            'Difficult': 0,
+            'Very Difficult': 0,
+        }
+        for item in items:
+            level = item['difficulty_level']
+            if level in dist:
+                dist[level] += 1
+        total = len(items)
+        dist_with_percent = {}
+        for level, count in dist.items():
+            dist_with_percent[level] = {
+                'count': count,
+                'percent': round((count / total) * 100) if total > 0 else 0,
+            }
+        return dist_with_percent
 
     def _build_competency_summary(self, items):
         """
@@ -180,8 +250,21 @@ class ItemAnalysisService:
                 f"Item {item['item_no']}: {item['question_text'][:80]} | "
                 f"Type: {item['question_type']} | "
                 f"Correct: {item['num_correct']}/{total_learners} ({item['percent_correct']}%) | "
+                f"Skipped: {item['num_skipped']} | "
                 f"Difficulty: {item['difficulty_level']}\n"
             )
+
+        overall = summary_data.get('overall_stats', {})
+        overall_text = ""
+        if overall:
+            overall_text = f"""
+OVERALL STATISTICS:
+- Average Score: {overall.get('avg_score', 0)}/{overall.get('total_possible', 0)} ({overall.get('avg_percent', 0)}%)
+- Passing Rate (60%): {overall.get('passing_rate', 0)}% ({overall.get('passing_count', 0)} passed, {overall.get('failing_count', 0)} failed)
+- Standard Deviation: {overall.get('std_dev', 0)}
+- Highest Score: {overall.get('highest_score', 0)}
+- Lowest Score: {overall.get('lowest_score', 0)}
+"""
 
         prompt = f"""You are an expert DepEd (Department of Education, Philippines) assessment specialist.
 Analyze the following Item Summary data from a summative/quarterly assessment and provide a Teacher's Analysis report.
@@ -190,7 +273,7 @@ EXAM: {exam.title}
 SUBJECT: {exam.subject or 'Not specified'}
 TOTAL LEARNERS: {total_learners}
 TOTAL ITEMS: {len(items)}
-
+{overall_text}
 DIFFICULTY DISTRIBUTION:
 - Easy (81-100%): {len(easy_items)} items
 - Moderately Easy (61-80%): {len(moderate_items)} items
@@ -215,7 +298,8 @@ RULES:
 2. Be specific - reference actual item numbers and percentages
 3. Intervention steps should be practical and aligned with DepEd practices
 4. Consider whether very difficult items indicate poor instruction OR poor item construction
-5. Return ONLY valid JSON, no markdown or explanation"""
+5. Items with high skip rates may indicate time pressure rather than difficulty
+6. Return ONLY valid JSON, no markdown or explanation"""
 
         return prompt
 

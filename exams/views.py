@@ -1087,13 +1087,6 @@ def item_summary_view(request, exam_id):
         messages.error(request, 'Exam not found')
         return redirect('exam_list')
 
-    ai_analysis = None
-    ai_error = None
-    if request.GET.get('analyze') == '1' and summary_data.get('has_data'):
-        ai_analysis = service.generate_ai_analysis(summary_data)
-        if ai_analysis is None:
-            ai_error = 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
-
     breadcrumbs = build_breadcrumbs(
         ('Dashboard', reverse('teacher_dashboard')),
         ('My Exams', reverse('exam_list')),
@@ -1104,9 +1097,37 @@ def item_summary_view(request, exam_id):
     context = {
         'exam': exam,
         'summary': summary_data,
-        'ai_analysis': ai_analysis,
-        'ai_error': ai_error,
         'page_breadcrumbs': breadcrumbs,
     }
 
     return render(request, 'exams/item_summary.html', context)
+
+
+@teacher_required
+@require_http_methods(["POST"])
+def item_summary_ai_analyze_view(request, exam_id):
+    """
+    AJAX endpoint to generate AI-powered teacher analysis for item summary.
+    Returns JSON with the analysis results.
+    """
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    service = ItemAnalysisService()
+    summary_data = service.get_item_summary(exam_id)
+
+    if not summary_data or not summary_data.get('has_data'):
+        return JsonResponse({'error': 'No graded attempts available for analysis'}, status=400)
+
+    analysis = service.generate_ai_analysis(summary_data)
+    if analysis is None:
+        return JsonResponse({
+            'error': 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
+        }, status=503)
+
+    return JsonResponse({'success': True, 'analysis': analysis})

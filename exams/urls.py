@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:exam_id>/delete/', views.exam_delete_view, name='exam_delete'),
     path('<int:exam_id>/takers/', views.exam_takers_view, name='exam_takers'),
     path('<int:exam_id>/item-summary/', views.item_summary_view, name='item_summary'),
+    path('<int:exam_id>/item-summary/analyze/', views.item_summary_ai_analyze_view, name='item_summary_analyze'),
     path('<int:exam_id>/students/', views.get_exam_students_view, name='exam_students'),
     
     # Question management URLs
