@@ -149,17 +149,16 @@
                             Subject
                         </span>
                     </label>
-                    <div class="flex gap-2">
+                    <div>
                         <select
                             name="subject"
                             id="subject"
-                            class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                         >
                             {% for value, label in form.subject.field.widget.choices %}
                             <option value="{{ value }}" {% if form.subject.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
-                        <button type="button" onclick="quickAddSubject()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap" title="Add new subject">+ New</button>
                     </div>
                 </div>
                 
