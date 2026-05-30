@@ -48,6 +48,12 @@
                     </svg>
                     Export Excel
                 </a>
+                <a href="{% url 'mps_export_word' exam.id %}" class="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Export Word
+                </a>
                 <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -237,6 +243,61 @@
         </div>
     </div>
     {% endif %}
+    {% endif %}
+
+    <!-- Student-by-Item Response Matrix -->
+    {% if summary.student_matrix and summary.student_matrix.students %}
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">Student-by-Item Response Matrix</h3>
+            <p class="text-xs text-gray-500 mt-1">1 = Correct, 0 = Wrong/Skipped. This is the standard DepEd MPS matrix format.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-xs border-collapse">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
+                        {% for item in summary.items %}
+                        <th class="px-1 py-2 text-center font-medium text-gray-500 border border-gray-200 w-8">{{ item.item_no }}</th>
+                        {% endfor %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in summary.student_matrix.students %}
+                    <tr class="{% cycle '' 'bg-gray-50' %}">
+                        <td class="px-2 py-1 border border-gray-200 text-gray-500 sticky left-0 {% cycle 'bg-white' 'bg-gray-50' %} z-10">{{ forloop.counter }}</td>
+                        <td class="px-2 py-1 border border-gray-200 font-medium text-gray-900 sticky left-6 {% cycle 'bg-white' 'bg-gray-50' %} z-10 whitespace-nowrap">{{ student.name }}</td>
+                        {% for mark in student.responses %}
+                        <td class="px-1 py-1 text-center border border-gray-200 {% if mark == 1 %}text-green-700 bg-green-50{% else %}text-red-600 bg-red-50{% endif %}">{{ mark }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50">{{ student.total_correct }}</td>
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50 {% if student.percent >= 75 %}text-green-700{% elif student.percent >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ student.percent }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-indigo-50">
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">Total Correct per Item</td>
+                        {% for count in summary.student_matrix.per_item_correct %}
+                        <td class="px-1 py-2 text-center border border-gray-200 font-bold">{{ count }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold">{{ summary.mps_data.total_correct }}</td>
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold text-indigo-700">{{ summary.mps_data.overall_mps }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">% Correct per Item</td>
+                        {% for pct in summary.student_matrix.per_item_percent %}
+                        <td class="px-1 py-2 text-center border border-gray-200 text-xs {% if pct >= 75 %}text-green-700{% elif pct >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ pct }}%</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 border border-gray-200" colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
     {% endif %}
 
     <!-- MPS Interpretation Guide -->

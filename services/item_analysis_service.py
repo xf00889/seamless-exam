@@ -120,6 +120,7 @@ class ItemAnalysisService:
         overall_stats = self._compute_overall_stats(graded_attempts, total_possible, total_learners)
         difficulty_distribution = self._compute_difficulty_distribution(items)
         mps_data = self._compute_mps(items, total_learners, exam, attempt_ids)
+        student_matrix = self._build_student_item_matrix(exam, questions, graded_attempts)
 
         return {
             'exam': exam,
@@ -130,6 +131,7 @@ class ItemAnalysisService:
             'overall_stats': overall_stats,
             'difficulty_distribution': difficulty_distribution,
             'mps_data': mps_data,
+            'student_matrix': student_matrix,
             'has_data': True,
         }
 
@@ -251,6 +253,80 @@ class ItemAnalysisService:
             'total_items': total_items,
             'total_learners': total_learners,
             'per_class': per_class,
+        }
+
+    def _build_student_item_matrix(self, exam, questions, graded_attempts):
+        """
+        Build the DepEd student-by-item response matrix.
+        Each row is a student, each column is an item.
+        Cells contain 1 (correct) or 0 (wrong/skipped).
+        Includes per-student totals and per-item totals.
+        """
+        attempts = graded_attempts.select_related(
+            'student', 'student__class_assigned'
+        ).order_by(
+            'student__class_assigned__grade_level',
+            'student__class_assigned__strand',
+            'student__class_assigned__section',
+            'student__last_name',
+            'student__first_name'
+        )
+
+        question_ids = [q.id for q in questions]
+        total_items = len(question_ids)
+
+        # Prefetch all answers for these attempts in one query
+        all_answers = Answer.objects.filter(
+            attempt__in=attempts,
+            question_id__in=question_ids
+        ).values_list('attempt_id', 'question_id', 'is_correct')
+
+        # Build lookup: (attempt_id, question_id) -> is_correct
+        answer_lookup = {}
+        for attempt_id, question_id, is_correct in all_answers:
+            answer_lookup[(attempt_id, question_id)] = is_correct
+
+        students = []
+        per_item_correct = [0] * total_items
+
+        for attempt in attempts:
+            student = attempt.student
+            responses = []
+            student_total = 0
+
+            for idx, q_id in enumerate(question_ids):
+                is_correct = answer_lookup.get((attempt.id, q_id), False)
+                mark = 1 if is_correct else 0
+                responses.append(mark)
+                student_total += mark
+                per_item_correct[idx] += mark
+
+            student_percent = round((student_total / total_items) * 100, 1) if total_items > 0 else 0
+
+            students.append({
+                'name': f"{student.last_name}, {student.first_name}",
+                'school_id': student.school_id,
+                'class_name': str(student.class_assigned) if student.class_assigned else 'N/A',
+                'responses': responses,
+                'total_correct': student_total,
+                'total_items': total_items,
+                'percent': student_percent,
+            })
+
+        # Per-item percent correct
+        total_learners = len(students)
+        per_item_percent = []
+        for correct_count in per_item_correct:
+            pct = round((correct_count / total_learners) * 100, 1) if total_learners > 0 else 0
+            per_item_percent.append(pct)
+
+        return {
+            'students': students,
+            'per_item_correct': per_item_correct,
+            'per_item_percent': per_item_percent,
+            'total_items': total_items,
+            'total_learners': total_learners,
+            'question_ids': question_ids,
         }
 
     def _build_competency_summary(self, items):
