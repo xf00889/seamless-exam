@@ -119,6 +119,7 @@ class ItemAnalysisService:
         competency_summary = self._build_competency_summary(items)
         overall_stats = self._compute_overall_stats(graded_attempts, total_possible, total_learners)
         difficulty_distribution = self._compute_difficulty_distribution(items)
+        mps_data = self._compute_mps(items, total_learners, exam, attempt_ids)
 
         return {
             'exam': exam,
@@ -128,6 +129,7 @@ class ItemAnalysisService:
             'competency_summary': competency_summary,
             'overall_stats': overall_stats,
             'difficulty_distribution': difficulty_distribution,
+            'mps_data': mps_data,
             'has_data': True,
         }
 
@@ -188,6 +190,68 @@ class ItemAnalysisService:
                 'percent': round((count / total) * 100) if total > 0 else 0,
             }
         return dist_with_percent
+
+    def _compute_mps(self, items, total_learners, exam, attempt_ids):
+        """
+        Compute Mean Percentage Score (MPS).
+        MPS = (Total Correct Answers / Total Possible Answers) × 100
+        Also computes per-class breakdown.
+        """
+        from users.models import Class
+        from exams.models import ExamClassAssignment
+
+        total_items = len(items)
+        total_correct = sum(item['num_correct'] for item in items)
+        total_possible_answers = total_learners * total_items
+
+        overall_mps = round((total_correct / total_possible_answers) * 100, 2) if total_possible_answers > 0 else 0
+
+        per_class = []
+        assigned_classes = Class.objects.filter(
+            exam_assignments__exam=exam
+        ).order_by('grade_level', 'strand', 'section')
+
+        for cls in assigned_classes:
+            class_attempts = Attempt.objects.filter(
+                id__in=attempt_ids,
+                student__class_assigned=cls
+            )
+            class_learners = class_attempts.count()
+            if class_learners == 0:
+                continue
+
+            class_attempt_ids = list(class_attempts.values_list('id', flat=True))
+            class_correct = 0
+            for item in items:
+                correct_count = Answer.objects.filter(
+                    attempt_id__in=class_attempt_ids,
+                    question_id=item['question_id'],
+                    is_correct=True
+                ).count()
+                class_correct += correct_count
+
+            class_possible = class_learners * total_items
+            class_mps = round((class_correct / class_possible) * 100, 2) if class_possible > 0 else 0
+
+            per_class.append({
+                'class_name': str(cls),
+                'grade_level': cls.grade_level,
+                'strand': cls.strand,
+                'section': cls.section,
+                'learners': class_learners,
+                'total_correct': class_correct,
+                'total_possible': class_possible,
+                'mps': class_mps,
+            })
+
+        return {
+            'overall_mps': overall_mps,
+            'total_correct': total_correct,
+            'total_possible_answers': total_possible_answers,
+            'total_items': total_items,
+            'total_learners': total_learners,
+            'per_class': per_class,
+        }
 
     def _build_competency_summary(self, items):
         """

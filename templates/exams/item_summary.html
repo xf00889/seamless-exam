@@ -143,6 +143,71 @@
     </div>
     {% endif %}
 
+    <!-- MPS (Mean Percentage Score) Section -->
+    {% if summary.mps_data %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Mean Percentage Score (MPS)</h3>
+                <p class="text-xs text-gray-500 mt-1">MPS = (Total Correct Answers / Total Possible Answers) x 100</p>
+            </div>
+        </div>
+
+        <!-- Overall MPS -->
+        <div class="flex flex-col sm:flex-row items-center gap-6 mb-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+            <div class="flex-shrink-0 text-center">
+                <div class="text-4xl font-bold {% if summary.mps_data.overall_mps >= 75 %}text-green-600{% elif summary.mps_data.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.mps_data.overall_mps }}%</div>
+                <div class="text-sm font-medium text-gray-700 mt-1">Overall MPS</div>
+            </div>
+            <div class="flex-1 w-full">
+                <div class="h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500 {% if summary.mps_data.overall_mps >= 75 %}bg-green-500{% elif summary.mps_data.overall_mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ summary.mps_data.overall_mps }}%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>{{ summary.mps_data.total_correct }} correct out of {{ summary.mps_data.total_possible_answers }} possible</span>
+                    <span>{{ summary.mps_data.total_learners }} learners x {{ summary.mps_data.total_items }} items</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per-Class MPS Breakdown -->
+        {% if summary.mps_data.per_class %}
+        <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">MPS by Class / Section</h4>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class / Section</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Learners</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Correct</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Possible</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="min-width: 200px">MPS</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for cls in summary.mps_data.per_class %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ cls.class_name }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.learners }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-green-700 font-medium">{{ cls.total_correct }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_possible }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full {% if cls.mps >= 75 %}bg-green-500{% elif cls.mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.mps }}%"></div>
+                                </div>
+                                <span class="text-xs font-bold w-14 text-right {% if cls.mps >= 75 %}text-green-700{% elif cls.mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ cls.mps }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Difficulty Distribution Chart -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
