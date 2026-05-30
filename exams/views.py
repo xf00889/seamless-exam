@@ -1062,3 +1062,51 @@ def get_exam_students_view(request, exam_id):
         'students': students_data,
         'count': len(students_data)
     })
+
+
+@teacher_required
+def item_summary_view(request, exam_id):
+    """
+    Display DepEd-style Item Summary Sheet with item analysis.
+    Shows difficulty levels, action needed, and competency summary.
+    Optionally generates AI-powered teacher analysis.
+    """
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to view this exam')
+        return redirect('exam_list')
+
+    service = ItemAnalysisService()
+    summary_data = service.get_item_summary(exam_id)
+
+    if summary_data is None:
+        messages.error(request, 'Exam not found')
+        return redirect('exam_list')
+
+    ai_analysis = None
+    ai_error = None
+    if request.GET.get('analyze') == '1' and summary_data.get('has_data'):
+        ai_analysis = service.generate_ai_analysis(summary_data)
+        if ai_analysis is None:
+            ai_error = 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('My Exams', reverse('exam_list')),
+        (exam.title, reverse('exam_takers', args=[exam_id])),
+        'Item Summary'
+    )
+
+    context = {
+        'exam': exam,
+        'summary': summary_data,
+        'ai_analysis': ai_analysis,
+        'ai_error': ai_error,
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'exams/item_summary.html', context)

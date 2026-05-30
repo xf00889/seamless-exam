@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Item Summary - {{ exam.title }} - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    body { background: white; }
+    main { padding: 0; max-width: 100%; }
+    .shadow-md, .shadow-sm { box-shadow: none !important; }
+}
+.print-only { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="container mx-auto px-4 py-0">
+
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-emerald-500 border-t border-r border-b border-gray-200 p-6 mb-6 no-print">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-emerald-100 mr-3">
+                    <svg class="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Item Summary Sheet</h1>
+                    <p class="text-gray-600">{{ exam.title }}</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                {% if summary.has_data and not ai_analysis %}
+                <a href="?analyze=1" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    AI Analysis
+                </a>
+                {% endif %}
+                <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                </button>
+                <a href="{% url 'exam_takers' exam.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if not summary.has_data %}
+    <!-- No Data State -->
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Graded Attempts Yet</h3>
+        <p class="text-gray-500">Item analysis will be available once students have taken and been graded on this exam.</p>
+    </div>
+    {% else %}
+
+    <!-- Exam Info Header (Print-friendly) -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">ITEM SUMMARY SHEET</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div>
+                <span class="font-semibold text-gray-700">Exam:</span>
+                <span class="text-gray-900 ml-1">{{ exam.title }}</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Subject:</span>
+                <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Teacher:</span>
+                <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">No. of Learners:</span>
+                <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Total Items:</span>
+                <span class="text-gray-900 ml-1">{{ summary.items|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Analysis Table -->
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">Item Analysis</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item No.</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question Type</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. Correct</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. Wrong</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Correct</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty Level</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action Needed</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in summary.items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.item_no }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ item.question_type }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-900">{{ item.num_correct }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-900">{{ item.num_wrong }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if item.percent_correct >= 81 %}bg-green-100 text-green-800
+                                {% elif item.percent_correct >= 61 %}bg-blue-100 text-blue-800
+                                {% elif item.percent_correct >= 41 %}bg-yellow-100 text-yellow-800
+                                {% elif item.percent_correct >= 21 %}bg-orange-100 text-orange-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.percent_correct }}%
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if item.difficulty_level == 'Easy' %}bg-green-100 text-green-800
+                                {% elif item.difficulty_level == 'Moderately Easy' %}bg-blue-100 text-blue-800
+                                {% elif item.difficulty_level == 'Average' %}bg-yellow-100 text-yellow-800
+                                {% elif item.difficulty_level == 'Difficult' %}bg-orange-100 text-orange-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.difficulty_level }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ item.action_needed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Difficulty Index Guide -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-4 border-b bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Difficulty Index Guide</h3>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">% Correct</th>
+                            <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">81-100%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Easy</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">61-80%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Moderately Easy</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">41-60%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">21-40%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Difficult</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-sm text-gray-700">0-20%</td>
+                            <td class="py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Very Difficult</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Competency Summary -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-4 border-b bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Competency Summary</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type / Competency</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Items</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Avg %</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Mastery</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Intervention</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for comp in summary.competency_summary %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900">{{ comp.competency }}</td>
+                            <td class="px-4 py-2 text-sm text-center text-gray-600">{{ comp.items }}</td>
+                            <td class="px-4 py-2 text-sm text-center">
+                                <span class="font-medium
+                                    {% if comp.avg_percent >= 76 %}text-green-700
+                                    {% elif comp.avg_percent >= 51 %}text-yellow-700
+                                    {% elif comp.avg_percent >= 26 %}text-orange-700
+                                    {% else %}text-red-700{% endif %}">
+                                    {{ comp.avg_percent }}%
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 text-sm text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                    {% if comp.mastery_level == 'Mastered' %}bg-green-100 text-green-800
+                                    {% elif comp.mastery_level == 'Developing' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ comp.mastery_level }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-700">{{ comp.intervention }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Analysis Section -->
+    {% if ai_analysis %}
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden border-l-4 border-l-purple-500">
+        <div class="p-4 border-b bg-purple-50">
+            <div class="flex items-center">
+                <svg class="h-5 w-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <h3 class="text-lg font-semibold text-purple-900">Teacher's Analysis (AI-Generated)</h3>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if ai_analysis.overall_assessment %}
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-800 italic">{{ ai_analysis.overall_assessment }}</p>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Strengths -->
+                <div>
+                    <h4 class="font-semibold text-green-800 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Strengths
+                    </h4>
+                    <ul class="space-y-1">
+                        {% for strength in ai_analysis.strengths %}
+                        <li class="text-sm text-gray-700 flex items-start">
+                            <span class="text-green-500 mr-2 mt-0.5">&#8226;</span>
+                            {{ strength }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Areas for Improvement -->
+                <div>
+                    <h4 class="font-semibold text-orange-800 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        Areas for Improvement
+                    </h4>
+                    <ul class="space-y-1">
+                        {% for area in ai_analysis.areas_for_improvement %}
+                        <li class="text-sm text-gray-700 flex items-start">
+                            <span class="text-orange-500 mr-2 mt-0.5">&#8226;</span>
+                            {{ area }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Intervention Plan -->
+            <div class="mt-6">
+                <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Intervention Plan
+                </h4>
+                <ul class="space-y-1">
+                    {% for step in ai_analysis.intervention_plan %}
+                    <li class="text-sm text-gray-700 flex items-start">
+                        <span class="text-blue-500 mr-2 mt-0.5">&#8226;</span>
+                        {{ step }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if ai_analysis.items_to_revise %}
+            <div class="mt-6 p-3 bg-red-50 rounded-lg">
+                <h4 class="font-semibold text-red-800 mb-1 text-sm">Items Recommended for Revision</h4>
+                <p class="text-sm text-red-700">
+                    {% for item_ref in ai_analysis.items_to_revise %}
+                        {{ item_ref }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if ai_error %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+            <svg class="h-5 w-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p class="text-sm text-yellow-800">{{ ai_error }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
