@@ -149,14 +149,18 @@
                             Subject
                         </span>
                     </label>
-                    <input 
-                        type="text" 
-                        name="subject" 
-                        id="subject" 
-                        value="{{ form.subject.value|default:'' }}"
-                        placeholder="e.g., English, Physical Science, Filipino"
-                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                    >
+                    <div class="flex gap-2">
+                        <select
+                            name="subject"
+                            id="subject"
+                            class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        >
+                            {% for value, label in form.subject.field.widget.choices %}
+                            <option value="{{ value }}" {% if form.subject.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" onclick="quickAddSubject()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap" title="Add new subject">+ New</button>
+                    </div>
                 </div>
                 
                 <div>
@@ -599,4 +603,33 @@
 
 {% block extra_js %}
 <script src="{% static 'js/exam-creation.js' %}?v=20260524b"></script>
+<script>
+function quickAddSubject() {
+    const name = prompt('Enter new Subject:');
+    if (!name || !name.trim()) return;
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    fetch('{% url "create_subject" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ name: name.trim() })
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok) {
+            alert(data.error || 'Failed to add');
+            return;
+        }
+        const select = document.getElementById('subject');
+        const option = new Option(data.name, data.name, true, true);
+        select.add(option);
+    })
+    .catch(() => alert('Network error. Please try again.'));
+}
+</script>
 {% endblock %}

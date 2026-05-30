@@ -214,7 +214,6 @@
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Correct</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Wrong</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Skipped</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:140px">% Correct</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
@@ -227,15 +226,6 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-green-700 font-medium">{{ item.num_correct }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-red-700 font-medium">{{ item.num_wrong }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-400">{% if item.num_skipped > 0 %}{{ item.num_skipped }}{% else %}-{% endif %}</td>
-                        <td class="px-4 py-3 text-sm" style="width:140px">
-                            <div class="flex items-center gap-2">
-                                <div class="progress-bar w-20">
-                                    <div class="progress-bar-fill {% if item.percent_correct >= 81 %}bg-green-400{% elif item.percent_correct >= 61 %}bg-blue-400{% elif item.percent_correct >= 41 %}bg-yellow-400{% elif item.percent_correct >= 21 %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {% if item.percent_correct > 0 %}{{ item.percent_correct }}%{% else %}0%{% endif %}; min-width: {% if item.percent_correct > 0 %}4px{% else %}0{% endif %}"></div>
-                                </div>
-                                <span class="text-xs font-medium w-10 text-right">{{ item.percent_correct }}%</span>
-                            </div>
-                        </td>
-                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
                                 {% if item.difficulty_level == 'Easy' %}bg-green-100 text-green-800
