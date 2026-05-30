@@ -307,103 +307,83 @@ class ClassForm(forms.Form):
     """
     Form for creating and editing classes.
     Validates grade level, strand, and section fields.
+    Uses dropdown selections from lookup tables.
     Requirements: 1.1, 7.1
     """
-    grade_level = forms.CharField(
-        max_length=20,
+    SELECT_ATTRS = {
+        'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
+    }
+
+    grade_level = forms.ChoiceField(
         required=True,
-        widget=forms.TextInput(attrs={
+        widget=forms.Select(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
-            'placeholder': 'e.g., Grade 11, Grade 12',
             'data-field-name': 'Grade Level'
         }),
-        error_messages={
-            'required': 'Grade level is required',
-            'max_length': 'Grade level must not exceed 20 characters'
-        }
+        error_messages={'required': 'Grade level is required'}
     )
-    
-    strand = forms.CharField(
-        max_length=50,
+
+    strand = forms.ChoiceField(
         required=True,
-        widget=forms.TextInput(attrs={
+        widget=forms.Select(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
-            'placeholder': 'e.g., HUMSS, GAS, ABM, Cookery, SMAW',
             'data-field-name': 'Strand'
         }),
-        error_messages={
-            'required': 'Strand is required',
-            'max_length': 'Strand must not exceed 50 characters'
-        }
+        error_messages={'required': 'Strand is required'}
     )
-    
-    section = forms.CharField(
-        max_length=50,
+
+    section = forms.ChoiceField(
         required=True,
-        widget=forms.TextInput(attrs={
+        widget=forms.Select(attrs={
             'class': 'mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm',
-            'placeholder': 'e.g., A, B, Einstein, Newton',
             'data-field-name': 'Section'
         }),
-        error_messages={
-            'required': 'Section is required',
-            'max_length': 'Section must not exceed 50 characters'
-        }
+        error_messages={'required': 'Section is required'}
     )
-    
+
     def __init__(self, *args, teacher=None, class_id=None, **kwargs):
-        """
-        Initialize form with optional teacher and class_id for duplicate checking.
-        
-        Args:
-            teacher: Teacher instance for duplicate checking
-            class_id: Class ID to exclude from duplicate checking (for updates)
-        """
         super().__init__(*args, **kwargs)
         self.teacher = teacher
         self.class_id = class_id
-    
+
+        from users.models import GradeLevel, Strand, Section
+        self.fields['grade_level'].choices = [('', '-- Select Grade Level --')] + [
+            (gl.name, gl.name) for gl in GradeLevel.objects.all()
+        ]
+        self.fields['strand'].choices = [('', '-- Select Strand --')] + [
+            (s.name, s.name) for s in Strand.objects.all()
+        ]
+        self.fields['section'].choices = [('', '-- Select Section --')] + [
+            (s.name, s.name) for s in Section.objects.all()
+        ]
+
     def clean_grade_level(self):
-        """Validate and clean grade level field."""
         grade_level = self.cleaned_data.get('grade_level', '').strip()
-        
         if not grade_level:
             raise ValidationError('Grade level cannot be empty')
-        
         return grade_level
-    
+
     def clean_strand(self):
-        """Validate and clean strand field."""
         strand = self.cleaned_data.get('strand', '').strip()
-        
         if not strand:
             raise ValidationError('Strand cannot be empty')
-        
         return strand
-    
+
     def clean_section(self):
-        """Validate and clean section field."""
         section = self.cleaned_data.get('section', '').strip()
-        
         if not section:
             raise ValidationError('Section cannot be empty')
-        
         return section
-    
+
     def clean(self):
-        """
-        Validate that no duplicate class exists for the teacher.
-        Requirements: 7.1
-        """
         cleaned_data = super().clean()
         grade_level = cleaned_data.get('grade_level')
         strand = cleaned_data.get('strand')
         section = cleaned_data.get('section')
-        
-        # Only check for duplicates if we have all required fields and a teacher
+
         if grade_level and strand and section and self.teacher:
             from repositories.class_repository import ClassRepository
-            
+
             repository = ClassRepository()
             is_duplicate = repository.check_duplicate_class(
                 teacher_id=self.teacher.pk,
@@ -412,13 +392,13 @@ class ClassForm(forms.Form):
                 section=section,
                 exclude_id=self.class_id
             )
-            
+
             if is_duplicate:
                 raise ValidationError(
                     f"A class with grade level '{grade_level}', strand '{strand}', "
                     f"and section '{section}' already exists for this teacher"
                 )
-        
+
         return cleaned_data
 
 

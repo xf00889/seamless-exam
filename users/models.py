@@ -194,3 +194,56 @@ class SystemSettings(models.Model):
 
     def __str__(self):
         return "System Settings"
+
+
+class GradeLevel(models.Model):
+    """Lookup table for grade levels (e.g., Grade 11, Grade 12)."""
+    name = models.CharField(max_length=50, unique=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_grade_level'
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Strand(models.Model):
+    """Lookup table for academic strands (e.g., HUMSS, GAS, ABM, STEM)."""
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_strand'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Section(models.Model):
+    """Lookup table for section names (e.g., A, B, Einstein, Newton)."""
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_section'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Subject(models.Model):
+    """Lookup table for subjects (e.g., English, Science, Filipino)."""
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_subject'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

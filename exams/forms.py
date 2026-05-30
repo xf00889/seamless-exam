@@ -128,6 +128,17 @@ class ExamForm(forms.ModelForm):
                 if field_name in self.fields:
                     del self.fields[field_name]
 
+        # Populate subject dropdown from lookup table
+        from users.models import Subject
+        subject_choices = [('', '-- Select Subject --')] + [
+            (s.name, s.name) for s in Subject.objects.all()
+        ]
+        self.fields['subject'].widget = forms.Select(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
+            'data-field-name': 'Subject',
+        })
+        self.fields['subject'].widget.choices = subject_choices
+
         # Set queryset for assigned_classes based on teacher
         if teacher:
             self.fields['assigned_classes'].queryset = Class.objects.filter(
