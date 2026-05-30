@@ -61,6 +61,11 @@ def navbar_context(request):
                 'url': '/users/teacher/accounts/',
                 'active': current_path.startswith('/users/teacher/accounts/')
             },
+            {
+                'label': 'Options',
+                'url': '/users/teacher/options/',
+                'active': current_path.startswith('/users/teacher/options/')
+            },
         ]
 
     if auth_service.require_student(request):
