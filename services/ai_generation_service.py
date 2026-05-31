@@ -26,7 +26,7 @@ QUESTION_TYPE_CONFIGS = {
         'format': '{"type": "ENUMERATION", "question": "...", "correct_answer": {"items": ["item1", "item2", "item3"], "min_required": 3}, "points": 3}',
     },
     'ESSAY': {
-        'description': 'Essay question (no correct answer, manually graded)',
+        'description': 'Short-answer essay question that tests understanding (like oral recitation but written). NOT a formal essay - just a question the student answers in 2-5 sentences based on what they know.',
         'format': '{"type": "ESSAY", "question": "...", "correct_answer": null, "points": 5}',
     },
 }

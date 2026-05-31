@@ -979,9 +979,19 @@ def ai_inline_generate_view(request, exam_id):
     if question_type not in ['MCQ', 'TRUE_FALSE', 'IDENTIFICATION', 'ENUMERATION', 'ESSAY']:
         return JsonResponse({'error': 'Invalid question type'}, status=400)
 
+    # Build topic context from exam title, description, and existing questions
+    topic_parts = [exam.title]
+    if exam.description:
+        topic_parts.append(exam.description)
+    existing_questions = exam.questions.all().order_by('order_index')[:10]
+    if existing_questions:
+        sample_texts = [q.question_text[:80] for q in existing_questions[:5]]
+        topic_parts.append('Related questions already in this exam: ' + '; '.join(sample_texts))
+    topic = '. '.join(topic_parts)
+
     try:
         questions = generate_exam_questions(
-            topic=subject,
+            topic=topic,
             subject=subject,
             type_counts={question_type: 1},
             difficulty='medium',
