@@ -442,13 +442,25 @@
 {{ questions_json|json_script:"questions-data" }}
 
 <script>
-// Store questions data for JavaScript access
-document.addEventListener('DOMContentLoaded', function() {
-    JsonDataLoader.loadData('questions-data', function(questionsData) {
-        window.questionsData = questionsData;
-    });
-});
+// Initialize questionsData as empty array to prevent "find is not a function" errors
+window.questionsData = [];
 
+// Load and populate questions data from JSON
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        JsonDataLoader.loadData('questions-data', function(questionsData) {
+            window.questionsData = Array.isArray(questionsData) ? questionsData : [];
+        });
+    });
+} else {
+    // If DOMContentLoaded already fired, load immediately
+    JsonDataLoader.loadData('questions-data', function(questionsData) {
+        window.questionsData = Array.isArray(questionsData) ? questionsData : [];
+    });
+}
+</script>
+
+<script>
 // AI Generate Modal
 (function() {
     const modal = document.getElementById('aiGenerateModal');
