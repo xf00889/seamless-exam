@@ -19,6 +19,8 @@ urlpatterns = [
     
     # Teacher grading URLs
     path('teacher/grading/', views.teacher_grading_list_view, name='teacher_grading_list'),
+    path('teacher/grading/pending/', views.teacher_pending_grading_view, name='teacher_pending_grading'),
+    path('teacher/grading/student/<int:student_id>/', views.teacher_student_detail_view, name='teacher_student_detail'),
     path('teacher/grading/<int:attempt_id>/', views.teacher_grading_view, name='teacher_grading'),
     path('teacher/grading/essay/<int:answer_id>/grade/', views.grade_essay_view, name='grade_essay'),
     path('teacher/grading/essay/<int:answer_id>/update/', views.update_essay_score_view, name='update_essay_score'),

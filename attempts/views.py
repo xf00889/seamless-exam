@@ -5,7 +5,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.urls import reverse
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import Paginator
 from itertools import groupby
 from exams.models import Exam
 from attempts.models import Attempt, AttemptStatus
@@ -29,6 +29,154 @@ answer_service = AnswerService()
 data_integrity_service = DataIntegrityService()
 tab_monitoring_service = TabMonitoringService()
 activity_log_service = ActivityLogService()
+
+
+def _attempt_timestamp(attempt):
+    return attempt.submitted_at or attempt.started_at
+
+
+def _attempt_pending_essay_count(attempt):
+    from exams.models import QuestionType
+
+    pending_count = 0
+    for answer in attempt.answers.all():
+        if answer.question.question_type == QuestionType.ESSAY and answer.is_correct is None:
+            pending_count += 1
+    return pending_count
+
+
+def _get_teacher_submission_attempts():
+    return Attempt.objects.select_related(
+        'student',
+        'student__class_assigned',
+        'exam',
+        'exam__quarter',
+    ).prefetch_related(
+        'answers',
+        'answers__question',
+    ).filter(
+        status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED]
+    ).order_by(
+        'student__last_name',
+        'student__first_name',
+        'student__school_id',
+        '-submitted_at',
+        '-started_at',
+    )
+
+
+def _build_student_rows(attempts):
+    student_rows = {}
+
+    for attempt in attempts:
+        student = attempt.student
+        latest_timestamp = _attempt_timestamp(attempt)
+        pending_count = _attempt_pending_essay_count(attempt)
+
+        if student.id not in student_rows:
+            student_rows[student.id] = {
+                'student': student,
+                'student_name': student.get_full_name(),
+                'student_class': student.class_assigned,
+                'attempt_count': 0,
+                'exam_ids': set(),
+                'pending_attempt_count': 0,
+                'latest_submission': latest_timestamp,
+                'latest_attempt': attempt,
+                'attempts': [],
+            }
+
+        row = student_rows[student.id]
+        row['attempts'].append(attempt)
+        row['attempt_count'] += 1
+        row['exam_ids'].add(attempt.exam_id)
+        row['pending_attempt_count'] += 1 if pending_count else 0
+
+        if latest_timestamp and (row['latest_submission'] is None or latest_timestamp > row['latest_submission']):
+            row['latest_submission'] = latest_timestamp
+            row['latest_attempt'] = attempt
+
+    rows = list(student_rows.values())
+    for row in rows:
+        row['exam_count'] = len(row['exam_ids'])
+        del row['exam_ids']
+
+    rows.sort(
+        key=lambda row: (
+            row['latest_submission'] or timezone.now(),
+            row['student_name'].lower(),
+        ),
+        reverse=True,
+    )
+    return rows
+
+
+def _build_exam_groups_for_student(attempts):
+    exam_groups = {}
+
+    for attempt in attempts:
+        exam = attempt.exam
+        latest_timestamp = _attempt_timestamp(attempt)
+        pending_count = _attempt_pending_essay_count(attempt)
+
+        if exam.id not in exam_groups:
+            exam_groups[exam.id] = {
+                'exam': exam,
+                'attempt_count': 0,
+                'pending_attempt_count': 0,
+                'latest_submission': latest_timestamp,
+                'attempts': [],
+            }
+
+        group = exam_groups[exam.id]
+        group['attempts'].append({
+            'attempt': attempt,
+            'pending_essay_count': pending_count,
+            'has_ungraded_essays': pending_count > 0,
+            'latest_timestamp': latest_timestamp,
+        })
+        group['attempt_count'] += 1
+        group['pending_attempt_count'] += 1 if pending_count else 0
+
+        if latest_timestamp and (group['latest_submission'] is None or latest_timestamp > group['latest_submission']):
+            group['latest_submission'] = latest_timestamp
+
+    groups = list(exam_groups.values())
+    for group in groups:
+        group['attempts'].sort(
+            key=lambda data: data['latest_timestamp'] or timezone.now(),
+            reverse=True,
+        )
+        group['latest_attempt'] = group['attempts'][0]['attempt'] if group['attempts'] else None
+
+    groups.sort(key=lambda group: group['exam'].title.lower())
+    return groups
+
+
+def _build_pending_grading_rows(attempts):
+    pending_rows = []
+
+    for attempt in attempts:
+        pending_count = _attempt_pending_essay_count(attempt)
+        if not pending_count:
+            continue
+
+        pending_rows.append({
+            'attempt': attempt,
+            'student': attempt.student,
+            'exam': attempt.exam,
+            'pending_essay_count': pending_count,
+            'latest_timestamp': _attempt_timestamp(attempt),
+        })
+
+    pending_rows.sort(
+        key=lambda row: (
+            row['latest_timestamp'] or timezone.now(),
+            row['student'].get_full_name().lower(),
+        ),
+        reverse=True,
+    )
+    return pending_rows
 
 
 @ensure_csrf_cookie
@@ -583,116 +731,111 @@ def exam_submitted_view(request, attempt_id):
 
 
 def teacher_grading_list_view(request):
-    """
-    Display list of submitted attempts that need grading.
-    Shows all submitted and graded attempts for teacher review.
-    Requirements: 13.1
-    """
-    # Check if user is authenticated as teacher
+    """Show the teacher a list of students with submission summaries."""
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in as a teacher to access grading')
         return redirect('teacher_login')
-    
-    # Import here to avoid circular dependency
-    from repositories.attempt_repository import AttemptRepository
-    from users.models import Student
-    from exams.models import Exam
-    
-    attempt_repository = AttemptRepository()
-    
-    # Get filter parameters
-    selected_exam = request.GET.get('exam', '')
-    selected_status = request.GET.get('status', '')
-    selected_flagged = request.GET.get('flagged', '')
-    
-    # Get all submitted and graded attempts
-    submitted_attempts = attempt_repository.get_submitted_attempts()
-    graded_attempts = attempt_repository.get_graded_attempts()
-    
-    # Combine and order by submission date
-    all_attempts = list(submitted_attempts) + list(graded_attempts)
-    all_attempts.sort(key=lambda x: x.submitted_at if x.submitted_at else x.started_at, reverse=True)
-    
-    # Prepare attempt data with student and exam info
-    attempts_data = []
-    for attempt in all_attempts:
-        # Get student info
-        try:
-            student = Student.objects.get(id=attempt.student_id)
-            student_name = student.get_full_name()
-        except Student.DoesNotExist:
-            student_name = "Unknown Student"
-        
-        # Get exam info
-        exam = exam_service.get_exam(attempt.exam_id)
-        
-        # Check if has ungraded essays
-        from services.grading_service import GradingService
-        grading_service_instance = GradingService()
-        has_ungraded = grading_service_instance.manual_grader.has_ungraded_essays(attempt.id)
-        
-        # Apply filters
-        # Filter by exam
-        if selected_exam and str(attempt.exam_id) != selected_exam:
-            continue
-        
-        # Filter by status
-        if selected_status:
-            if selected_status == 'needs_grading' and not has_ungraded:
-                continue
-            elif selected_status == 'graded' and (attempt.status != 'graded' or has_ungraded):
-                continue
-            elif selected_status == 'auto_graded' and (has_ungraded or attempt.status != 'graded'):
-                continue
-        
-        # Filter by flagged
-        if selected_flagged == 'yes' and not attempt.is_flagged:
-            continue
-        
-        attempts_data.append({
-            'attempt': attempt,
-            'student_name': student_name,
-            'exam': exam,
-            'has_ungraded_essays': has_ungraded
-        })
-    
-    # Get all available exams for filter dropdown
-    available_exams = Exam.objects.all().order_by('-created_at')
-    
-    # Get selected exam name for display
-    selected_exam_name = ''
-    if selected_exam:
-        try:
-            exam_obj = Exam.objects.get(id=selected_exam)
-            selected_exam_name = exam_obj.title
-        except Exam.DoesNotExist:
-            pass
-    
-    # Implement pagination (10 items per page for detailed review)
-    paginator = Paginator(attempts_data, 10)
+
+    attempts = _get_teacher_submission_attempts()
+    student_rows = _build_student_rows(attempts)
+
+    paginator = Paginator(student_rows, 10)
     page_number = request.GET.get('page', 1)
-    
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range, deliver last page
-        page_obj = paginator.page(paginator.num_pages)
-    
+    page_obj = paginator.get_page(page_number)
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        'Student Submissions'
+    )
+
     context = {
         'page_obj': page_obj,
-        'attempts_data': page_obj.object_list,
-        'total_attempts': paginator.count,
-        'available_exams': available_exams,
-        'selected_exam': selected_exam,
-        'selected_exam_name': selected_exam_name,
-        'selected_status': selected_status,
-        'selected_flagged': selected_flagged,
+        'student_rows': page_obj.object_list,
+        'total_students': paginator.count,
+        'total_attempts': sum(row['attempt_count'] for row in student_rows),
+        'total_pending': sum(row['pending_attempt_count'] for row in student_rows),
+        'page_breadcrumbs': breadcrumbs,
     }
-    
+
     return render(request, 'attempts/grading_list.html', context)
+
+
+def teacher_student_detail_view(request, student_id):
+    """Show all submissions for one student, grouped by exam."""
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please log in as a teacher to access student submissions')
+        return redirect('teacher_login')
+
+    from users.models import Student
+
+    try:
+        student = Student.objects.get(pk=student_id)
+    except Student.DoesNotExist:
+        messages.error(request, 'Student not found')
+        return redirect('teacher_grading_list')
+
+    attempts = list(_get_teacher_submission_attempts().filter(student_id=student_id))
+    exam_groups = _build_exam_groups_for_student(attempts)
+
+    total_attempts = len(attempts)
+    pending_attempts = sum(1 for attempt in attempts if _attempt_pending_essay_count(attempt) > 0)
+    graded_attempts = sum(1 for attempt in attempts if attempt.status == AttemptStatus.GRADED)
+    average_score = 0
+    if attempts:
+        average_score = sum(float(attempt.total_score) for attempt in attempts) / len(attempts)
+
+    latest_submission = None
+    if attempts:
+        latest_submission = max(
+            (_attempt_timestamp(attempt) for attempt in attempts if _attempt_timestamp(attempt)),
+            default=None,
+        )
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('Student Submissions', reverse('teacher_grading_list')),
+        student.get_full_name(),
+    )
+
+    context = {
+        'student': student,
+        'exam_groups': exam_groups,
+        'total_attempts': total_attempts,
+        'pending_attempts': pending_attempts,
+        'graded_attempts': graded_attempts,
+        'average_score': round(average_score, 2),
+        'latest_submission': latest_submission,
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'attempts/student_submissions_detail.html', context)
+
+
+def teacher_pending_grading_view(request):
+    """Show attempts that still have ungraded essays."""
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please log in as a teacher to access grading')
+        return redirect('teacher_login')
+
+    pending_rows = _build_pending_grading_rows(list(_get_teacher_submission_attempts()))
+
+    paginator = Paginator(pending_rows, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        'Pending Essay Grading'
+    )
+
+    context = {
+        'page_obj': page_obj,
+        'pending_rows': page_obj.object_list,
+        'total_pending_attempts': paginator.count,
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'attempts/grading_pending.html', context)
 
 
 def teacher_grading_view(request, attempt_id):
@@ -742,6 +885,13 @@ def teacher_grading_view(request, attempt_id):
     
     # Get grading status
     grading_status = grading_service_instance.get_grading_status(attempt_id)
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('Student Submissions', reverse('teacher_grading_list')),
+        (student.get_full_name(), reverse('teacher_student_detail', args=[student.id])),
+        'Grade Essay',
+    )
     
     # Prepare questions with answers
     questions_data = []
@@ -763,7 +913,8 @@ def teacher_grading_view(request, attempt_id):
         'student': student,
         'exam': exam,
         'questions_data': questions_data,
-        'grading_status': grading_status
+        'grading_status': grading_status,
+        'page_breadcrumbs': breadcrumbs,
     }
     
     return render(request, 'attempts/grading.html', context)

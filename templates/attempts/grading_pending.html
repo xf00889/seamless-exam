@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Essay Grading - Seamless{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div class="flex items-center">
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-100 mr-3">
+                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Pending Essay Grading</h1>
+                <p class="text-gray-600">Attempts that still have essay answers waiting for manual grading.</p>
+            </div>
+        </div>
+        <a href="{% url 'teacher_grading_list' %}" class="bg-gray-700 hover:bg-gray-800 text-white px-4 sm:px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center sm:justify-start">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Students
+        </a>
+    </div>
+</div>
+
+<div class="bg-white shadow rounded-lg p-5 mb-6">
+    <div class="text-sm text-gray-500">Pending Attempts</div>
+    <div class="mt-1 text-3xl font-bold text-gray-900">{{ total_pending_attempts }}</div>
+</div>
+
+{% if pending_rows %}
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Essays</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for row in pending_rows %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ row.student.get_full_name }}</div>
+                        <div class="text-xs text-gray-500">{{ row.student.school_id }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900">{{ row.exam.title }}</div>
+                        <div class="text-xs text-gray-500">{{ row.exam.questions.count }} question{{ row.exam.questions.count|pluralize }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {% if row.latest_timestamp %}
+                            {{ row.latest_timestamp|date:"M d, Y" }}<br>
+                            <span class="text-xs text-gray-500">{{ row.latest_timestamp|time:"g:i A" }}</span>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                            {{ row.pending_essay_count }} essay{{ row.pending_essay_count|pluralize }} pending
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{% url 'teacher_grading' row.attempt.id %}" class="inline-flex items-center px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Grade
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include 'components/pagination.html' with page_obj=page_obj %}
+{% else %}
+<div class="bg-white shadow rounded-lg p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No essays need grading</h3>
+    <p class="mt-1 text-sm text-gray-500">All essay submissions are already graded.</p>
+</div>
+{% endif %}
+{% endblock %}

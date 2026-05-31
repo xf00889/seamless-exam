@@ -24,13 +24,21 @@
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-2">
-                <a href="{% url 'teacher_grading_list' %}" 
+                <a href="{% url 'teacher_student_detail' student.id %}" 
                    class="inline-flex items-center justify-center sm:justify-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
-                   aria-label="Back to submissions list">
+                   aria-label="Back to student details">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    All Submissions
+                    Student Details
+                </a>
+                <a href="{% url 'teacher_pending_grading' %}" 
+                   class="inline-flex items-center justify-center sm:justify-start bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                   aria-label="Go to pending essay grading">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Pending Essays
                 </a>
                 <a href="{% url 'teacher_dashboard' %}" 
                    class="inline-flex items-center justify-center sm:justify-start bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
@@ -232,7 +240,7 @@
         </div>
         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {% if grading_status.ungraded_essays > 0 %}
-            <a href="{% url 'teacher_grading_list' %}" 
+            <a href="{% url 'teacher_pending_grading' %}" 
                class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
                aria-label="Done grading, return to submissions">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,13 +249,13 @@
                 Done Grading
             </a>
             {% else %}
-            <a href="{% url 'teacher_grading_list' %}" 
+            <a href="{% url 'teacher_student_detail' student.id %}" 
                class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
-               aria-label="Back to submissions">
+               aria-label="Back to student details">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                Back to Submissions
+                Student Details
             </a>
             {% endif %}
             <a href="{% url 'teacher_dashboard' %}" 

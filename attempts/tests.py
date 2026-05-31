@@ -258,7 +258,8 @@ class AttemptServiceTest(TestCase):
         self.assertIsNotNone(flagged)
         self.assertTrue(flagged.is_flagged)
         self.assertEqual(flagged.flag_reason, "Test reason")
-    
+
+
     def test_is_flagged(self):
         """Test checking if an attempt is flagged."""
         attempt = self.service.create_attempt(self.student.id, self.exam.id)
@@ -283,6 +284,106 @@ class AttemptServiceTest(TestCase):
         self.assertFalse(submitted.auto_submitted)
         self.assertFalse(submitted.is_flagged)
         self.assertEqual(submitted.flag_reason, "")
+
+
+class TeacherGradingSplitViewTests(TestCase):
+    """Test the teacher grading split into student list, student detail, and pending queue."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='teacher_split', password='pass123')
+        self.teacher = Teacher.objects.create(user=self.user, department='Math')
+
+        self.student = Student.objects.create(
+            school_id='2001',
+            first_name='Ana',
+            last_name='Lopez'
+        )
+
+        self.exam_pending = Exam.objects.create(
+            title='Essay Exam',
+            duration_minutes=60,
+            is_active=True,
+            created_by=self.teacher
+        )
+        self.pending_question = Question.objects.create(
+            exam=self.exam_pending,
+            question_type=QuestionType.ESSAY,
+            question_text='Explain gravity.',
+            points=5,
+            correct_answer='Gravity',
+        )
+        self.pending_attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam_pending,
+            status=AttemptStatus.SUBMITTED,
+            total_score=0,
+            submitted_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.pending_attempt,
+            question=self.pending_question,
+            answer_text={'value': 'Gravity pulls objects together.'},
+        )
+
+        self.exam_graded = Exam.objects.create(
+            title='Objective Exam',
+            duration_minutes=45,
+            is_active=True,
+            created_by=self.teacher
+        )
+        self.graded_question = Question.objects.create(
+            exam=self.exam_graded,
+            question_type=QuestionType.MCQ,
+            question_text='What is 2 + 2?',
+            options=[
+                {'key': 'A', 'value': '3'},
+                {'key': 'B', 'value': '4'},
+            ],
+            correct_answer='B',
+            points=5,
+        )
+        self.graded_attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam_graded,
+            status=AttemptStatus.GRADED,
+            total_score=5,
+            submitted_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.graded_attempt,
+            question=self.graded_question,
+            answer_text={'value': 'B'},
+            is_correct=True,
+            points_earned=5,
+        )
+
+        self.client.force_login(self.user)
+
+    def test_teacher_grading_list_groups_students(self):
+        response = self.client.get(reverse('teacher_grading_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Student Submissions')
+        self.assertContains(response, self.student.get_full_name())
+        self.assertContains(response, '2 attempts')
+        self.assertContains(response, '1 pending')
+
+    def test_teacher_student_detail_lists_all_attempts(self):
+        response = self.client.get(reverse('teacher_student_detail', args=[self.student.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'All Submissions')
+        self.assertContains(response, self.exam_pending.title)
+        self.assertContains(response, self.exam_graded.title)
+        self.assertContains(response, 'Pending Essay Grading')
+
+    def test_teacher_pending_grading_queue_shows_ungraded_essays(self):
+        response = self.client.get(reverse('teacher_pending_grading'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pending Essay Grading')
+        self.assertContains(response, self.exam_pending.title)
+        self.assertNotContains(response, self.exam_graded.title)
 
 
 class StudentExamListQuarterGroupingTest(TestCase):

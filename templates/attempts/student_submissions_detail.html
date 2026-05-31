@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Submissions - {{ student.get_full_name }}{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="bg-white rounded-lg shadow-sm border-l-4 border-l-indigo-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+        <div class="flex items-center">
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-100 mr-4">
+                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm3 7h8m-8 4h8m-8 4h5" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">All Submissions</h1>
+                <p class="text-gray-600">
+                    {{ student.get_full_name }}{% if student.class_assigned %} · {{ student.class_assigned }}{% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <a href="{% url 'teacher_pending_grading' %}" class="inline-flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md font-medium transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Pending Essay Grading
+            </a>
+            <a href="{% url 'teacher_grading_list' %}" class="inline-flex items-center justify-center bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-md font-medium transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Students
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white shadow rounded-lg p-5">
+        <div class="text-sm font-medium text-gray-500">Total Submissions</div>
+        <div class="mt-1 text-3xl font-bold text-gray-900">{{ total_attempts }}</div>
+    </div>
+    <div class="bg-white shadow rounded-lg p-5">
+        <div class="text-sm font-medium text-gray-500">Graded</div>
+        <div class="mt-1 text-3xl font-bold text-green-600">{{ graded_attempts }}</div>
+    </div>
+    <div class="bg-white shadow rounded-lg p-5">
+        <div class="text-sm font-medium text-gray-500">Pending Essays</div>
+        <div class="mt-1 text-3xl font-bold text-orange-600">{{ pending_attempts }}</div>
+    </div>
+    <div class="bg-white shadow rounded-lg p-5">
+        <div class="text-sm font-medium text-gray-500">Average Score</div>
+        <div class="mt-1 text-3xl font-bold text-gray-900">{{ average_score|floatformat:2 }}</div>
+    </div>
+</div>
+
+{% if exam_groups %}
+<div class="space-y-6">
+    {% for group in exam_groups %}
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">{{ group.exam.title }}</h2>
+                <p class="text-sm text-gray-500">
+                    {{ group.attempt_count }} submission{{ group.attempt_count|pluralize }}
+                    {% if group.latest_submission %}
+                        · Latest: {{ group.latest_submission|date:"M d, Y" }} {{ group.latest_submission|time:"g:i A" }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% if group.pending_attempt_count %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                    Pending Essay Grading
+                </span>
+                {% endif %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    Exam
+                </span>
+            </div>
+        </div>
+
+        <div class="divide-y divide-gray-200">
+            {% for attempt_data in group.attempts %}
+            <div class="p-6">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold {% if attempt_data.attempt.status == 'graded' %}bg-green-100 text-green-800{% elif attempt_data.attempt.status == 'submitted' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ attempt_data.attempt.get_status_display }}
+                            </span>
+                            {% if attempt_data.has_ungraded_essays %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                                Pending Essay Grading
+                            </span>
+                            {% endif %}
+                            <span class="text-sm text-gray-500">
+                                {% if attempt_data.latest_timestamp %}
+                                    {{ attempt_data.latest_timestamp|date:"M d, Y g:i A" }}
+                                {% else %}
+                                    No submission timestamp
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-700">
+                            Score: <span class="font-semibold text-gray-900">{{ attempt_data.attempt.total_score|floatformat:2 }}</span>
+                            {% if attempt_data.attempt.submitted_at %}
+                                · Submitted on {{ attempt_data.attempt.submitted_at|date:"M d, Y g:i A" }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <a href="{% url 'teacher_attempt_detail' attempt_data.attempt.id %}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            View Details
+                        </a>
+                        {% if attempt_data.has_ungraded_essays %}
+                        <a href="{% url 'teacher_grading' attempt_data.attempt.id %}" class="inline-flex items-center justify-center px-4 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Grade Essays
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="bg-white shadow rounded-lg p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No submissions yet</h3>
+    <p class="mt-1 text-sm text-gray-500">This student has no submitted exams yet.</p>
+</div>
+{% endif %}
+{% endblock %}
