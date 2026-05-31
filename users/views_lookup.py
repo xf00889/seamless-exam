@@ -4,7 +4,7 @@ from django.views import View
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from users.decorators import teacher_required
-from users.models import GradeLevel, Strand, Section, Subject
+from users.models import GradeLevel, Strand, Section, Subject, Quarter
 from services.view_helpers import build_breadcrumbs
 from django.urls import reverse
 import json
@@ -24,6 +24,7 @@ class LookupManagementView(View):
             'strands': Strand.objects.all(),
             'sections': Section.objects.all(),
             'subjects': Subject.objects.all(),
+            'quarters': Quarter.objects.all(),
             'page_breadcrumbs': breadcrumbs,
         }
         return render(request, 'users/lookup_management.html', context)
@@ -107,6 +108,53 @@ def create_subject_view(request):
 
 @teacher_required
 @require_http_methods(["POST"])
+def create_quarter_view(request):
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        name = request.POST.get('name', '').strip()
+
+    if not name:
+        return JsonResponse({'error': 'Name is required'}, status=400)
+
+    obj, created = Quarter.objects.get_or_create(name=name)
+    if not created:
+        return JsonResponse({'error': 'This quarter already exists'}, status=400)
+
+    return JsonResponse({'success': True, 'id': obj.id, 'name': obj.name})
+
+
+@teacher_required
+@require_http_methods(["POST"])
+def update_quarter_view(request):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    quarter_id = data.get('id')
+    name = data.get('name', '').strip()
+
+    if not quarter_id or not name:
+        return JsonResponse({'error': 'Quarter ID and name are required'}, status=400)
+
+    try:
+        quarter = Quarter.objects.get(id=quarter_id)
+    except Quarter.DoesNotExist:
+        return JsonResponse({'error': 'Quarter not found'}, status=404)
+
+    if Quarter.objects.exclude(id=quarter.id).filter(name__iexact=name).exists():
+        return JsonResponse({'error': 'This quarter already exists'}, status=400)
+
+    quarter.name = name
+    quarter.save()
+
+    return JsonResponse({'success': True, 'id': quarter.id, 'name': quarter.name})
+
+
+@teacher_required
+@require_http_methods(["POST"])
 def delete_lookup_view(request):
     try:
         data = json.loads(request.body)
@@ -124,6 +172,7 @@ def delete_lookup_view(request):
         'strand': Strand,
         'section': Section,
         'subject': Subject,
+        'quarter': Quarter,
     }
 
     model = model_map.get(lookup_type)

@@ -31,7 +31,7 @@
                         {% endif %}
                     </div>
                     <p class="mt-1 text-gray-600">
-                        {{ exam.subject|default:"No subject set" }} · {{ exam.duration_minutes }} minutes
+                        {{ exam.subject|default:"No subject set" }}{% if exam.quarter %} · {{ exam.quarter.name }}{% endif %} · {{ exam.duration_minutes }} minutes
                     </p>
                     {% if exam.description %}
                     <p class="mt-2 max-w-3xl text-sm text-gray-500 whitespace-pre-line">{{ exam.description }}</p>

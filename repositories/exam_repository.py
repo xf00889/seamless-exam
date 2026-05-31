@@ -26,7 +26,7 @@ class ExamRepository(BaseRepository):
             
         Requirements: 9.5
         """
-        return self.filter(is_active=True).select_related('created_by').prefetch_related('questions')
+        return self.filter(is_active=True).select_related('created_by', 'quarter').prefetch_related('questions')
     
     def get_exams_by_teacher(self, teacher_id: int) -> QuerySet:
         """
@@ -41,7 +41,7 @@ class ExamRepository(BaseRepository):
             
         Requirements: 9.5
         """
-        return self.filter(created_by_id=teacher_id).select_related('created_by').prefetch_related('questions')
+        return self.filter(created_by_id=teacher_id).select_related('created_by', 'quarter').prefetch_related('questions')
     
     def get_active_exams_by_teacher(self, teacher_id: int) -> QuerySet:
         """
@@ -90,7 +90,7 @@ class ExamRepository(BaseRepository):
             Exam instance with questions prefetched, None if not found
         """
         try:
-            return self.model.objects.prefetch_related('questions').get(pk=exam_id)
+            return self.model.objects.select_related('created_by', 'quarter').prefetch_related('questions').get(pk=exam_id)
         except self.model.DoesNotExist:
             return None
     
@@ -109,7 +109,7 @@ class ExamRepository(BaseRepository):
         """
         return self.model.objects.filter(
             class_assignments__class_assigned_id=class_id
-        ).select_related('created_by').prefetch_related('class_assignments')
+        ).select_related('created_by', 'quarter').prefetch_related('class_assignments')
     
     def get_classes_for_exam(self, exam_id: int) -> QuerySet:
         """

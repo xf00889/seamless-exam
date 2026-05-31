@@ -53,6 +53,83 @@ def get_mastery_info(avg_percent):
 
 class ItemAnalysisService:
 
+    def _compute_exam_mps_snapshot(self, exam):
+        """
+        Compute a lightweight MPS snapshot for a single exam.
+        Used by quarter summaries and exports.
+        """
+        questions = list(exam.questions.all().order_by('order_index', 'id'))
+        graded_attempts = Attempt.objects.filter(
+            exam=exam,
+            status=AttemptStatus.GRADED
+        )
+        total_learners = graded_attempts.count()
+        total_items = len(questions)
+        attempt_ids = list(graded_attempts.values_list('id', flat=True))
+        total_correct = 0
+        if attempt_ids:
+            total_correct = Answer.objects.filter(
+                attempt_id__in=attempt_ids,
+                is_correct=True
+            ).count()
+
+        total_possible_answers = total_learners * total_items
+        overall_mps = round((total_correct / total_possible_answers) * 100, 2) if total_possible_answers > 0 else 0
+
+        return {
+            'exam_id': exam.id,
+            'title': exam.title,
+            'subject': exam.subject or 'Not specified',
+            'quarter_id': exam.quarter_id,
+            'quarter_name': exam.quarter.name if exam.quarter else None,
+            'total_learners': total_learners,
+            'total_items': total_items,
+            'total_correct': total_correct,
+            'total_possible_answers': total_possible_answers,
+            'overall_mps': overall_mps,
+            'has_data': bool(total_learners and total_items),
+        }
+
+    def _build_quarter_summary(self, exam):
+        """
+        Build a quarter-level MPS summary for the teacher's exams in the same quarter.
+        """
+        if not exam.quarter_id:
+            return None
+
+        quarter_exams = Exam.objects.filter(
+            created_by=exam.created_by,
+            quarter=exam.quarter
+        ).select_related('quarter').prefetch_related('questions').order_by('created_at', 'id')
+
+        exam_summaries = []
+        total_correct = 0
+        total_possible_answers = 0
+        total_graded_attempts = 0
+
+        for quarter_exam in quarter_exams:
+            snapshot = self._compute_exam_mps_snapshot(quarter_exam)
+            exam_summaries.append(snapshot)
+            if snapshot['has_data']:
+                total_correct += snapshot['total_correct']
+                total_possible_answers += snapshot['total_possible_answers']
+                total_graded_attempts += snapshot['total_learners']
+
+        overall_mps = round((total_correct / total_possible_answers) * 100, 2) if total_possible_answers > 0 else 0
+
+        return {
+            'quarter_id': exam.quarter_id,
+            'quarter_name': exam.quarter.name,
+            'exam_count': quarter_exams.count(),
+            'graded_exam_count': sum(1 for snapshot in exam_summaries if snapshot['has_data']),
+            'graded_attempts': total_graded_attempts,
+            'total_correct': total_correct,
+            'total_possible_answers': total_possible_answers,
+            'overall_mps': overall_mps,
+            'exams': exam_summaries,
+            'has_data': bool(total_possible_answers),
+        }
+
     def get_item_summary(self, exam_id):
         """
         Compute the DepEd-style Item Summary for a given exam.
@@ -121,6 +198,7 @@ class ItemAnalysisService:
         difficulty_distribution = self._compute_difficulty_distribution(items)
         mps_data = self._compute_mps(items, total_learners, exam, attempt_ids)
         student_matrix = self._build_student_item_matrix(exam, questions, graded_attempts)
+        quarter_summary = self._build_quarter_summary(exam)
 
         return {
             'exam': exam,
@@ -132,6 +210,7 @@ class ItemAnalysisService:
             'difficulty_distribution': difficulty_distribution,
             'mps_data': mps_data,
             'student_matrix': student_matrix,
+            'quarter_summary': quarter_summary,
             'has_data': True,
         }
 

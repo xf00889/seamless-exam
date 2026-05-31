@@ -51,15 +51,15 @@ class ExamAdmin(admin.ModelAdmin):
     """
     Admin interface for Exam model.
     """
-    list_display = ('title', 'subject', 'is_active', 'duration_minutes', 'created_by', 'created_at')
-    list_filter = ('is_active', 'subject', 'created_at')
-    search_fields = ('title', 'subject', 'description', 'created_by__user__username')
+    list_display = ('title', 'subject', 'quarter', 'is_active', 'duration_minutes', 'created_by', 'created_at')
+    list_filter = ('is_active', 'subject', 'quarter', 'created_at')
+    search_fields = ('title', 'subject', 'quarter__name', 'description', 'created_by__user__username')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
     
     fieldsets = (
         ('Exam Information', {
-            'fields': ('title', 'subject', 'description', 'duration_minutes', 'is_active', 'created_by')
+            'fields': ('title', 'subject', 'quarter', 'description', 'duration_minutes', 'is_active', 'created_by')
         }),
         ('File Uploads', {
             'fields': ('questionnaire_file', 'answer_key_file', 'auto_extracted')

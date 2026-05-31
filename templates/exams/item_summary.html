@@ -82,6 +82,7 @@
             <div><strong>School:</strong> _________________________</div>
             <div><strong>Teacher:</strong> {{ exam.created_by.user.get_full_name }}</div>
             <div><strong>Subject:</strong> {{ exam.subject|default:"_________________" }}</div>
+            <div><strong>Quarter:</strong> {{ exam.quarter.name|default:"_________________" }}</div>
             <div><strong>No. of Learners:</strong> {{ summary.total_learners }}</div>
             <div><strong>Exam:</strong> {{ exam.title }}</div>
             <div><strong>Date:</strong> _________________________</div>
@@ -94,6 +95,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
             <div><span class="font-semibold text-gray-700">Exam:</span> <span class="text-gray-900 ml-1">{{ exam.title }}</span></div>
             <div><span class="font-semibold text-gray-700">Subject:</span> <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span></div>
+            <div><span class="font-semibold text-gray-700">Quarter:</span> <span class="text-gray-900 ml-1">{{ exam.quarter.name|default:"Not specified" }}</span></div>
             <div><span class="font-semibold text-gray-700">Teacher:</span> <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span></div>
             <div><span class="font-semibold text-gray-700">No. of Learners:</span> <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span></div>
             <div><span class="font-semibold text-gray-700">Total Items:</span> <span class="text-gray-900 ml-1">{{ summary.items|length }}</span></div>
@@ -158,6 +160,71 @@
                 </svg>
                 View Full MPS Report
             </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.quarter_summary %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Quarter Summary</h3>
+                <p class="text-xs text-gray-500">{{ summary.quarter_summary.quarter_name }} • {{ summary.quarter_summary.exam_count }} exam{{ summary.quarter_summary.exam_count|pluralize }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold {% if summary.quarter_summary.overall_mps >= 75 %}text-green-600{% elif summary.quarter_summary.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.quarter_summary.overall_mps }}%</div>
+                <div class="text-xs text-gray-500">Quarter-level MPS</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Graded Attempts</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.graded_attempts }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Exams Counted</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.graded_exam_count }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Correct</div>
+                <div class="text-lg font-bold text-green-700">{{ summary.quarter_summary.total_correct }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Possible</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.total_possible_answers }}</div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">MPS</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for quarter_exam in summary.quarter_summary.exams %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ quarter_exam.title }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ quarter_exam.subject }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-700">{{ quarter_exam.total_learners }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-700">{{ quarter_exam.total_items }}</td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            {% if quarter_exam.has_data %}
+                            <span class="font-bold {% if quarter_exam.overall_mps >= 75 %}text-green-700{% elif quarter_exam.overall_mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ quarter_exam.overall_mps }}%</span>
+                            {% else %}
+                            <span class="text-gray-400">No data</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
     {% endif %}

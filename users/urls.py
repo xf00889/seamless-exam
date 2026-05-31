@@ -34,6 +34,8 @@ from .views_lookup import (
     create_strand_view,
     create_section_view,
     create_subject_view,
+    create_quarter_view,
+    update_quarter_view,
     delete_lookup_view,
 )
 
@@ -89,5 +91,7 @@ urlpatterns = [
     path('teacher/options/strand/create/', create_strand_view, name='create_strand'),
     path('teacher/options/section/create/', create_section_view, name='create_section'),
     path('teacher/options/subject/create/', create_subject_view, name='create_subject'),
+    path('teacher/options/quarter/create/', create_quarter_view, name='create_quarter'),
+    path('teacher/options/quarter/update/', update_quarter_view, name='update_quarter'),
     path('teacher/options/delete/', delete_lookup_view, name='delete_lookup'),
 ]

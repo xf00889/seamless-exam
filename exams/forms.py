@@ -8,7 +8,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from exams.models import Exam, Question, QuestionType
-from users.models import Class
+from users.models import Class, Quarter
 import json
 
 
@@ -139,6 +139,15 @@ class ExamForm(forms.ModelForm):
         })
         self.fields['subject'].widget.choices = subject_choices
 
+        self.fields['quarter'].queryset = Quarter.objects.all().order_by('order', 'name')
+        self.fields['quarter'].required = False
+        self.fields['quarter'].empty_label = '-- Select Quarter --'
+        self.fields['quarter'].widget = forms.Select(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
+            'data-field-name': 'Quarter',
+        })
+        self.fields['quarter'].widget.choices = self.fields['quarter'].choices
+
         # Set queryset for assigned_classes based on teacher
         if teacher:
             self.fields['assigned_classes'].queryset = Class.objects.filter(
@@ -147,7 +156,7 @@ class ExamForm(forms.ModelForm):
     
     class Meta:
         model = Exam
-        fields = ['title', 'subject', 'description', 'duration_minutes']
+        fields = ['title', 'subject', 'quarter', 'description', 'duration_minutes']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
@@ -160,6 +169,10 @@ class ExamForm(forms.ModelForm):
                 'placeholder': 'e.g., English, Physical Science, Filipino',
                 'maxlength': '100',
                 'data-field-name': 'Subject'
+            }),
+            'quarter': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
+                'data-field-name': 'Quarter'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
@@ -182,6 +195,9 @@ class ExamForm(forms.ModelForm):
             },
             'subject': {
                 'max_length': 'Subject must not exceed 100 characters'
+            },
+            'quarter': {
+                'invalid_choice': 'Please select a valid quarter'
             },
             'duration_minutes': {
                 'required': 'Duration is required',

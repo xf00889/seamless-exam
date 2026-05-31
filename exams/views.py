@@ -16,6 +16,7 @@ from services.exam_activation_service import ExamActivationService
 from services.view_helpers import build_breadcrumbs
 from django.urls import reverse
 import logging
+from itertools import groupby
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,29 @@ def exam_list_view(request):
     except EmptyPage:
         # If page is out of range, deliver last page
         page_obj = paginator.page(paginator.num_pages)
+
+    page_exams = list(page_obj.object_list)
+    page_exams.sort(key=lambda exam: (
+        exam.quarter.order if exam.quarter else 9999,
+        exam.quarter.name.lower() if exam.quarter else 'no quarter',
+        -exam.created_at.timestamp(),
+    ))
+
+    grouped_exams = []
+    for key, group in groupby(
+        page_exams,
+        key=lambda exam: (
+            exam.quarter.id if exam.quarter else None,
+            exam.quarter.name if exam.quarter else 'No Quarter',
+            exam.quarter.order if exam.quarter else 9999,
+        )
+    ):
+        group_items = list(group)
+        grouped_exams.append({
+            'quarter_id': key[0],
+            'label': key[1],
+            'exams': group_items,
+        })
     
     # Build breadcrumbs
     breadcrumbs = build_breadcrumbs(
@@ -60,6 +84,7 @@ def exam_list_view(request):
     
     context = {
         'exams': page_obj,
+        'grouped_exams': grouped_exams,
         'page_obj': page_obj,
         'teacher': teacher,
         'page_breadcrumbs': breadcrumbs
@@ -115,6 +140,7 @@ def exam_create_view(request):
         exam_data = {
             'title': form.cleaned_data['title'],
             'subject': form.cleaned_data.get('subject', ''),
+            'quarter': form.cleaned_data.get('quarter'),
             'description': form.cleaned_data.get('description', ''),
             'duration_minutes': form.cleaned_data['duration_minutes'],
             'created_by': teacher
@@ -386,6 +412,7 @@ def exam_edit_view(request, exam_id):
             exam_data = {
                 'title': form.cleaned_data['title'],
                 'subject': form.cleaned_data.get('subject', ''),
+                'quarter': form.cleaned_data.get('quarter'),
                 'description': form.cleaned_data.get('description', ''),
                 'duration_minutes': form.cleaned_data['duration_minutes']
             }
@@ -1579,6 +1606,7 @@ def mps_export_excel_view(request, exam_id):
 
     mps_data = summary_data['mps_data']
     items = summary_data['items']
+    quarter_summary = summary_data.get('quarter_summary')
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -1615,6 +1643,63 @@ def mps_export_excel_view(request, exam_id):
             return 'Nearing Mastery'
         return 'Low Mastery'
 
+    # --- Sheet 0: Quarter Summary ---
+    if quarter_summary:
+        wsq = wb.create_sheet(title='Quarter Summary')
+        row = 1
+
+        if has_brand:
+            imgq = XlImage(brand_path)
+            imgq.width = 120
+            imgq.height = 60
+            wsq.add_image(imgq, 'A1')
+            row = 5
+
+        wsq.cell(row=row, column=1, value='QUARTER SUMMARY')
+        wsq.cell(row=row, column=1).font = title_font
+        wsq.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        row += 1
+
+        wsq.cell(row=row, column=1, value=f'Quarter: {quarter_summary["quarter_name"]}')
+        wsq.cell(row=row, column=1).font = subheader_font
+        row += 1
+        wsq.cell(row=row, column=1, value=f'Overall MPS: {quarter_summary["overall_mps"]}%')
+        wsq.cell(row=row, column=1).font = Font(bold=True)
+        row += 1
+        wsq.cell(row=row, column=1, value=f'Graded Attempts: {quarter_summary["graded_attempts"]}')
+        row += 1
+        wsq.cell(row=row, column=1, value=f'Exams Counted: {quarter_summary["graded_exam_count"]} of {quarter_summary["exam_count"]}')
+        row += 2
+
+        quarter_headers = ['Exam', 'Subject', 'Attempts', 'Items', 'MPS']
+        for col_idx, h in enumerate(quarter_headers, 1):
+            cell = wsq.cell(row=row, column=col_idx, value=h)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        row += 1
+
+        for exam_summary in quarter_summary['exams']:
+            row_data = [
+                exam_summary['title'],
+                exam_summary['subject'],
+                exam_summary['total_learners'],
+                exam_summary['total_items'],
+                f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
+            ]
+            for col_idx, value in enumerate(row_data, 1):
+                cell = wsq.cell(row=row, column=col_idx, value=value)
+                cell.border = thin_border
+                if col_idx in (3, 4, 5):
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 5 and exam_summary['has_data']:
+                    cell.font = get_mps_font(exam_summary['overall_mps'])
+            row += 1
+
+        for i, width in enumerate([28, 22, 12, 10, 12], 1):
+            wsq.column_dimensions[get_column_letter(i)].width = width
+
     # --- Sheet 1: MPS Summary ---
     ws = wb.create_sheet(title='MPS Summary')
     row = 1
@@ -1634,6 +1719,7 @@ def mps_export_excel_view(request, exam_id):
     info_labels = [
         ('Exam:', exam.title),
         ('Subject:', exam.subject or 'Not specified'),
+        ('Quarter:', exam.quarter.name if exam.quarter else 'Not specified'),
         ('Teacher:', exam.created_by.user.get_full_name()),
         ('No. of Learners:', str(mps_data['total_learners'])),
         ('No. of Items:', str(mps_data['total_items'])),
@@ -2020,6 +2106,7 @@ def mps_export_word_view(request, exam_id):
         ('School', '________________________'),
         ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
         ('Subject', exam.subject or 'Not specified'),
+        ('Quarter', exam.quarter.name if exam.quarter else 'Not specified'),
         ('No. of Learners', str(mps_data['total_learners'])),
         ('Exam', exam.title),
         ('No. of Items', str(mps_data['total_items'])),
@@ -2059,7 +2146,62 @@ def mps_export_word_view(request, exam_id):
     level_para.add_run('Performance Level: ').bold = True
     level_para.add_run(get_performance_level(mps_data['overall_mps']))
 
-    doc.add_paragraph()
+    quarter_summary = summary_data.get('quarter_summary')
+    if quarter_summary:
+        doc.add_paragraph()
+        doc.add_heading(f'Quarter Summary - {quarter_summary["quarter_name"]}', level=2)
+
+        quarter_meta = doc.add_paragraph()
+        quarter_meta.paragraph_format.space_after = Pt(2)
+        quarter_meta.add_run('Overall Quarter MPS: ').bold = True
+        quarter_meta.add_run(f'{quarter_summary["overall_mps"]}%')
+
+        quarter_meta_2 = doc.add_paragraph()
+        quarter_meta_2.paragraph_format.space_after = Pt(4)
+        quarter_meta_2.add_run('Graded Attempts: ').bold = True
+        quarter_meta_2.add_run(str(quarter_summary['graded_attempts']))
+
+        quarter_table = doc.add_table(rows=1, cols=5)
+        quarter_table.style = 'Table Grid'
+        quarter_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+        quarter_headers = ['Exam', 'Subject', 'Attempts', 'Items', 'MPS']
+        header_row = quarter_table.rows[0]
+        for idx, h in enumerate(quarter_headers):
+            cell = header_row.cells[idx]
+            cell.text = h
+            set_cell_shading(cell, '1F4E79')
+            for para in cell.paragraphs:
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in para.runs:
+                    run.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)
+                    run.font.size = Pt(9)
+
+        for exam_summary in quarter_summary['exams']:
+            row = quarter_table.add_row()
+            row_data = [
+                exam_summary['title'],
+                exam_summary['subject'],
+                str(exam_summary['total_learners']),
+                str(exam_summary['total_items']),
+                f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
+            ]
+            for idx, value in enumerate(row_data):
+                cell = row.cells[idx]
+                cell.text = value
+                for para in cell.paragraphs:
+                    if idx > 0:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.font.size = Pt(9)
+                        if idx == 4 and exam_summary['has_data']:
+                            if exam_summary['overall_mps'] >= 75:
+                                run.font.color.rgb = RGBColor(0, 97, 0)
+                            elif exam_summary['overall_mps'] >= 50:
+                                run.font.color.rgb = RGBColor(127, 96, 0)
+                            else:
+                                run.font.color.rgb = RGBColor(156, 0, 6)
 
     # Per-class MPS breakdown
     if mps_data['per_class']:

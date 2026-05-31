@@ -58,12 +58,25 @@
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-            {% for exam in exams %}
+            {% for group in grouped_exams %}
+            <tr class="bg-blue-50/70">
+                <td colspan="6" class="px-3 sm:px-6 py-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <div class="text-sm font-semibold text-blue-900">{{ group.label }}</div>
+                        <div class="text-xs text-blue-700">{{ group.exams|length }} exam{{ group.exams|length|pluralize }}</div>
+                    </div>
+                </td>
+            </tr>
+            {% for exam in group.exams %}
             <tr>
                 <td class="px-3 sm:px-6 py-3 sm:py-4">
                     <div class="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">{{ exam.title }}</div>
-                    {% if exam.subject %}
-                    <div class="text-xs text-blue-600 font-medium">{{ exam.subject }}</div>
+                    {% if exam.subject or exam.quarter %}
+                    <div class="text-xs text-blue-600 font-medium">
+                        {% if exam.subject %}{{ exam.subject }}{% endif %}
+                        {% if exam.subject and exam.quarter %} · {% endif %}
+                        {% if exam.quarter %}{{ exam.quarter.name }}{% endif %}
+                    </div>
                     {% endif %}
                     {% if exam.description %}
                     <div class="text-xs text-gray-500 hidden sm:block">{{ exam.description|truncatewords:10 }}</div>
@@ -92,7 +105,7 @@
                 <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div class="flex justify-end items-center gap-2 sm:gap-3">
                         <!-- View Details -->
-                        <a href="{% url 'exam_detail' exam.id %}" 
+                        <a href="{% url 'exam_detail' exam.id %}"
                            class="text-teal-600 hover:text-teal-900 transition-colors"
                            title="View Details">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,52 +113,41 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </a>
-                        
-                        <!-- View Takers -->
-                        <a href="{% url 'exam_takers' exam.id %}" 
+                        <a href="{% url 'exam_takers' exam.id %}"
                            class="text-purple-600 hover:text-purple-900 transition-colors"
                            title="View Takers">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                             </svg>
                         </a>
-                        
-                        <!-- Edit -->
-                        <a href="{% url 'exam_edit' exam.id %}" 
+                        <a href="{% url 'exam_edit' exam.id %}"
                            class="text-blue-600 hover:text-blue-900 transition-colors"
                            title="Edit Exam">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </a>
-                        
-                        <!-- Activate/Deactivate -->
                         <div class="relative group">
                             {% if exam.is_active %}
-                            <!-- Close Exam - Direct submit -->
                             <form method="post" action="{% url 'exam_activate' exam.id %}" class="inline">
                                 {% csrf_token %}
-                                <button type="submit" 
+                                <button type="submit"
                                         class="text-orange-600 hover:text-orange-900 transition-colors"
                                         title="Close Exam - Hide from students">
-                                    <!-- Close Icon -->
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                     </svg>
                                 </button>
                             </form>
                             {% else %}
-                            <!-- Reopen Exam - Open modal -->
                             <button type="button"
                                     onclick="openReopenModal({{ exam.id }}, '{{ exam.title|escapejs }}')"
                                     class="text-green-600 hover:text-green-900 transition-colors">
-                                <!-- Reopen Icon -->
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </button>
                             {% endif %}
-                            <!-- Helper Tooltip -->
                             <div class="absolute right-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                                 {% if exam.is_active %}
                                 <p class="font-semibold mb-1">Close Exam</p>
@@ -156,9 +158,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
-                        <!-- Delete -->
-                        <button type="button" 
+                        <button type="button"
                                 onclick="openDeleteModal({{ exam.id }}, '{{ exam.title|escapejs }}')"
                                 class="text-red-600 hover:text-red-900 transition-colors"
                                 title="Delete Exam">
@@ -169,6 +169,7 @@
                     </div>
                 </td>
             </tr>
+            {% endfor %}
             {% endfor %}
         </tbody>
     </table>

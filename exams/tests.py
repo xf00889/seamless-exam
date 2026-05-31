@@ -8,11 +8,13 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from docx import Document
+from openpyxl import load_workbook
 
 from attempts.models import Attempt, AttemptStatus
 from exams.models import Exam, Question, QuestionType
-from users.models import Class as SchoolClass, Student, Teacher
+from users.models import Class as SchoolClass, Quarter, Student, Teacher
 from exams.models import ExamClassAssignment
+from services.item_analysis_service import ItemAnalysisService
 
 
 def _container_text(container):
@@ -96,6 +98,212 @@ class ExamEditPageTests(TestCase):
         self.assertEqual(len(questions_payload), 1)
         self.assertEqual(questions_payload[0]['id'], self.question.id)
         self.assertEqual(questions_payload[0]['text'], self.question.question_text)
+
+
+class ExamQuarterSelectionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='teacher_quarter',
+            password='testpass123',
+            first_name='Quarter',
+            last_name='Teacher',
+        )
+        self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.quarter = Quarter.objects.create(name='1st Quarter')
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['user_type'] = 'teacher'
+        session.save()
+
+    def test_exam_create_saves_quarter(self):
+        response = self.client.post(
+            reverse('exam_create'),
+            data={
+                'generation_method': 'manual',
+                'title': 'Quarter Exam',
+                'subject': 'Science',
+                'quarter': self.quarter.id,
+                'description': 'Quarter-based exam',
+                'duration_minutes': 60,
+                'assigned_classes': [],
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        exam = Exam.objects.get(title='Quarter Exam')
+        self.assertEqual(exam.quarter_id, self.quarter.id)
+
+    def test_exam_create_page_lists_existing_quarters(self):
+        response = self.client.get(reverse('exam_create'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1st Quarter')
+
+
+class ExamListQuarterGroupingTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='teacher_list',
+            password='testpass123',
+            first_name='List',
+            last_name='Teacher',
+        )
+        self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.quarter_one = Quarter.objects.create(name='1st Quarter', order=1)
+        self.quarter_two = Quarter.objects.create(name='2nd Quarter', order=2)
+        self.exam_one = Exam.objects.create(
+            title='Quarter One Exam',
+            subject='Science',
+            duration_minutes=45,
+            quarter=self.quarter_one,
+            created_by=self.teacher,
+        )
+        self.exam_two = Exam.objects.create(
+            title='Quarter Two Exam',
+            subject='Science',
+            duration_minutes=45,
+            quarter=self.quarter_two,
+            created_by=self.teacher,
+        )
+        self.exam_no_quarter = Exam.objects.create(
+            title='Ungrouped Exam',
+            subject='Science',
+            duration_minutes=45,
+            created_by=self.teacher,
+        )
+
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['user_type'] = 'teacher'
+        session.save()
+
+    def test_exam_list_groups_exams_by_quarter(self):
+        response = self.client.get(reverse('exam_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1st Quarter')
+        self.assertContains(response, '2nd Quarter')
+        self.assertContains(response, 'No Quarter')
+        self.assertContains(response, self.exam_one.title)
+        self.assertContains(response, self.exam_two.title)
+        self.assertContains(response, self.exam_no_quarter.title)
+
+
+class QuarterSummaryServiceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='teacher_summary',
+            password='testpass123',
+            first_name='Quarter',
+            last_name='Summary',
+        )
+        self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.quarter = Quarter.objects.create(name='1st Quarter', order=1)
+        self.exam_one = Exam.objects.create(
+            title='Quarter Exam 1',
+            subject='Science',
+            duration_minutes=45,
+            quarter=self.quarter,
+            created_by=self.teacher,
+        )
+        self.exam_two = Exam.objects.create(
+            title='Quarter Exam 2',
+            subject='Science',
+            duration_minutes=45,
+            quarter=self.quarter,
+            created_by=self.teacher,
+        )
+        self.student = Student.objects.create(
+            school_id='S-3001',
+            first_name='Cora',
+            last_name='Mendoza',
+            password_hash='legacy',
+        )
+
+        self.question_one = Question.objects.create(
+            exam=self.exam_one,
+            question_type=QuestionType.TRUE_FALSE,
+            question_text='Water boils at 100 degrees Celsius at sea level.',
+            correct_answer=True,
+            points=1,
+            order_index=0,
+        )
+        self.question_two = Question.objects.create(
+            exam=self.exam_two,
+            question_type=QuestionType.TRUE_FALSE,
+            question_text='The moon emits its own light.',
+            correct_answer=False,
+            points=1,
+            order_index=0,
+        )
+
+        self.attempt_one = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam_one,
+            total_score=1,
+            status=AttemptStatus.GRADED,
+            submitted_at=timezone.now(),
+        )
+        self.attempt_two = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam_two,
+            total_score=0,
+            status=AttemptStatus.GRADED,
+            submitted_at=timezone.now(),
+        )
+
+        from attempts.models import Answer
+
+        Answer.objects.create(
+            attempt=self.attempt_one,
+            question=self.question_one,
+            answer_text={'value': True},
+            is_correct=True,
+            points_earned=1,
+            graded_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.attempt_two,
+            question=self.question_two,
+            answer_text={'value': True},
+            is_correct=False,
+            points_earned=0,
+            graded_at=timezone.now(),
+        )
+
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['user_type'] = 'teacher'
+        session.save()
+
+    def test_quarter_summary_aggregates_multiple_exams(self):
+        summary = ItemAnalysisService().get_item_summary(self.exam_one.id)
+
+        self.assertIn('quarter_summary', summary)
+        self.assertTrue(summary['quarter_summary']['has_data'])
+        self.assertEqual(summary['quarter_summary']['quarter_name'], '1st Quarter')
+        self.assertEqual(summary['quarter_summary']['exam_count'], 2)
+        self.assertEqual(summary['quarter_summary']['overall_mps'], 50.0)
+        self.assertEqual(len(summary['quarter_summary']['exams']), 2)
+
+    def test_item_summary_page_shows_quarter_summary(self):
+        response = self.client.get(reverse('item_summary', args=[self.exam_one.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Quarter Summary')
+        self.assertContains(response, '1st Quarter')
+        self.assertContains(response, self.exam_one.title)
+        self.assertContains(response, self.exam_two.title)
+
+    def test_mps_report_page_shows_quarter_summary(self):
+        response = self.client.get(reverse('mps_report', args=[self.exam_one.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Quarter Summary')
+        self.assertContains(response, '1st Quarter')
+        self.assertContains(response, self.exam_one.title)
+        self.assertContains(response, self.exam_two.title)
+
 
 
 class ExamDetailPageTests(TestCase):
@@ -238,10 +446,19 @@ class MpsExportWordTests(TestCase):
             last_name='Teacher',
         )
         self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.quarter = Quarter.objects.create(name='1st Quarter', order=1)
         self.exam = Exam.objects.create(
             title='Physics Check',
             subject='Science',
             duration_minutes=45,
+            quarter=self.quarter,
+            created_by=self.teacher,
+        )
+        self.other_exam = Exam.objects.create(
+            title='Quarter Review',
+            subject='Science',
+            duration_minutes=30,
+            quarter=self.quarter,
             created_by=self.teacher,
         )
         self.school_class = SchoolClass.objects.create(
@@ -266,10 +483,25 @@ class MpsExportWordTests(TestCase):
             points=1,
             order_index=0,
         )
+        self.other_question = Question.objects.create(
+            exam=self.other_exam,
+            question_type=QuestionType.TRUE_FALSE,
+            question_text='The earth is flat.',
+            correct_answer=False,
+            points=1,
+            order_index=0,
+        )
         self.attempt = Attempt.objects.create(
             student=self.student,
             exam=self.exam,
             total_score=0,
+            status=AttemptStatus.GRADED,
+            submitted_at=timezone.now(),
+        )
+        self.other_attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.other_exam,
+            total_score=1,
             status=AttemptStatus.GRADED,
             submitted_at=timezone.now(),
         )
@@ -281,6 +513,14 @@ class MpsExportWordTests(TestCase):
             answer_text={'value': True},
             is_correct=False,
             points_earned=0,
+            graded_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.other_attempt,
+            question=self.other_question,
+            answer_text={'value': False},
+            is_correct=True,
+            points_earned=1,
             graded_at=timezone.now(),
         )
 
@@ -305,3 +545,117 @@ class MpsExportWordTests(TestCase):
         self.assertIn('School Logo', header_xml)
         self.assertNotIn('MEAN PERCENTAGE SCORE (MPS) REPORT', header_xml)
         self.assertIn('Generated by: seamless.dpdns.org', footer_xml)
+        self.assertIn('Prepared by:', _document_text(document))
+        self.assertIn('Name of Teacher: MPS Teacher', _document_text(document))
+        self.assertIn('Quarter Summary', _document_text(document))
+        self.assertIn('1st Quarter', _document_text(document))
+        self.assertIn('Quarter Review', _document_text(document))
+        self.assertGreaterEqual(len(document.tables), 5)
+        self.assertEqual(document.tables[0].cell(0, 0).text, 'Exam')
+        self.assertEqual(document.tables[1].cell(0, 0).text, 'Class / Section')
+        self.assertNotIn('School:', document.tables[1]._element.xml)
+
+
+class MpsExportExcelTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='teacher5',
+            password='testpass123',
+            first_name='Excel',
+            last_name='Teacher',
+        )
+        self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.quarter = Quarter.objects.create(name='1st Quarter', order=1)
+        self.exam = Exam.objects.create(
+            title='Biology Check',
+            subject='Science',
+            duration_minutes=45,
+            quarter=self.quarter,
+            created_by=self.teacher,
+        )
+        self.other_exam = Exam.objects.create(
+            title='Biology Review',
+            subject='Science',
+            duration_minutes=30,
+            quarter=self.quarter,
+            created_by=self.teacher,
+        )
+        self.school_class = SchoolClass.objects.create(
+            grade_level='Grade 8',
+            strand='STEM',
+            section='C',
+            teacher=self.teacher,
+        )
+        ExamClassAssignment.objects.create(exam=self.exam, class_assigned=self.school_class)
+        self.student = Student.objects.create(
+            school_id='S-3002',
+            first_name='Dina',
+            last_name='Reyes',
+            password_hash='legacy',
+            class_assigned=self.school_class,
+        )
+        self.question = Question.objects.create(
+            exam=self.exam,
+            question_type=QuestionType.TRUE_FALSE,
+            question_text='Plants make food through photosynthesis.',
+            correct_answer=True,
+            points=1,
+            order_index=0,
+        )
+        self.other_question = Question.objects.create(
+            exam=self.other_exam,
+            question_type=QuestionType.TRUE_FALSE,
+            question_text='Fish can breathe on land forever.',
+            correct_answer=False,
+            points=1,
+            order_index=0,
+        )
+        self.attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam,
+            total_score=1,
+            status=AttemptStatus.GRADED,
+            submitted_at=timezone.now(),
+        )
+        self.other_attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.other_exam,
+            total_score=0,
+            status=AttemptStatus.GRADED,
+            submitted_at=timezone.now(),
+        )
+        from attempts.models import Answer
+
+        Answer.objects.create(
+            attempt=self.attempt,
+            question=self.question,
+            answer_text={'value': True},
+            is_correct=True,
+            points_earned=1,
+            graded_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.other_attempt,
+            question=self.other_question,
+            answer_text={'value': True},
+            is_correct=False,
+            points_earned=0,
+            graded_at=timezone.now(),
+        )
+
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['user_type'] = 'teacher'
+        session.save()
+
+    def test_mps_export_excel_contains_quarter_summary_sheet(self):
+        response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+
+        self.assertEqual(response.status_code, 200)
+        workbook = load_workbook(BytesIO(response.content))
+        self.assertIn('Quarter Summary', workbook.sheetnames)
+        sheet = workbook['Quarter Summary']
+        self.assertEqual(sheet['A5'].value, 'QUARTER SUMMARY')
+        self.assertIn('1st Quarter', str(sheet['A6'].value))
+        self.assertIn('Biology Check', str(sheet['A12'].value))
+        self.assertIn('Biology Review', str(sheet['A13'].value))

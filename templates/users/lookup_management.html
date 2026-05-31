@@ -130,6 +130,36 @@
             </div>
         </div>
 
+        <!-- Quarters -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Quarters</h3>
+                <button onclick="showAddModal('quarter', 'Quarter')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add
+                </button>
+            </div>
+            <div class="p-4">
+                <div id="quarter-list" class="space-y-2">
+                    {% for item in quarters %}
+                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded border" data-id="{{ item.id }}">
+                        <span class="text-sm font-medium text-gray-800">{{ item.name }}</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="showEditModal('quarter', {{ item.id }}, '{{ item.name|escapejs }}')" class="text-blue-500 hover:text-blue-700 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h6m-6 4h6m-6 4h3m2.586-9.414a2 2 0 112.828 2.828L8 18l-4 1 1-4 10.586-10.586z"/></svg>
+                            </button>
+                            <button onclick="deleteItem('quarter', {{ item.id }}, this)" class="text-red-500 hover:text-red-700 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500 italic">No quarters added yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -155,16 +185,23 @@ const urlMap = {
     'strand': '{% url "create_strand" %}',
     'section': '{% url "create_section" %}',
     'subject': '{% url "create_subject" %}',
+    'quarter': '{% url "create_quarter" %}',
+};
+const updateUrlMap = {
+    'quarter': '{% url "update_quarter" %}',
 };
 const listMap = {
     'grade_level': 'gradeLevel-list',
     'strand': 'strand-list',
     'section': 'section-list',
     'subject': 'subject-list',
+    'quarter': 'quarter-list',
 };
+let editingId = null;
 
 function showAddModal(type, label) {
     currentType = type;
+    editingId = null;
     document.getElementById('modalTitle').textContent = 'Add ' + label;
     document.getElementById('modalInput').value = '';
     document.getElementById('modalInput').placeholder = 'Enter ' + label.toLowerCase() + ' name...';
@@ -173,9 +210,23 @@ function showAddModal(type, label) {
     setTimeout(() => document.getElementById('modalInput').focus(), 100);
 }
 
+function showEditModal(type, id, currentName) {
+    currentType = type;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Quarter';
+    document.getElementById('modalInput').value = currentName;
+    document.getElementById('modalInput').placeholder = 'Enter quarter name...';
+    document.getElementById('modalError').classList.add('hidden');
+    document.getElementById('addModal').classList.remove('hidden');
+    document.getElementById('modalSubmitBtn').textContent = 'Save';
+    setTimeout(() => document.getElementById('modalInput').focus(), 100);
+}
+
 function closeModal() {
     document.getElementById('addModal').classList.add('hidden');
     currentType = '';
+    editingId = null;
+    document.getElementById('modalSubmitBtn').textContent = 'Add';
 }
 
 function submitAdd() {
@@ -191,28 +242,40 @@ function submitAdd() {
     }
 
     btn.disabled = true;
-    btn.textContent = 'Adding...';
+    const isEdit = Boolean(editingId && updateUrlMap[currentType]);
+    btn.textContent = isEdit ? 'Saving...' : 'Adding...';
     errorEl.classList.add('hidden');
 
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    const requestUrl = isEdit ? updateUrlMap[currentType] : urlMap[currentType];
+    const payload = isEdit ? { id: editingId, name: name } : { name: name };
 
-    fetch(urlMap[currentType], {
+    fetch(requestUrl, {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ name: name })
+        body: JSON.stringify(payload)
     })
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
         btn.disabled = false;
-        btn.textContent = 'Add';
+        btn.textContent = isEdit ? 'Save' : 'Add';
 
         if (!ok) {
             errorEl.textContent = data.error || 'Failed to add';
             errorEl.classList.remove('hidden');
+            return;
+        }
+
+        if (isEdit) {
+            const row = document.querySelector(`#quarter-list [data-id="${editingId}"]`);
+            if (row) {
+                row.querySelector('span').textContent = data.name;
+            }
+            closeModal();
             return;
         }
 

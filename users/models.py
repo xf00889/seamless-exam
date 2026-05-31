@@ -247,3 +247,17 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Quarter(models.Model):
+    """Lookup table for grading quarters (e.g., 1st Quarter, 2nd Quarter)."""
+    name = models.CharField(max_length=100, unique=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_quarter'
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name

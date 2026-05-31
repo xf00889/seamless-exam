@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from users.models import Teacher
+from users.models import Teacher, Quarter
 
 
 class QuestionType(models.TextChoices):
@@ -25,6 +25,14 @@ class Exam(models.Model):
         blank=True,
         null=True,
         help_text="Subject of the exam (e.g., English, Physical Science, Filipino)"
+    )
+    quarter = models.ForeignKey(
+        Quarter,
+        on_delete=models.SET_NULL,
+        related_name='exams',
+        null=True,
+        blank=True,
+        help_text="Quarter when the exam is created or administered"
     )
     description = models.TextField(blank=True, null=True)
     duration_minutes = models.IntegerField(
