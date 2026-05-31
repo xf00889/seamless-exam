@@ -434,7 +434,6 @@ def exam_edit_view(request, exam_id):
     questions = question_service.get_questions_by_exam(exam_id)
     
     # Serialize question data for JavaScript
-    import json
     questions_data = []
     for q in questions:
         # Get options - check if it's a field or property
@@ -482,7 +481,7 @@ def exam_edit_view(request, exam_id):
         'exam': exam,
         'form': form,
         'questions': questions,
-        'questions_json': json.dumps(questions_data),
+        'questions_data': questions_data,
         'question_types': QuestionType.choices,
         'assigned_classes': assigned_classes,
         'classes': classes,

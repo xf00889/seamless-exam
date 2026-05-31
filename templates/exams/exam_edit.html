@@ -437,37 +437,43 @@
 
 {% block extra_js %}
 <!-- Questions Data from Django Context -->
-{{ questions_json|json_script:"questions-data" }}
+{{ questions_data|json_script:"questions-data" }}
 
-<!-- Delete Question Modal (Password-Protected) -->
-<div id="deleteQuestionModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(75,85,99,0.5);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:white;border-radius:0.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);width:100%;max-width:24rem;padding:1.5rem;">
-        <div style="display:flex;justify-content:center;margin-bottom:1rem;">
-            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
+<!-- Delete Question Modal -->
+<div id="deleteQuestionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 px-4" role="dialog" aria-modal="true" aria-labelledby="deleteQuestionTitle">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <div class="mb-4 flex justify-center">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
         </div>
-        
-        <h3 style="font-size:1.25rem;font-weight:600;margin-bottom:1rem;color:#111827;text-align:center;">Delete Question</h3>
-        
-        <div style="margin-bottom:1.5rem;">
-            <p style="color:#374151;margin-bottom:0.75rem;text-align:center;">
-                You are about to delete: <strong id="deleteQuestionText" style="color:#111827;"></strong>
+
+        <h3 id="deleteQuestionTitle" class="mb-3 text-center text-xl font-semibold text-gray-900">
+            Delete Question
+        </h3>
+
+        <div class="space-y-3 text-center">
+            <p class="text-gray-700">
+                You are about to delete:
+                <span id="deleteQuestionText" class="font-semibold text-gray-900"></span>
             </p>
-            <p style="color:#dc2626;font-weight:500;margin-bottom:0.75rem;text-align:center;">
-                ⚠️ This action cannot be undone.
+            <p class="font-medium text-red-600">
+                This action cannot be undone.
             </p>
-            <p style="color:#374151;margin-bottom:1rem;text-align:center;">
-                Please enter your password to confirm:
+            <p class="text-sm text-gray-500">
+                The question will be removed immediately after you confirm.
             </p>
-            
-            <input type="password" id="deleteQuestionPassword" placeholder="Enter your password" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.375rem;font-size:0.875rem;box-sizing:border-box;margin-bottom:0.5rem;" autocomplete="current-password">
-            <div id="deleteQuestionError" style="color:#dc2626;font-size:0.875rem;margin-bottom:1rem;display:none;text-align:center;"></div>
         </div>
-        
-        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-            <button onclick="closeDeleteQuestionModal()" style="padding:0.5rem 1rem;background:#f3f4f6;color:#111827;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500;">Cancel</button>
-            <button onclick="confirmDeleteQuestion()" style="padding:0.5rem 1rem;background:#dc2626;color:white;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500;">Delete Question</button>
+
+        <div class="mt-6 flex gap-3 justify-end">
+            <button type="button" onclick="closeDeleteQuestionModal()" class="rounded-md bg-gray-100 px-4 py-2 font-medium text-gray-800 hover:bg-gray-200">
+                Cancel
+            </button>
+            <button type="button" onclick="confirmDeleteQuestion()" class="rounded-md bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">
+                Delete Question
+            </button>
         </div>
     </div>
 </div>
@@ -512,31 +518,23 @@ function initializeDeleteHandlers() {
 function openDeleteQuestionModal(questionId, questionText) {
     currentDeleteQuestionId = questionId;
     document.getElementById('deleteQuestionText').textContent = questionText;
-    document.getElementById('deleteQuestionPassword').value = '';
-    document.getElementById('deleteQuestionError').style.display = 'none';
-    document.getElementById('deleteQuestionModal').style.display = 'flex';
-    document.getElementById('deleteQuestionPassword').focus();
+    document.getElementById('deleteQuestionModal').classList.remove('hidden');
 }
 
 function closeDeleteQuestionModal() {
-    document.getElementById('deleteQuestionModal').style.display = 'none';
+    document.getElementById('deleteQuestionModal').classList.add('hidden');
     currentDeleteQuestionId = null;
 }
 
 function confirmDeleteQuestion() {
-    const password = document.getElementById('deleteQuestionPassword').value;
-    const errorDiv = document.getElementById('deleteQuestionError');
-    
-    if (!password) {
-        errorDiv.textContent = 'Password is required';
-        errorDiv.style.display = 'block';
+    if (!currentDeleteQuestionId) {
         return;
     }
-    
+
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/exams/question/${currentDeleteQuestionId}/delete/`;
-    form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="password" value="${password}">`;
+    form.action = `/exams/questions/${currentDeleteQuestionId}/delete/`;
+    form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">`;
     document.body.appendChild(form);
     form.submit();
 }

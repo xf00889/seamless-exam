@@ -45,7 +45,12 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const questionId = parseInt(this.dataset.questionId);
+            const questionId = Number.parseInt(this.dataset.questionId, 10);
+            if (Number.isNaN(questionId)) {
+                console.warn('Edit clicked without a valid question ID');
+                return;
+            }
+
             console.log('Edit clicked for question:', questionId, 'Modal exists:', !!modal);
 
             // Find question data from global array
@@ -55,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             console.log('Searching in', window.questionsData.length, 'questions');
-            const questionData = window.questionsData.find(q => q.id === questionId);
+            const questionData = window.questionsData.find(q => Number(q.id) === questionId);
             
             if (!questionData) {
                 console.warn('Question not found in data');
