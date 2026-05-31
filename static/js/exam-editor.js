@@ -42,9 +42,10 @@ document.addEventListener('DOMContentLoaded', function() {
     editButtons.forEach((btn, index) => {
         btn.addEventListener('click', function(e) {
             const questionId = parseInt(this.dataset.questionId);
-            
+
             // Find question data from global array
-            const questionData = window.questionsData.find(q => q.id === questionId);
+            const questionsArr = Array.isArray(window.questionsData) ? window.questionsData : [];
+            const questionData = questionsArr.find(q => q.id === questionId);
             
             if (!questionData) {
                 return;

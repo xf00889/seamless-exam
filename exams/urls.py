@@ -20,6 +20,7 @@ urlpatterns = [
     # Question management URLs
     path('<int:exam_id>/questions/create/', views.question_create_view, name='question_create'),
     path('<int:exam_id>/questions/ai-generate/', views.ai_generate_questions_view, name='ai_generate_questions'),
+    path('<int:exam_id>/questions/ai-inline/', views.ai_inline_generate_view, name='ai_inline_generate'),
     path('ai-task/<int:task_id>/status/', views.ai_task_status_view, name='ai_task_status'),
     path('question/<int:question_id>/edit/', views.question_edit_view, name='question_edit'),
     path('questions/<int:question_id>/delete/', views.question_delete_view, name='question_delete'),

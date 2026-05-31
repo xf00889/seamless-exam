@@ -249,13 +249,25 @@
     <div class="p-4 sm:p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
         <div class="mt-3">
             <!-- Modal Header with Icon -->
-            <div class="flex items-center mb-4">
-                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mr-4">
-                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mr-4">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 id="modalTitle" class="text-xl leading-6 font-medium text-gray-900">Add New Question</h3>
                 </div>
-                <h3 id="modalTitle" class="text-xl leading-6 font-medium text-gray-900">Add New Question</h3>
+                <button type="button" id="aiWandBtn" onclick="generateInlineQuestion()" class="flex items-center gap-2 px-3 py-2 border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-md transition-colors text-sm font-medium" title="Generate question with AI">
+                    <svg id="aiWandIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <svg id="aiWandSpinner" class="w-4 h-4 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span id="aiWandLabel">AI Generate</span>
+                </button>
             </div>
             
             <!-- Modal Content -->
@@ -286,24 +298,13 @@
                             <label for="question_text" class="block text-sm font-medium text-gray-700 mb-2">
                                 Question Text <span class="text-red-500">*</span>
                             </label>
-                            <div class="relative">
-                                <textarea
-                                    name="question_text"
-                                    id="question_text"
-                                    rows="3"
-                                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    required
-                                ></textarea>
-                                <button type="button" id="aiWandBtn" onclick="generateInlineQuestion()" class="absolute top-2 right-2 p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors" title="Generate question with AI">
-                                    <svg id="aiWandIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                    </svg>
-                                    <svg id="aiWandSpinner" class="w-5 h-5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                            <textarea
+                                name="question_text"
+                                id="question_text"
+                                rows="3"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                            ></textarea>
                         </div>
                         
                         <div>
@@ -600,25 +601,22 @@ async function generateInlineQuestion() {
     wandSpinner.classList.remove('hidden');
 
     try {
-        const response = await fetch("{% url 'ai_generate_questions' exam.id %}", {
+        const response = await fetch("{% url 'ai_inline_generate' exam.id %}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}',
             },
             body: JSON.stringify({
-                topic: '{{ exam.subject|default:"General" }}',
-                subject: '{{ exam.subject|default:"" }}',
-                type_counts: { [questionType]: 1 },
-                difficulty: 'medium',
+                question_type: questionType,
                 grade_level: document.getElementById('aiGradeLevel') ? document.getElementById('aiGradeLevel').value : 'grade_11_12',
             }),
         });
 
         const data = await response.json();
 
-        if (response.ok && data.questions && data.questions.length > 0) {
-            textarea.value = data.questions[0].question_text;
+        if (response.ok && data.success && data.question) {
+            textarea.value = data.question.question_text;
             textarea.focus();
         } else {
             alert(data.error || 'Failed to generate question. Please try again.');

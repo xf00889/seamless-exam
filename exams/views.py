@@ -948,7 +948,65 @@ def ai_generate_questions_view(request, exam_id):
         'status': 'ok',
         'message': f'Generated {len(created_questions)} questions',
         'questions': created_questions,
-    })@teacher_required
+    })
+
+
+@teacher_required
+@require_http_methods(["POST"])
+def ai_inline_generate_view(request, exam_id):
+    """
+    Generate a single question via AI without saving to DB.
+    Used for inline question generation in the Add Question modal.
+    Returns the question text and metadata for the teacher to review before saving.
+    """
+    import json as json_module
+    from services.ai_generation_service import generate_exam_questions
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    try:
+        body = json_module.loads(request.body)
+    except json_module.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    question_type = body.get('question_type', 'MCQ')
+    grade_level = body.get('grade_level', 'grade_11_12')
+    subject = exam.subject or 'General'
+
+    if question_type not in ['MCQ', 'TRUE_FALSE', 'IDENTIFICATION', 'ENUMERATION', 'ESSAY']:
+        return JsonResponse({'error': 'Invalid question type'}, status=400)
+
+    try:
+        questions = generate_exam_questions(
+            topic=subject,
+            subject=subject,
+            type_counts={question_type: 1},
+            difficulty='medium',
+            grade_level=grade_level,
+        )
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    if not questions:
+        return JsonResponse({'error': 'AI failed to generate a question. Please try again.'}, status=500)
+
+    q = questions[0]
+    return JsonResponse({
+        'success': True,
+        'question': {
+            'question_type': q['question_type'],
+            'question_text': q['question_text'],
+            'options': q.get('options', []),
+            'correct_answer': q.get('correct_answer'),
+            'points': q.get('points', 1.0),
+        }
+    })
+
+
+@teacher_required
 def exam_takers_view(request, exam_id):
     """
     Display all students who have taken a specific exam.
