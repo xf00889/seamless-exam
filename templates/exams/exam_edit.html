@@ -214,18 +214,17 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
-                    <form method="post" action="{% url 'question_delete' question.id %}" class="inline delete-question-form">
-                        {% csrf_token %}
-                        <button 
-                            type="submit" 
-                            class="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors delete-btn"
-                            title="Delete question"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </form>
+                    <button 
+                        type="button"
+                        class="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors delete-question-btn"
+                        data-question-id="{{ question.id }}"
+                        data-question-text="{{ question.question_text|truncatewords:5 }}"
+                        title="Delete question"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -440,52 +439,106 @@
 <!-- Questions Data from Django Context -->
 {{ questions_json|json_script:"questions-data" }}
 
-<script>
-// Initialize questionsData as empty array to prevent "find is not a function" errors
-window.questionsData = [];
+<!-- Delete Question Modal (Password-Protected) -->
+<div id="deleteQuestionModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(75,85,99,0.5);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:0.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);width:100%;max-width:24rem;padding:1.5rem;">
+        <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        
+        <h3 style="font-size:1.25rem;font-weight:600;margin-bottom:1rem;color:#111827;text-align:center;">Delete Question</h3>
+        
+        <div style="margin-bottom:1.5rem;">
+            <p style="color:#374151;margin-bottom:0.75rem;text-align:center;">
+                You are about to delete: <strong id="deleteQuestionText" style="color:#111827;"></strong>
+            </p>
+            <p style="color:#dc2626;font-weight:500;margin-bottom:0.75rem;text-align:center;">
+                ⚠️ This action cannot be undone.
+            </p>
+            <p style="color:#374151;margin-bottom:1rem;text-align:center;">
+                Please enter your password to confirm:
+            </p>
+            
+            <input type="password" id="deleteQuestionPassword" placeholder="Enter your password" style="width:100%;padding:0.75rem;border:1px solid #d1d5db;border-radius:0.375rem;font-size:0.875rem;box-sizing:border-box;margin-bottom:0.5rem;" autocomplete="current-password">
+            <div id="deleteQuestionError" style="color:#dc2626;font-size:0.875rem;margin-bottom:1rem;display:none;text-align:center;"></div>
+        </div>
+        
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="closeDeleteQuestionModal()" style="padding:0.5rem 1rem;background:#f3f4f6;color:#111827;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500;">Cancel</button>
+            <button onclick="confirmDeleteQuestion()" style="padding:0.5rem 1rem;background:#dc2626;color:white;border:none;border-radius:0.375rem;cursor:pointer;font-weight:500;">Delete Question</button>
+        </div>
+    </div>
+</div>
 
-// Load and populate questions data from JSON
+<script>
+// Initialize questionsData 
+window.questionsData = [];
+let currentDeleteQuestionId = null;
+
+// Load questions data from JSON
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         JsonDataLoader.loadData('questions-data', function(questionsData) {
             window.questionsData = Array.isArray(questionsData) ? questionsData : [];
+            console.log('✓ Questions loaded:', window.questionsData.length);
+            initializeDeleteHandlers();
         });
-        initializeDeleteHandlers();
     });
 } else {
-    // If DOMContentLoaded already fired, load immediately
     JsonDataLoader.loadData('questions-data', function(questionsData) {
         window.questionsData = Array.isArray(questionsData) ? questionsData : [];
+        console.log('✓ Questions loaded:', window.questionsData.length);
+        initializeDeleteHandlers();
     });
-    initializeDeleteHandlers();
 }
 
-// Initialize delete button handlers with SweetAlert2 confirmation
 function initializeDeleteHandlers() {
-    const deleteForms = document.querySelectorAll('.delete-question-form');
+    const deleteButtons = document.querySelectorAll('.delete-question-btn');
+    console.log('Delete buttons found:', deleteButtons.length);
     
-    deleteForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // Show SweetAlert2 confirmation modal
-            Swal.fire({
-                title: 'Delete Question?',
-                text: 'Are you sure you want to delete this question? This action cannot be undone.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, Delete',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Submit the form if user confirms
-                    form.submit();
-                }
-            });
+            e.stopPropagation();
+            const questionId = this.dataset.questionId;
+            const questionText = this.dataset.questionText;
+            openDeleteQuestionModal(questionId, questionText);
         });
     });
+}
+
+function openDeleteQuestionModal(questionId, questionText) {
+    currentDeleteQuestionId = questionId;
+    document.getElementById('deleteQuestionText').textContent = questionText;
+    document.getElementById('deleteQuestionPassword').value = '';
+    document.getElementById('deleteQuestionError').style.display = 'none';
+    document.getElementById('deleteQuestionModal').style.display = 'flex';
+    document.getElementById('deleteQuestionPassword').focus();
+}
+
+function closeDeleteQuestionModal() {
+    document.getElementById('deleteQuestionModal').style.display = 'none';
+    currentDeleteQuestionId = null;
+}
+
+function confirmDeleteQuestion() {
+    const password = document.getElementById('deleteQuestionPassword').value;
+    const errorDiv = document.getElementById('deleteQuestionError');
+    
+    if (!password) {
+        errorDiv.textContent = 'Password is required';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/exams/question/${currentDeleteQuestionId}/delete/`;
+    form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="password" value="${password}">`;
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
 

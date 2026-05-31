@@ -17,9 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Debug: Check if elements exist
     if (!modal || !modalTitle || !submitBtn || !questionIdInput) {
-        // Log error for debugging but don't use console.log in production
+        console.error('Exam editor: Required modal elements not found');
         return;
     }
+    console.log('Exam editor initialized');
     
     let isEditMode = false;
     
@@ -38,10 +39,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Show modal for editing
     const editButtons = document.querySelectorAll('.edit-question-btn');
+    console.log('Found edit buttons:', editButtons.length);
     
     editButtons.forEach((btn, index) => {
         btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const questionId = parseInt(this.dataset.questionId);
+            console.log('Edit clicked for question:', questionId, 'Modal exists:', !!modal);
 
             // Find question data from global array
             if (!window.questionsData || !Array.isArray(window.questionsData)) {
@@ -49,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            console.log('Searching in', window.questionsData.length, 'questions');
             const questionData = window.questionsData.find(q => q.id === questionId);
             
             if (!questionData) {
