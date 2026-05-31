@@ -1805,6 +1805,18 @@ def mps_export_excel_view(request, exam_id):
                 cell.font = Font(bold=True, color='1F4E79')
         row += 1
 
+    row += 2
+    ws.cell(row=row, column=1, value='Prepared by:')
+    ws.cell(row=row, column=1).font = Font(bold=True, size=10)
+    row += 1
+    ws.cell(row=row, column=1, value='________________________________________')
+    ws.cell(row=row, column=1).font = Font(size=10)
+    row += 1
+    ws.cell(row=row, column=1, value='Name of Teacher:')
+    ws.cell(row=row, column=1).font = Font(bold=True, size=10)
+    ws.cell(row=row, column=2, value=exam.created_by.user.get_full_name() or exam.created_by.user.username)
+    ws.cell(row=row, column=2).font = Font(bold=True, size=10)
+
     col_widths = [25, 15, 15, 15, 12, 18]
     for i, width in enumerate(col_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = width

@@ -659,3 +659,14 @@ class MpsExportExcelTests(TestCase):
         self.assertIn('1st Quarter', str(sheet['A6'].value))
         self.assertIn('Biology Check', str(sheet['A12'].value))
         self.assertIn('Biology Review', str(sheet['A13'].value))
+
+        summary_sheet = workbook['MPS Summary']
+        summary_values = {
+            cell.value
+            for row in summary_sheet.iter_rows()
+            for cell in row
+            if cell.value is not None
+        }
+        self.assertIn('Prepared by:', summary_values)
+        self.assertIn('Name of Teacher:', summary_values)
+        self.assertIn('Biology Check', summary_values)
