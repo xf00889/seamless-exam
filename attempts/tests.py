@@ -386,6 +386,69 @@ class TeacherGradingSplitViewTests(TestCase):
         self.assertNotContains(response, self.exam_graded.title)
 
 
+class TeacherDashboardChartPayloadTests(TestCase):
+    """Regression tests for the dashboard chart payloads passed to the template."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='teacher_dashboard_chart', password='pass123')
+        self.teacher = Teacher.objects.create(user=self.user, department='Science')
+        self.school_class = SchoolClass.objects.create(
+            grade_level='Grade 10',
+            strand='STEM',
+            section='A',
+            teacher=self.teacher,
+        )
+        self.student = Student.objects.create(
+            school_id='3001',
+            first_name='Lia',
+            last_name='Cruz',
+            class_assigned=self.school_class,
+        )
+        self.exam = Exam.objects.create(
+            title='Quarterly Science Test',
+            subject='Science',
+            duration_minutes=60,
+            is_active=True,
+            created_by=self.teacher,
+        )
+        self.question = Question.objects.create(
+            exam=self.exam,
+            question_type=QuestionType.MCQ,
+            question_text='What is H2O?',
+            options=[
+                {'key': 'A', 'value': 'Hydrogen'},
+                {'key': 'B', 'value': 'Water'},
+            ],
+            correct_answer='B',
+            points=5,
+        )
+        self.attempt = Attempt.objects.create(
+            student=self.student,
+            exam=self.exam,
+            status=AttemptStatus.GRADED,
+            total_score=5,
+            submitted_at=timezone.now(),
+        )
+        Answer.objects.create(
+            attempt=self.attempt,
+            question=self.question,
+            answer_text={'value': 'B'},
+            is_correct=True,
+            points_earned=5,
+        )
+        self.client.force_login(self.user)
+
+    def test_teacher_dashboard_passes_raw_chart_objects_to_template(self):
+        response = self.client.get(reverse('teacher_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.context['exam_performance_json'], dict)
+        self.assertIsInstance(response.context['passing_rate_json'], dict)
+        self.assertIn(self.exam.title, response.context['exam_performance_json'])
+        self.assertIn('subjects', response.context['passing_rate_json'])
+        self.assertIn('Science', response.context['passing_rate_json']['subjects'])
+
+
 class StudentExamListQuarterGroupingTest(TestCase):
     def setUp(self):
         self.teacher_user = User.objects.create_user(username='teacher_quarter', password='pass123')

@@ -1310,29 +1310,6 @@ def teacher_dashboard_view(request):
     total_passers = sum(1 for data in attempts_data if data['percentage'] >= 60)
     total_failers = len(attempts_data) - total_passers
     
-    # Serialize exam_performance for JSON
-    import json
-    try:
-        exam_performance_json = json.dumps(exam_performance)
-    except TypeError as e:
-        logger.error(f"JSON serialization error for exam_performance: {str(e)}")
-        exam_performance_json = json.dumps({})
-    
-    # Serialize class statistics for JSON (Requirement 5.3)
-    try:
-        class_statistics_json = json.dumps({
-            str(class_id): {
-                'class_name': stats.get('class_name', ''),
-                'average': stats.get('average', 0),
-                'student_count': stats.get('student_count', 0),
-                'total_attempts': stats.get('total_attempts', 0)
-            }
-            for class_id, stats in class_statistics.items()
-        })
-    except TypeError as e:
-        logger.error(f"JSON serialization error for class_statistics: {str(e)}")
-        class_statistics_json = json.dumps({})
-    
     # Get passing rate by subject per section
     try:
         # Check if teacher profile exists
@@ -1351,12 +1328,17 @@ def teacher_dashboard_view(request):
         passing_rate_data = {'sections': [], 'subjects': [], 'data': {}}
     
     # Ensure passing_rate_data is JSON serializable
-    try:
-        passing_rate_json = json.dumps(passing_rate_data)
-    except TypeError as e:
-        logger.error(f"JSON serialization error for passing_rate_data: {str(e)}")
-        # Fallback to empty data if serialization fails
-        passing_rate_json = json.dumps({'sections': [], 'subjects': [], 'data': {}})
+    passing_rate_json = passing_rate_data
+
+    class_statistics_json = {
+        str(class_id): {
+            'class_name': stats.get('class_name', ''),
+            'average': stats.get('average', 0),
+            'student_count': stats.get('student_count', 0),
+            'total_attempts': stats.get('total_attempts', 0)
+        }
+        for class_id, stats in class_statistics.items()
+    }
     
     context = {
         'attempts_data': paginated_attempts_data,  # Use paginated data
@@ -1374,7 +1356,7 @@ def teacher_dashboard_view(request):
         'total_students': total_students,
         'total_exams': total_exams,
         'exam_performance': exam_performance,
-        'exam_performance_json': exam_performance_json,
+        'exam_performance_json': exam_performance,
         'total_passers': total_passers,
         'total_failers': total_failers,
         # Class statistics (Requirements 5.2, 5.3)
