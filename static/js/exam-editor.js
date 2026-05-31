@@ -43,15 +43,16 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function(e) {
             const questionId = parseInt(this.dataset.questionId);
 
-            // Find question data from global array - ensure it's an array before calling .find()
-            if (!window.questionsData || !Array.isArray(window.questionsData) || window.questionsData.length === 0) {
-                console.warn('Questions data not available or empty');
+            // Find question data from global array
+            if (!window.questionsData || !Array.isArray(window.questionsData)) {
+                console.warn('Questions data not initialized');
                 return;
             }
             
             const questionData = window.questionsData.find(q => q.id === questionId);
             
             if (!questionData) {
+                console.warn('Question not found in data');
                 return;
             }
             
