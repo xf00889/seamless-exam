@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.core.cache import cache
 from django.test import RequestFactory, TestCase
 
 from services.auth_service import AuthenticationService
@@ -10,6 +11,7 @@ class AuthenticationServiceTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.auth_service = AuthenticationService()
+        cache.clear()
 
     def _build_request(self, path: str):
         request = self.factory.post(path)
@@ -96,3 +98,69 @@ class AuthenticationServiceTests(TestCase):
         self.assertTrue(result.success)
         self.assertNotEqual(student.password_hash, 'legacyPass123')
         self.assertTrue(student.password_hash.startswith('pbkdf2_'))
+
+    def test_teacher_login_is_rate_limited_after_failed_attempts(self):
+        user = User.objects.create_user(
+            username='RateLimitedTeacher',
+            password='SecretPass123',
+            first_name='Rate',
+            last_name='Limited',
+        )
+        Teacher.objects.create(user=user, department='Science')
+
+        for _ in range(self.auth_service.rate_limiter.LOGIN_ATTEMPT_LIMIT):
+            request = self._build_request('/users/teacher/login/')
+            result = self.auth_service.authenticate_teacher(
+                request=request,
+                username='ratelimitedteacher',
+                password='wrong-password',
+            )
+
+            self.assertFalse(result.success)
+
+        blocked_request = self._build_request('/users/teacher/login/')
+        blocked_result = self.auth_service.authenticate_teacher(
+            request=blocked_request,
+            username='ratelimitedteacher',
+            password='SecretPass123',
+        )
+
+        self.assertFalse(blocked_result.success)
+        self.assertIn('Too many login attempts', blocked_result.error)
+
+    def test_student_login_resets_rate_limit_after_success(self):
+        student = Student.objects.create(
+            school_id='RESET001',
+            first_name='Reset',
+            last_name='Student',
+        )
+        student.set_password('StudentPass123')
+        student.save()
+
+        for _ in range(2):
+            request = self._build_request('/users/student/login/')
+            result = self.auth_service.authenticate_student(
+                request=request,
+                school_id='RESET001',
+                password='wrong-password',
+            )
+
+            self.assertFalse(result.success)
+
+        success_request = self._build_request('/users/student/login/')
+        success_result = self.auth_service.authenticate_student(
+            request=success_request,
+            school_id='RESET001',
+            password='StudentPass123',
+        )
+
+        self.assertTrue(success_result.success)
+
+        followup_request = self._build_request('/users/student/login/')
+        followup_result = self.auth_service.authenticate_student(
+            request=followup_request,
+            school_id='RESET001',
+            password='wrong-password',
+        )
+
+        self.assertFalse(followup_result.success)
