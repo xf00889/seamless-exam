@@ -165,6 +165,7 @@ def exam_create_view(request):
                 topic = request.POST.get('ai_topic', '').strip()
                 difficulty = request.POST.get('ai_difficulty', 'medium')
                 subject = exam_data.get('subject', '')
+                grade_level = request.POST.get('ai_grade_level', 'grade_11_12')
 
                 # Build per-type counts (safe int parsing)
                 type_counts = {}
@@ -203,7 +204,7 @@ def exam_create_view(request):
                 # Start background thread
                 thread = threading.Thread(
                     target=_run_ai_generation,
-                    args=(task.id,),
+                    args=(task.id, grade_level),
                     daemon=True,
                 )
                 thread.start()
@@ -255,7 +256,7 @@ def exam_create_view(request):
     })
 
 
-def _run_ai_generation(task_id):
+def _run_ai_generation(task_id, grade_level='grade_11_12'):
     """Background worker that generates AI questions in batches."""
     import django
     django.db.connections.close_all()
@@ -271,6 +272,7 @@ def _run_ai_generation(task_id):
             task.topic, task.subject,
             type_counts=task.type_counts,
             difficulty=task.difficulty,
+            grade_level=grade_level,
         )
 
         questions_by_type = {}
@@ -910,6 +912,7 @@ def ai_generate_questions_view(request, exam_id):
     subject = body.get('subject', exam.subject or '').strip()
     type_counts = body.get('type_counts', {})
     difficulty = body.get('difficulty', 'medium')
+    grade_level = body.get('grade_level', 'grade_11_12')
 
     if not topic:
         return JsonResponse({'error': 'Topic is required'}, status=400)
@@ -917,7 +920,7 @@ def ai_generate_questions_view(request, exam_id):
         return JsonResponse({'error': 'At least one question type count must be greater than 0'}, status=400)
 
     try:
-        questions = generate_exam_questions(topic, subject, type_counts=type_counts, difficulty=difficulty)
+        questions = generate_exam_questions(topic, subject, type_counts=type_counts, difficulty=difficulty, grade_level=grade_level)
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)
 

@@ -66,7 +66,7 @@ BATCH_SIZE = 15
 BATCH_DELAY = 3
 
 
-def generate_exam_questions(topic, subject, num_questions=None, question_types=None, difficulty='medium', type_counts=None):
+def generate_exam_questions(topic, subject, num_questions=None, question_types=None, difficulty='medium', type_counts=None, grade_level=None):
     """
     Generate exam questions using the OpenRouter API in batches to avoid timeouts.
 
@@ -77,6 +77,7 @@ def generate_exam_questions(topic, subject, num_questions=None, question_types=N
         question_types: List of question types (legacy, used if type_counts not provided)
         difficulty: easy, medium, or hard
         type_counts: Dict of {question_type: count} for per-type generation
+        grade_level: Target grade level (grade_1_3, grade_4_6, grade_7_10, grade_11_12)
 
     Returns:
         List of question dictionaries ready to be saved
@@ -110,7 +111,7 @@ def generate_exam_questions(topic, subject, num_questions=None, question_types=N
         if i > 0:
             time.sleep(BATCH_DELAY)
 
-        batch_questions = _generate_batch(batch, topic, subject, difficulty, api_key, base_url, model)
+        batch_questions = _generate_batch(batch, topic, subject, difficulty, api_key, base_url, model, grade_level)
         all_questions.extend(batch_questions)
 
     return all_questions
@@ -147,7 +148,51 @@ def _build_batches_from_counts(type_counts):
     return batches
 
 
-def _generate_batch(batch_counts, topic, subject, difficulty, api_key, base_url, model):
+GRADE_LEVEL_INSTRUCTIONS = {
+    'grade_1_3': {
+        'label': 'Elementary (Grade 1-3)',
+        'instructions': """TARGET STUDENTS: Elementary Grade 1-3 (ages 6-9)
+- Use very simple vocabulary and short sentences (max 10-12 words per sentence)
+- Questions should be concrete and literal (no abstract concepts)
+- Use familiar, everyday contexts (home, school, playground, family)
+- Avoid complex sentence structures and multi-step reasoning
+- For MCQ: options should be short (1-3 words each)
+- Reading level should be appropriate for early readers"""
+    },
+    'grade_4_6': {
+        'label': 'Elementary (Grade 4-6)',
+        'instructions': """TARGET STUDENTS: Elementary Grade 4-6 (ages 9-12)
+- Use moderate vocabulary appropriate for upper elementary
+- Questions can involve basic analysis and application
+- Use age-appropriate contexts (community, nature, basic science)
+- Simple multi-step reasoning is acceptable
+- Sentences should be clear and not exceed 20 words
+- Avoid jargon; define technical terms within the question if needed"""
+    },
+    'grade_7_10': {
+        'label': 'Junior High School (Grade 7-10)',
+        'instructions': """TARGET STUDENTS: Junior High School Grade 7-10 (ages 12-16)
+- Use standard academic language appropriate for adolescents
+- Questions can require analysis, comparison, and evaluation
+- Multi-step reasoning and inference are appropriate
+- Subject-specific terminology can be used
+- Questions should align with DepEd K-12 curriculum competencies
+- Include application-level and analysis-level questions"""
+    },
+    'grade_11_12': {
+        'label': 'Senior High School (Grade 11-12)',
+        'instructions': """TARGET STUDENTS: Senior High School Grade 11-12 (ages 16-18)
+- Use advanced academic and discipline-specific vocabulary
+- Questions should require critical thinking, synthesis, and evaluation
+- Complex multi-step reasoning and abstract concepts are appropriate
+- Align with DepEd Senior High School MELCs (Most Essential Learning Competencies)
+- Include higher-order thinking skills (HOTS) questions
+- Real-world application and case-based questions are encouraged"""
+    },
+}
+
+
+def _generate_batch(batch_counts, topic, subject, difficulty, api_key, base_url, model, grade_level=None):
     """Generate a single batch of questions."""
     batch_total = sum(batch_counts.values())
 
@@ -158,17 +203,22 @@ def _generate_batch(batch_counts, topic, subject, difficulty, api_key, base_url,
 
     types_text = '\n'.join(type_instructions)
 
-    prompt = f"""You are an expert exam creator for educational institutions. Generate exactly {batch_total} exam questions about the following:
+    grade_info = GRADE_LEVEL_INSTRUCTIONS.get(grade_level, GRADE_LEVEL_INSTRUCTIONS['grade_11_12'])
+    grade_text = grade_info['instructions']
+
+    prompt = f"""You are an expert exam creator for Philippine educational institutions (DepEd K-12 curriculum). Generate exactly {batch_total} exam questions about the following:
 
 Subject: {subject}
 Topics: {topic}
 Difficulty: {difficulty}
 
+{grade_text}
+
 Question types and counts to generate:
 {types_text}
 
 RULES:
-1. Questions must be clear, unambiguous, and appropriate for students
+1. Questions must be clear, unambiguous, and age-appropriate for the target grade level
 2. Distribute questions evenly across all listed topics
 3. Generate EXACTLY the specified number of questions for each type
 4. For MCQ: Always provide exactly 4 options (A, B, C, D). Only ONE correct answer.
@@ -179,6 +229,7 @@ RULES:
 9. Questions should test understanding, not just memorization
 10. Vary the difficulty based on the specified level
 11. Make distractors (wrong options) plausible but clearly incorrect to someone who studied
+12. Language complexity MUST match the target grade level
 
 Return ONLY a valid JSON array of question objects. No markdown, no explanation, just the JSON array."""
 
