@@ -689,25 +689,51 @@ class DashboardCharts {
         }
 
         // Ensure data consistency
-        const { sections, subjects, data } = passingRateData;
+        const sections = Array.isArray(passingRateData.sections) ? passingRateData.sections : [];
+        const subjects = Array.isArray(passingRateData.subjects) ? passingRateData.subjects : [];
+        const data = passingRateData.data && typeof passingRateData.data === 'object' ? passingRateData.data : {};
+        const normalizedData = new Map();
+        for (const [rawSubject, values] of Object.entries(data)) {
+            const normalizedSubject = String(rawSubject).trim().toLowerCase();
+            if (!normalizedSubject || normalizedData.has(normalizedSubject) || !Array.isArray(values)) {
+                continue;
+            }
+
+            normalizedData.set(normalizedSubject, {
+                label: String(rawSubject).trim(),
+                values: values.slice(0, sections.length)
+            });
+        }
+
         const validated = {
-            sections: sections || [],
-            subjects: subjects || [],
+            sections,
+            subjects: [],
             data: {}
         };
 
         // Validate that each subject has data for each section
-        if (data && typeof data === 'object') {
-            for (const subject of subjects) {
-                if (data[subject] && Array.isArray(data[subject])) {
-                    if (data[subject].length !== sections.length) {
-                        console.warn(`Data length mismatch for subject '${subject}': expected ${sections.length}, got ${data[subject].length}`);
-                    }
-                    validated.data[subject] = data[subject].slice(0, sections.length);
-                } else {
-                    console.warn(`Missing or invalid data for subject '${subject}'`);
-                    validated.data[subject] = new Array(sections.length).fill(0);
+        const seenSubjects = new Set();
+        for (const subject of subjects) {
+            const normalizedSubject = String(subject).trim().toLowerCase();
+            if (!normalizedSubject || seenSubjects.has(normalizedSubject)) {
+                continue;
+            }
+
+            seenSubjects.add(normalizedSubject);
+            const normalizedDataEntry = normalizedData.get(normalizedSubject);
+            const subjectLabel = normalizedDataEntry?.label || String(subject).trim();
+            const subjectValues = normalizedDataEntry?.values;
+
+            if (subjectValues && Array.isArray(subjectValues)) {
+                if (subjectValues.length !== sections.length) {
+                    console.warn(`Data length mismatch for subject '${subjectLabel}': expected ${sections.length}, got ${subjectValues.length}`);
                 }
+                validated.subjects.push(subjectLabel);
+                validated.data[subjectLabel] = subjectValues;
+            } else {
+                console.warn(`Missing or invalid data for subject '${subjectLabel}'`);
+                validated.subjects.push(subjectLabel);
+                validated.data[subjectLabel] = new Array(sections.length).fill(0);
             }
         }
 
@@ -1243,12 +1269,47 @@ class DashboardCharts {
             { bg: 'rgba(14, 165, 233, 0.85)', border: 'rgb(14, 165, 233)' },      // Sky
         ];
 
-        // Prepare datasets for each subject
-        const datasets = passingRateData.subjects.map((subject, index) => {
+        const sectionCount = Array.isArray(passingRateData.sections) ? passingRateData.sections.length : 0;
+
+        const subjectDataByNormalizedLabel = new Map();
+        if (passingRateData.data && typeof passingRateData.data === 'object') {
+            for (const [rawSubject, values] of Object.entries(passingRateData.data)) {
+                const normalizedSubject = String(rawSubject).trim().toLowerCase();
+                if (!normalizedSubject || subjectDataByNormalizedLabel.has(normalizedSubject) || !Array.isArray(values)) {
+                    continue;
+                }
+
+                const normalizedValues = values.slice(0, sectionCount);
+                while (normalizedValues.length < sectionCount) {
+                    normalizedValues.push(0);
+                }
+
+                subjectDataByNormalizedLabel.set(normalizedSubject, normalizedValues);
+            }
+        }
+
+        const uniqueSubjects = [];
+        const seenSubjects = new Set();
+        for (const subject of Array.isArray(passingRateData.subjects) ? passingRateData.subjects : []) {
+            const subjectLabel = String(subject).trim();
+            const normalizedSubject = subjectLabel.toLowerCase();
+            if (!normalizedSubject || seenSubjects.has(normalizedSubject)) {
+                continue;
+            }
+
+            seenSubjects.add(normalizedSubject);
+            uniqueSubjects.push(subjectLabel);
+        }
+
+        // Prepare datasets for each unique subject
+        const datasets = uniqueSubjects.map((subject, index) => {
             const colorIndex = index % subjectColors.length;
+            const normalizedSubject = subject.toLowerCase();
+            const subjectValues = subjectDataByNormalizedLabel.get(normalizedSubject) || new Array(sectionCount).fill(0);
+
             return {
                 label: subject,
-                data: passingRateData.data[subject],
+                data: subjectValues,
                 backgroundColor: subjectColors[colorIndex].bg,
                 borderColor: subjectColors[colorIndex].border,
                 borderWidth: 2,

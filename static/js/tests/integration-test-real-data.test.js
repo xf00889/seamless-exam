@@ -47,6 +47,14 @@ const REAL_PASSING_RATE_DATA = {
     }
 };
 
+const DUPLICATE_PASSING_RATE_DATA = {
+    "sections": ["Grade 12 A"],
+    "subjects": ["Science", "Science"],
+    "data": {
+        "Science": [100]
+    }
+};
+
 describe('Integration Test: Real Django Data Flow', () => {
     let mockCanvas, mockContext, mockChart;
     let originalChart;
@@ -178,6 +186,24 @@ describe('Integration Test: Real Django Data Flow', () => {
                     Math.round((data.passers / calculatedTotal) * 100 * 10) / 10 : 0;
                 expect(data.passingRate).toBe(expectedPassingRate);
             });
+        });
+
+        test('should deduplicate repeated subject labels in passing rate data', () => {
+            const dashboardCharts = new DashboardCharts();
+            const validatedData = dashboardCharts.validatePassingRateSchema(DUPLICATE_PASSING_RATE_DATA);
+
+            expect(validatedData.subjects).toEqual(['Science']);
+            expect(Object.keys(validatedData.data)).toEqual(['Science']);
+        });
+
+        test('should render only one dataset for repeated subject labels', () => {
+            const dashboardCharts = new DashboardCharts();
+
+            dashboardCharts.createPassingRateBySubjectChart(DUPLICATE_PASSING_RATE_DATA);
+
+            const chartConfig = global.Chart.mock.calls[0][1];
+            expect(chartConfig.data.datasets).toHaveLength(1);
+            expect(chartConfig.data.datasets[0].label).toBe('Science');
         });
     });
 
