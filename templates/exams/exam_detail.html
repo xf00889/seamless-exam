@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Exam Details - {{ exam.title }} - Seamless{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
+<div class="mx-auto px-4 py-0" role="main" aria-labelledby="exam-detail-heading">
+    <div class="hidden">{% csrf_token %}</div>
+
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 id="exam-detail-heading" class="text-3xl font-bold text-gray-900">{{ exam.title }}</h1>
+                        {% if exam.is_active %}
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">Active</span>
+                        {% else %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <p class="mt-1 text-gray-600">
+                        {{ exam.subject|default:"No subject set" }} · {{ exam.duration_minutes }} minutes
+                    </p>
+                    {% if exam.description %}
+                    <p class="mt-2 max-w-3xl text-sm text-gray-500 whitespace-pre-line">{{ exam.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'exam_edit' exam.id %}"
+                   class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Exam
+                </a>
+                <a href="{% url 'exam_edit' exam.id %}#questionsList"
+                   class="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 font-medium text-white transition-colors hover:bg-emerald-700">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Edit Questions
+                </a>
+                <a href="{% url 'exam_takers' exam.id %}"
+                   class="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-700">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    View Takers
+                </a>
+                <a href="{% url 'exam_export_word' exam.id %}"
+                   class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 font-medium text-white transition-colors hover:bg-indigo-700">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0011.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Export Word
+                </a>
+                {% if exam.is_active %}
+                <form method="post" action="{% url 'exam_activate' exam.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-orange-600 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-700">
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        Close Exam
+                    </button>
+                </form>
+                {% else %}
+                <button type="button"
+                        onclick="openReopenModal({{ exam.id }}, '{{ exam.title|escapejs }}')"
+                        class="inline-flex items-center rounded-md bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Reopen Exam
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Questions</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ question_count }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Points</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ total_points|floatformat:1 }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned Classes</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ assigned_class_count }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Accessible Students</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ accessible_students_count }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Completed Takers</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ unique_takers }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Avg Score</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">
+                {% if average_score is not None %}{{ average_score|floatformat:1 }}{% else %}—{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Questions -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Questions</h2>
+                        <p class="text-sm text-gray-500">Read-only question list for this exam.</p>
+                    </div>
+                    <a href="{% url 'exam_edit' exam.id %}#questionsList" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                        Edit questions
+                    </a>
+                </div>
+
+                {% if questions %}
+                <div class="space-y-4" id="questionsList">
+                    {% for question in questions %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                        <div class="flex justify-between items-start gap-4">
+                            <div class="flex-1">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                        {{ question.get_question_type_display }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">{{ question.points }} points</span>
+                                    <span class="text-xs text-gray-400">Question {{ forloop.counter }}</span>
+                                </div>
+                                <p class="text-gray-900 mb-2 font-medium whitespace-pre-line">{{ question.question_text }}</p>
+
+                                {% if question.question_type == 'MCQ' and question.options %}
+                                <div class="ml-4 mt-2 space-y-1">
+                                    {% for option in question.options %}
+                                    <div class="text-sm {% if option.key == question.correct_answer %}font-semibold text-green-700 bg-green-50 px-2 py-1 rounded{% else %}text-gray-600{% endif %}">
+                                        <span class="font-medium">{{ option.key }}.</span> {{ option.value }}
+                                        {% if option.key == question.correct_answer %}
+                                        <svg class="inline-block w-4 h-4 ml-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% elif question.question_type == 'IDENTIFICATION' %}
+                                <div class="ml-4 mt-2 text-sm">
+                                    <span class="text-gray-600">Answer:</span>
+                                    <span class="font-medium text-green-700">
+                                        {% if question.correct_answer %}
+                                            {% if question.correct_answer is iterable and question.correct_answer is not string %}
+                                                {{ question.correct_answer|join:", " }}
+                                            {% else %}
+                                                {{ question.correct_answer }}
+                                            {% endif %}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% elif question.question_type == 'TRUE_FALSE' %}
+                                <div class="ml-4 mt-2 text-sm">
+                                    <span class="text-gray-600">Answer:</span>
+                                    <span class="font-medium text-green-700">
+                                        {% if question.correct_answer %}True{% else %}False{% endif %}
+                                    </span>
+                                </div>
+                                {% elif question.question_type == 'ENUMERATION' %}
+                                <div class="ml-4 mt-2 text-sm">
+                                    <span class="text-gray-600">Acceptable answers:</span>
+                                    <span class="font-medium text-green-700">
+                                        {% if question.correct_answer.items %}
+                                            {{ question.correct_answer.items|join:", " }}
+                                        {% endif %}
+                                    </span>
+                                    {% if question.correct_answer.min_required %}
+                                    <span class="text-xs text-gray-500 ml-2">(min: {{ question.correct_answer.min_required }})</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-10">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="mt-3 text-gray-500">No questions added yet.</p>
+                    <a href="{% url 'exam_edit' exam.id %}" class="mt-3 inline-flex rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                        Add Questions
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Summary sidebar -->
+        <div class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Class Summary</h2>
+                <div class="mb-4 rounded-lg bg-gray-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Access Mode</p>
+                    <p class="mt-1 font-medium text-gray-900">{{ access_mode }}</p>
+                    <p class="text-sm text-gray-500">{{ accessible_students_count }} accessible student{{ accessible_students_count|pluralize:"s" }}</p>
+                </div>
+
+                {% if assigned_classes %}
+                <div class="space-y-3">
+                    {% for class_item in assigned_classes %}
+                    <div class="rounded-lg border border-gray-200 p-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ class_item }}</p>
+                                <p class="text-sm text-gray-500">{{ class_item.student_count }} student{{ class_item.student_count|pluralize:"s" }}</p>
+                            </div>
+                            <span class="text-xs rounded-full bg-blue-100 px-2 py-1 font-semibold text-blue-800">Assigned</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No classes assigned yet.</p>
+                {% endif %}
+
+                {% if selected_students %}
+                <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Selected Students</p>
+                    <p class="mt-1 text-sm text-amber-900">{{ selected_students|length }} selected student{{ selected_students|length|pluralize:"s" }}</p>
+                    <div class="mt-3 space-y-2">
+                        {% for student in selected_students|slice:":6" %}
+                        <div class="text-sm text-amber-900">
+                            {{ student.get_full_name }} <span class="text-amber-700">({{ student.school_id }})</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Taker Summary</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Attempts</p>
+                        <p class="mt-1 text-xl font-bold text-gray-900">{{ total_attempts }}</p>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">In Progress</p>
+                        <p class="mt-1 text-xl font-bold text-gray-900">{{ in_progress_attempts }}</p>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted</p>
+                        <p class="mt-1 text-xl font-bold text-gray-900">{{ submitted_attempts }}</p>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Graded</p>
+                        <p class="mt-1 text-xl font-bold text-gray-900">{{ graded_attempts }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 rounded-lg bg-red-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Flagged</p>
+                    <p class="mt-1 text-2xl font-bold text-red-700">{{ flagged_attempts }}</p>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'exam_takers' exam.id %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+                        Open full taker list
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Takers</h2>
+                {% if recent_attempts_data %}
+                <div class="space-y-3">
+                    {% for data in recent_attempts_data %}
+                    <div class="rounded-lg border border-gray-200 p-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ data.student.get_full_name }}</p>
+                                <p class="text-sm text-gray-500">{{ data.class_name }}</p>
+                            </div>
+                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold
+                                {% if data.attempt.status == 'graded' %}bg-green-100 text-green-800{% elif data.attempt.status == 'submitted' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ data.attempt.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-sm">
+                            <span class="text-gray-500">{{ data.submitted_display }}</span>
+                            <span class="font-semibold text-gray-900">
+                                {{ data.attempt.total_score }} / {{ total_points|floatformat:1 }}
+                            </span>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            {{ data.percentage }}%
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-500">No submissions yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reopen Exam Modal -->
+<div id="reopenModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="px-6 py-4 bg-green-600 text-white flex justify-between items-center">
+            <h3 class="text-lg font-semibold flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Reopen Exam
+            </h3>
+            <button type="button" onclick="closeReopenModal()" class="text-white hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">Select which students can access:</p>
+                <p class="font-semibold text-gray-900" id="reopenExamTitle"></p>
+            </div>
+            <div class="mb-4 rounded-lg border border-gray-200 p-3">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" id="selectAllStudents" onchange="toggleSelectAll()" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                    <span class="text-sm font-medium text-gray-700">Select All Students</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <div id="studentsLoading" class="rounded-lg border border-gray-200 p-4">
+                    <p class="text-sm text-gray-500">Loading students...</p>
+                </div>
+                <div id="studentsList" class="hidden space-y-2"></div>
+                <div id="studentsError" class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    Failed to load students. Please try again.
+                </div>
+                <div id="studentsEmpty" class="hidden rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                    No students found in assigned classes.
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeReopenModal()" class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" onclick="confirmReopen()" id="confirmReopenBtn" disabled class="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300">
+                    Reopen Exam
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/components/modal-manager.js' %}"></script>
+{% endblock %}

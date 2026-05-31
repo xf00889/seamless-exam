@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from repositories.student_repository import StudentRepository
 from repositories.teacher_repository import TeacherRepository
+from services.rate_limiter import RateLimiter
 from users.models import Teacher, Student
 
 
@@ -32,6 +33,7 @@ class AuthenticationService:
         """Initialize with repositories."""
         self.student_repo = StudentRepository()
         self.teacher_repo = TeacherRepository()
+        self.rate_limiter = RateLimiter()
 
     @staticmethod
     def _resolve_username_case_insensitive(username: str) -> str:
@@ -62,10 +64,19 @@ class AuthenticationService:
         """
         canonical_username = self._resolve_username_case_insensitive(username)
 
+        is_allowed, _ = self.rate_limiter.check_login_attempt_limit(f'teacher:{canonical_username.lower()}')
+        if not is_allowed:
+            return AuthResult(
+                success=False,
+                error='Too many login attempts. Please try again later.'
+            )
+
         # Use Django's built-in authentication
         user = authenticate(request, username=canonical_username, password=password)
         
         if user is not None:
+            self.rate_limiter.record_login_attempt(f'teacher:{canonical_username.lower()}', success=True)
+
             # Check if user has a teacher profile
             teacher = Teacher.objects.filter(user=user).first()
             if teacher is None and (user.is_staff or user.is_superuser):
@@ -91,6 +102,7 @@ class AuthenticationService:
                 user_type='teacher'
             )
         else:
+            self.rate_limiter.record_login_attempt(f'teacher:{canonical_username.lower()}', success=False)
             return AuthResult(
                 success=False,
                 error='Invalid username or password'
@@ -108,9 +120,20 @@ class AuthenticationService:
         Returns:
             AuthResult with success status and student or error message
         """
-        student = self.student_repo.get_by_school_id(school_id)
+        normalized_school_id = (school_id or '').strip()
+        rate_limit_key = f'student:{normalized_school_id.lower()}'
+
+        is_allowed, _ = self.rate_limiter.check_login_attempt_limit(rate_limit_key)
+        if not is_allowed:
+            return AuthResult(
+                success=False,
+                error='Too many login attempts. Please try again later.'
+            )
+
+        student = self.student_repo.get_by_school_id(normalized_school_id)
         
         if student is None:
+            self.rate_limiter.record_login_attempt(rate_limit_key, success=False)
             return AuthResult(
                 success=False,
                 error='Invalid School ID or password'
@@ -126,6 +149,7 @@ class AuthenticationService:
                 student.save(update_fields=['password_hash'])
 
         if not password_is_valid:
+            self.rate_limiter.record_login_attempt(rate_limit_key, success=False)
             return AuthResult(
                 success=False,
                 error='Invalid School ID or password'
@@ -140,6 +164,7 @@ class AuthenticationService:
         
         # Mark session as modified to ensure it's saved
         request.session.modified = True
+        self.rate_limiter.record_login_attempt(rate_limit_key, success=True)
         
         return AuthResult(
             success=True,

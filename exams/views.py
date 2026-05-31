@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Count, Avg
 from exams.models import Exam, Question, QuestionType, AIGenerationTask
 from exams.forms import ExamForm, QuestionForm
 from users.models import Class
@@ -488,6 +489,117 @@ def exam_edit_view(request, exam_id):
         'page_breadcrumbs': breadcrumbs
     }
     return render(request, 'exams/exam_edit.html', context)
+
+
+@teacher_required
+def exam_detail_view(request, exam_id):
+    """
+    Display a read-only overview of an exam with quick actions,
+    question list, assigned classes, and taker summary.
+    """
+    exam = get_object_or_404(Exam, pk=exam_id)
+    teacher = auth_service.get_current_teacher(request)
+
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to view this exam')
+        return redirect('exam_list')
+
+    from attempts.models import Attempt, AttemptStatus
+    from exams.models import ExamStudentAssignment
+    from users.models import Student
+
+    questions = list(question_service.get_questions_by_exam(exam_id))
+    question_count = len(questions)
+    total_points = sum(float(question.points) for question in questions)
+
+    assigned_classes = Class.objects.filter(
+        exam_assignments__exam=exam
+    ).annotate(
+        student_count=Count('students', distinct=True)
+    ).order_by('grade_level', 'strand', 'section')
+
+    assigned_class_count = assigned_classes.count()
+    assigned_class_ids = list(assigned_classes.values_list('id', flat=True))
+    assigned_students_count = Student.objects.filter(
+        class_assigned_id__in=assigned_class_ids
+    ).count() if assigned_class_ids else 0
+
+    student_assignments = list(
+        ExamStudentAssignment.objects.filter(exam=exam).select_related(
+            'student', 'student__class_assigned'
+        ).order_by('student__last_name', 'student__first_name')
+    )
+    access_mode = 'Assigned classes'
+    accessible_students_count = assigned_students_count
+    selected_students = []
+    if student_assignments:
+        access_mode = 'Selected students'
+        accessible_students_count = len(student_assignments)
+        selected_students = [assignment.student for assignment in student_assignments]
+
+    attempts = Attempt.objects.filter(
+        exam=exam
+    ).select_related(
+        'student', 'student__class_assigned'
+    ).order_by('-submitted_at', '-started_at')
+
+    total_attempts = attempts.count()
+    in_progress_attempts = attempts.filter(status=AttemptStatus.IN_PROGRESS).count()
+    submitted_attempts = attempts.filter(status=AttemptStatus.SUBMITTED).count()
+    graded_attempts = attempts.filter(status=AttemptStatus.GRADED).count()
+    unique_takers = attempts.filter(
+        status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED]
+    ).values('student_id').distinct().count()
+    flagged_attempts = attempts.filter(is_flagged=True).count()
+
+    average_score = attempts.filter(
+        status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED]
+    ).aggregate(avg_score=Avg('total_score'))['avg_score']
+    average_score = float(average_score) if average_score is not None else None
+
+    recent_attempts_data = []
+    for attempt in attempts[:8]:
+        percentage = 0
+        if total_points > 0:
+            percentage = (float(attempt.total_score) / total_points) * 100
+        submitted_moment = attempt.submitted_at or attempt.started_at
+        recent_attempts_data.append({
+            'attempt': attempt,
+            'student': attempt.student,
+            'class_name': str(attempt.student.class_assigned) if attempt.student.class_assigned else 'No Class',
+            'percentage': round(percentage, 2),
+            'submitted_display': submitted_moment.strftime('%b %d, %Y %H:%M'),
+        })
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('My Exams', reverse('exam_list')),
+        f'Exam Details: {exam.title}'
+    )
+
+    context = {
+        'exam': exam,
+        'questions': questions,
+        'question_count': question_count,
+        'total_points': total_points,
+        'assigned_classes': assigned_classes,
+        'assigned_class_count': assigned_class_count,
+        'assigned_students_count': assigned_students_count,
+        'selected_students': selected_students,
+        'access_mode': access_mode,
+        'accessible_students_count': accessible_students_count,
+        'total_attempts': total_attempts,
+        'in_progress_attempts': in_progress_attempts,
+        'submitted_attempts': submitted_attempts,
+        'graded_attempts': graded_attempts,
+        'unique_takers': unique_takers,
+        'flagged_attempts': flagged_attempts,
+        'average_score': average_score,
+        'recent_attempts_data': recent_attempts_data,
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'exams/exam_detail.html', context)
 
 
 @teacher_required
@@ -1246,6 +1358,194 @@ def mps_report_view(request, exam_id):
     return render(request, 'exams/mps_report.html', context)
 
 
+def _configure_docx_branding(document, report_title, exam, meta_lines, footer_label):
+    import os
+    from django.conf import settings
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Cm, Inches, Pt, RGBColor
+
+    brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
+
+    section = document.sections[0]
+    section.top_margin = Cm(1.8)
+    section.bottom_margin = Cm(2)
+    section.left_margin = Cm(2.5)
+    section.right_margin = Cm(2.5)
+    section.header_distance = Cm(0.2)
+    section.footer_distance = Cm(0.2)
+
+    header = section.header
+    footer = section.footer
+    header.is_linked_to_previous = False
+    footer.is_linked_to_previous = False
+
+    header_paragraph = header.paragraphs[0]
+    header_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    header_paragraph.paragraph_format.space_before = Pt(0)
+    header_paragraph.paragraph_format.space_after = Pt(0)
+    if os.path.isfile(brand_path):
+        logo_run = header_paragraph.add_run()
+        logo_run.add_picture(brand_path, width=Inches(1.05))
+    else:
+        placeholder_run = header_paragraph.add_run('School Logo')
+        placeholder_run.bold = True
+        placeholder_run.font.size = Pt(9)
+        placeholder_run.font.color.rgb = RGBColor(90, 90, 90)
+    if os.path.isfile(brand_path):
+        placeholder_paragraph = header.add_paragraph()
+        placeholder_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        placeholder_paragraph.paragraph_format.space_before = Pt(0)
+        placeholder_paragraph.paragraph_format.space_after = Pt(0)
+        placeholder_run = placeholder_paragraph.add_run('School Logo')
+        placeholder_run.bold = True
+        placeholder_run.font.size = Pt(8)
+        placeholder_run.font.color.rgb = RGBColor(90, 90, 90)
+
+    footer_paragraph = footer.paragraphs[0]
+    footer_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    footer_paragraph.paragraph_format.space_before = Pt(0)
+    footer_paragraph.paragraph_format.space_after = Pt(0)
+    footer_run = footer_paragraph.add_run('Generated by: seamless.dpdns.org')
+    footer_run.font.size = Pt(8)
+    footer_run.font.color.rgb = RGBColor(107, 114, 128)
+
+
+def _write_docx_question_block(document, question, question_number):
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Cm, Pt, RGBColor
+
+    title_paragraph = document.add_paragraph()
+    title_paragraph.paragraph_format.space_after = Pt(2)
+    title_paragraph.add_run(f'{question_number}. ').bold = True
+    question_run = title_paragraph.add_run(question.question_text)
+    question_run.font.size = Pt(11)
+    question_run.font.color.rgb = RGBColor(31, 41, 55)
+
+    meta_paragraph = document.add_paragraph()
+    meta_paragraph.paragraph_format.space_after = Pt(4)
+    meta_paragraph.paragraph_format.left_indent = Cm(0.3)
+    meta_run = meta_paragraph.add_run(
+        f'{question.get_question_type_display()} • {question.points} point{"s" if question.points != 1 else ""}'
+    )
+    meta_run.italic = True
+    meta_run.font.size = Pt(9)
+    meta_run.font.color.rgb = RGBColor(107, 114, 128)
+
+    if question.question_type == QuestionType.MCQ:
+        for option in question.options or []:
+            option_paragraph = document.add_paragraph()
+            option_paragraph.paragraph_format.left_indent = Cm(0.9)
+            option_paragraph.paragraph_format.space_after = Pt(1)
+            option_run = option_paragraph.add_run(f"{option.get('key', '')}. {option.get('value', '')}")
+            option_run.font.size = Pt(10)
+    elif question.question_type == QuestionType.TRUE_FALSE:
+        for label in ('True', 'False'):
+            option_paragraph = document.add_paragraph()
+            option_paragraph.paragraph_format.left_indent = Cm(0.9)
+            option_paragraph.paragraph_format.space_after = Pt(1)
+            option_run = option_paragraph.add_run(f'☐ {label}')
+            option_run.font.size = Pt(10)
+    else:
+        answer_paragraph = document.add_paragraph()
+        answer_paragraph.paragraph_format.left_indent = Cm(0.9)
+        answer_paragraph.paragraph_format.space_after = Pt(4)
+        answer_run = answer_paragraph.add_run('Answer: ______________________________')
+        answer_run.font.size = Pt(10)
+
+
+@teacher_required
+@require_http_methods(["GET"])
+def exam_export_word_view(request, exam_id):
+    """
+    Export a printable exam paper as a Word document.
+    Includes exam metadata, a branded header/footer, and the full question list.
+    """
+    import os
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Cm, Pt
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'Permission denied')
+        return redirect('exam_list')
+
+    questions = list(question_service.get_questions_by_exam(exam_id))
+
+    doc = Document()
+    style = doc.styles['Normal']
+    style.font.name = 'Calibri'
+    style.font.size = Pt(11)
+
+    _configure_docx_branding(
+        doc,
+        'EXAMINATION PAPER',
+        exam,
+        [
+            ('Exam Title', exam.title),
+            ('Subject', exam.subject or 'Not specified'),
+            ('Duration', f'{exam.duration_minutes} minutes'),
+            ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+        ],
+        'Exam Export',
+    )
+
+    intro_title = doc.add_paragraph()
+    intro_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    intro_run = intro_title.add_run('EXAMINATION PAPER')
+    intro_run.bold = True
+    intro_run.font.size = Pt(16)
+
+    exam_meta = doc.add_table(rows=4, cols=2)
+    exam_meta.style = 'Table Grid'
+    meta_rows = [
+        ('Exam Title', exam.title),
+        ('Subject', exam.subject or 'Not specified'),
+        ('Duration', f'{exam.duration_minutes} minutes'),
+        ('Instructions', 'Read each item carefully and answer all questions.'),
+    ]
+    for row_index, (label, value) in enumerate(meta_rows):
+        row = exam_meta.rows[row_index]
+        row.cells[0].text = label
+        row.cells[1].text = value
+        for run in row.cells[0].paragraphs[0].runs:
+            run.bold = True
+            run.font.size = Pt(10)
+        for run in row.cells[1].paragraphs[0].runs:
+            run.font.size = Pt(10)
+
+    doc.add_paragraph()
+    questions_title = doc.add_paragraph()
+    questions_title.paragraph_format.space_after = Pt(6)
+    questions_run = questions_title.add_run('Questions')
+    questions_run.bold = True
+    questions_run.font.size = Pt(13)
+
+    if questions:
+        for index, question in enumerate(questions, start=1):
+            _write_docx_question_block(doc, question, index)
+    else:
+        empty_paragraph = doc.add_paragraph()
+        empty_paragraph.add_run('No questions have been added to this exam yet.')
+
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+
+    safe_title = exam.title.replace(' ', '_')[:30]
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = f'attachment; filename="Exam_{safe_title}.docx"'
+    return response
+
+
 @teacher_required
 @require_http_methods(["GET"])
 def mps_export_excel_view(request, exam_id):
@@ -1647,15 +1947,12 @@ def mps_export_word_view(request, exam_id):
     Export MPS report to Word (DOCX) with DepEd-style formatting.
     Includes overall MPS, per-class breakdown, and item-level data.
     """
-    import os
     from io import BytesIO
-    from django.conf import settings
     from django.http import HttpResponse
     from docx import Document
-    from docx.shared import Inches, Pt, Cm, RGBColor
+    from docx.shared import Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.enum.table import WD_TABLE_ALIGNMENT
-    from docx.oxml.ns import qn
     from services.item_analysis_service import ItemAnalysisService
 
     exam = get_object_or_404(Exam, pk=exam_id)
@@ -1680,13 +1977,21 @@ def mps_export_word_view(request, exam_id):
     style = doc.styles['Normal']
     style.font.name = 'Calibri'
     style.font.size = Pt(11)
+    _configure_docx_branding(
+        doc,
+        'MEAN PERCENTAGE SCORE (MPS) REPORT',
+        exam,
+        [
+            ('Exam Title', exam.title),
+            ('Subject', exam.subject or 'Not specified'),
+            ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+            ('No. of Learners', mps_data['total_learners']),
+            ('No. of Items', mps_data['total_items']),
+        ],
+        'MPS Report',
+    )
 
-    sections = doc.sections
-    for section in sections:
-        section.top_margin = Cm(2)
-        section.bottom_margin = Cm(2)
-        section.left_margin = Cm(2.5)
-        section.right_margin = Cm(2.5)
+    from docx.oxml.ns import qn
 
     def set_cell_shading(cell, color):
         shading_elm = cell._element.get_or_add_tcPr()
@@ -1703,14 +2008,6 @@ def mps_export_word_view(request, exam_id):
         elif mps_val >= 50:
             return 'Nearing Mastery'
         return 'Low Mastery'
-
-    # Brand logo
-    brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
-    if os.path.isfile(brand_path):
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run()
-        run.add_picture(brand_path, width=Inches(1.2))
 
     # Title
     title = doc.add_heading('MEAN PERCENTAGE SCORE (MPS) REPORT', level=1)
