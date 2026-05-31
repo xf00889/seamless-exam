@@ -40,81 +40,104 @@
     </div>
 
 {% if has_exams %}
-<main>
-<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" aria-label="Available exams">
-    {% for data in exam_data %}
-    <article class="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-lg overflow-hidden flex flex-col h-full">
-        <div class="p-4 sm:p-6 flex flex-col flex-grow">
-            <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
-                {{ data.exam.title }}
-            </h3>
-            
-            {% if data.exam.description %}
-            <p class="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 leading-relaxed">
-                {{ data.exam.description|truncatewords:20 }}
-            </p>
-            {% endif %}
-            
-            <div class="space-y-2.5 sm:space-y-4 mb-4 sm:mb-6">
-                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="font-medium">Duration:</span>
-                    <span class="ml-1">{{ data.exam.duration_minutes }} min</span>
-                </div>
-                
-                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <span class="font-medium">Questions:</span>
-                    <span class="ml-1">{{ data.question_count }}</span>
-                </div>
-            </div>
-            
-            <div class="mt-auto">
-                {% if data.graded_attempt %}
-                <div class="space-y-2.5 sm:space-y-4">
-                    <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-green-50 border-2 border-green-200 text-green-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Completed and graded">
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>Completed & Graded</span>
+<main class="space-y-4 sm:space-y-6">
+    <section aria-label="Available exams by quarter" class="space-y-4">
+        {% for group in grouped_quarters %}
+        <details class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200" {% if forloop.first %}open{% endif %}>
+            <summary class="cursor-pointer list-none px-4 sm:px-6 py-4 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-white">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex items-center justify-center h-9 w-9 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex-shrink-0">
+                        {{ forloop.counter }}
                     </div>
-                    <a href="{% url 'student_results' data.graded_attempt.id %}" 
-                       class="block w-full text-center py-2.5 sm:py-3 px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height">
-                        View Results
-                    </a>
+                    <div class="min-w-0">
+                        <h3 class="text-base sm:text-lg font-bold text-gray-900 truncate">{{ group.label }}</h3>
+                        <p class="text-xs sm:text-sm text-gray-500">{{ group.exam_count }} exam{{ group.exam_count|pluralize }}</p>
+                    </div>
                 </div>
-                {% elif data.is_completed %}
-                <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Awaiting grading">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>Awaiting Grading</span>
+                <svg class="w-5 h-5 text-gray-500 transition-transform duration-200 details-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </summary>
+
+            <div class="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-gray-100">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-4">
+                    {% for data in group.exams %}
+                    <article class="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 rounded-lg overflow-hidden flex flex-col h-full border border-gray-100">
+                        <div class="p-4 sm:p-6 flex flex-col flex-grow">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
+                                {{ data.exam.title }}
+                            </h3>
+
+                            {% if data.exam.description %}
+                            <p class="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+                                {{ data.exam.description|truncatewords:20 }}
+                            </p>
+                            {% endif %}
+
+                            <div class="space-y-2.5 sm:space-y-4 mb-4 sm:mb-6">
+                                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="font-medium">Duration:</span>
+                                    <span class="ml-1">{{ data.exam.duration_minutes }} min</span>
+                                </div>
+
+                                <div class="flex items-center text-xs sm:text-sm text-gray-700 leading-normal">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span class="font-medium">Questions:</span>
+                                    <span class="ml-1">{{ data.question_count }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                {% if data.graded_attempt %}
+                                <div class="space-y-2.5 sm:space-y-4">
+                                    <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-green-50 border-2 border-green-200 text-green-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Completed and graded">
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span>Completed & Graded</span>
+                                    </div>
+                                    <a href="{% url 'student_results' data.graded_attempt.id %}"
+                                       class="block w-full text-center py-2.5 sm:py-3 px-3 sm:px-4 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height">
+                                        View Results
+                                    </a>
+                                </div>
+                                {% elif data.is_completed %}
+                                <div class="flex items-center justify-center py-2 sm:py-3 px-3 sm:px-4 bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-lg text-xs sm:text-base font-semibold leading-normal" role="status" aria-label="Exam status: Awaiting grading">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Awaiting Grading</span>
+                                </div>
+                                {% elif data.in_progress_attempt %}
+                                <a href="{% url 'exam_take' data.in_progress_attempt.id %}"
+                                   class="flex items-center justify-center w-full py-2.5 sm:py-3 px-3 sm:px-4 bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height"
+                                   aria-label="Resume exam: {{ data.exam.title }}">
+                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Resume Exam</span>
+                                </a>
+                                {% else %}
+                                <button class="start-exam-btn flex items-center justify-center w-full py-3 sm:py-4 px-4 sm:px-6 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg font-bold text-base sm:text-lg leading-tight transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 btn-min-height"
+                                        data-exam-id="{{ data.exam.id }}"
+                                        aria-label="Start exam: {{ data.exam.title }}">
+                                    <span>Start Exam</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
                 </div>
-                {% elif data.in_progress_attempt %}
-                <a href="{% url 'exam_take' data.in_progress_attempt.id %}" 
-                   class="flex items-center justify-center w-full py-2.5 sm:py-3 px-3 sm:px-4 bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 text-white rounded-lg text-sm sm:text-base font-semibold leading-normal transition-all duration-200 shadow-md hover:shadow-lg btn-min-height"
-                   aria-label="Resume exam: {{ data.exam.title }}">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>Resume Exam</span>
-                </a>
-                {% else %}
-                <button class="start-exam-btn flex items-center justify-center w-full py-3 sm:py-4 px-4 sm:px-6 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-lg font-bold text-base sm:text-lg leading-tight transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 btn-min-height"
-                        data-exam-id="{{ data.exam.id }}"
-                        aria-label="Start exam: {{ data.exam.title }}">
-                    <span>Start Exam</span>
-                </button>
-                {% endif %}
             </div>
-        </div>
-    </article>
-    {% endfor %}
-</section>
+        </details>
+        {% endfor %}
+    </section>
 </main>
 {% else %}
 <main>

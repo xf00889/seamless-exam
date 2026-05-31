@@ -3,8 +3,9 @@ Tests for the attempts app.
 Tests models, repositories, and services for exam attempts and answers.
 """
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
-from users.models import Student, Teacher
+from users.models import Student, Teacher, Class as SchoolClass, Quarter
 from exams.models import Exam, Question, QuestionType
 from attempts.models import Attempt, Answer, AttemptStatus
 from repositories.attempt_repository import AttemptRepository
@@ -12,6 +13,7 @@ from repositories.answer_repository import AnswerRepository
 from services.attempt_service import AttemptService
 from services.answer_service import AnswerService
 from django.contrib.auth.models import User
+from exams.models import ExamClassAssignment
 
 
 class AttemptModelTest(TestCase):
@@ -246,7 +248,7 @@ class AttemptServiceTest(TestCase):
         self.assertTrue(submitted.auto_submitted)
         self.assertTrue(submitted.is_flagged)
         self.assertEqual(submitted.flag_reason, "Auto-submitted after 4 tab switches")
-    
+
     def test_flag_attempt(self):
         """Test flagging an attempt."""
         attempt = self.service.create_attempt(self.student.id, self.exam.id)
@@ -281,6 +283,64 @@ class AttemptServiceTest(TestCase):
         self.assertFalse(submitted.auto_submitted)
         self.assertFalse(submitted.is_flagged)
         self.assertEqual(submitted.flag_reason, "")
+
+
+class StudentExamListQuarterGroupingTest(TestCase):
+    def setUp(self):
+        self.teacher_user = User.objects.create_user(username='teacher_quarter', password='pass123')
+        self.teacher = Teacher.objects.create(user=self.teacher_user, department='Science')
+        self.student = Student.objects.create(
+            school_id='2024002',
+            first_name='Mia',
+            last_name='Lopez',
+        )
+        self.school_class = SchoolClass.objects.create(
+            grade_level='Grade 10',
+            strand='STEM',
+            section='A',
+            teacher=self.teacher,
+        )
+        self.student.class_assigned = self.school_class
+        self.student.save(update_fields=['class_assigned'])
+        self.quarter_one = Quarter.objects.create(name='1st Quarter', order=1)
+        self.quarter_two = Quarter.objects.create(name='2nd Quarter', order=2)
+        self.exam_one = Exam.objects.create(
+            title='Quarter One Exam',
+            duration_minutes=45,
+            is_active=True,
+            quarter=self.quarter_one,
+            created_by=self.teacher,
+        )
+        self.exam_two = Exam.objects.create(
+            title='Quarter Two Exam',
+            duration_minutes=45,
+            is_active=True,
+            quarter=self.quarter_two,
+            created_by=self.teacher,
+        )
+        self.exam_unassigned = Exam.objects.create(
+            title='Unassigned Exam',
+            duration_minutes=45,
+            is_active=True,
+            created_by=self.teacher,
+        )
+        ExamClassAssignment.objects.create(exam=self.exam_one, class_assigned=self.school_class)
+        ExamClassAssignment.objects.create(exam=self.exam_two, class_assigned=self.school_class)
+
+        session = self.client.session
+        session['student_id'] = self.student.id
+        session.save()
+
+    def test_student_exam_list_groups_exams_into_quarter_cards(self):
+        response = self.client.get(reverse('student_exam_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1st Quarter')
+        self.assertContains(response, '2nd Quarter')
+        self.assertContains(response, 'No Quarter')
+        self.assertContains(response, self.exam_one.title)
+        self.assertContains(response, self.exam_two.title)
+        self.assertContains(response, self.exam_unassigned.title)
 
 
 class AnswerServiceTest(TestCase):

@@ -6,6 +6,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.urls import reverse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from itertools import groupby
 from exams.models import Exam
 from attempts.models import Attempt, AttemptStatus
 from services.exam_service import ExamService
@@ -139,6 +140,29 @@ def student_exam_list_view(request):
             'question_count': exam.questions.count()
         }
         exam_data.append(exam_info)
+
+    exam_data.sort(key=lambda data: (
+        data['exam'].quarter.order if data['exam'].quarter else 9999,
+        data['exam'].quarter.name.lower() if data['exam'].quarter else 'no quarter',
+        -data['exam'].created_at.timestamp(),
+    ))
+
+    grouped_quarters = []
+    for key, group in groupby(
+        exam_data,
+        key=lambda data: (
+            data['exam'].quarter.id if data['exam'].quarter else None,
+            data['exam'].quarter.name if data['exam'].quarter else 'No Quarter',
+            data['exam'].quarter.order if data['exam'].quarter else 9999,
+        )
+    ):
+        quarter_items = list(group)
+        grouped_quarters.append({
+            'quarter_id': key[0],
+            'label': key[1],
+            'exam_count': len(quarter_items),
+            'exams': quarter_items,
+        })
     
     # Build breadcrumbs
     breadcrumbs = build_breadcrumbs(
@@ -147,6 +171,7 @@ def student_exam_list_view(request):
     
     context = {
         'exam_data': exam_data,
+        'grouped_quarters': grouped_quarters,
         'has_exams': len(exam_data) > 0,
         'student_class': student.class_assigned,
         'breadcrumbs': breadcrumbs
