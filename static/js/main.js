@@ -42,6 +42,20 @@ function validateForm(formElement) {
     return isValid;
 }
 
+function applyProgressBars() {
+    const progressBars = document.querySelectorAll('[data-progress-percent]');
+    progressBars.forEach(bar => {
+        const percent = Number(bar.dataset.progressPercent);
+        if (Number.isNaN(percent)) {
+            return;
+        }
+
+        const boundedPercent = Math.max(0, Math.min(100, percent));
+        bar.style.width = `${boundedPercent}%`;
+        bar.setAttribute('aria-valuenow', String(boundedPercent));
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Add form validation to all forms
@@ -75,5 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    applyProgressBars();
 });
 

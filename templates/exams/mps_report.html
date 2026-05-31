@@ -116,7 +116,7 @@
             <div class="mps-gauge flex-shrink-0">
                 <svg class="mps-gauge-circle" width="140" height="140" viewBox="0 0 140 140">
                     <circle class="mps-gauge-bg" cx="70" cy="70" r="60"></circle>
-                    <circle class="mps-gauge-fill {% if summary.mps_data.overall_mps >= 75 %}stroke-green-500{% elif summary.mps_data.overall_mps >= 50 %}stroke-yellow-500{% else %}stroke-red-500{% endif %}" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="{{ mps_gauge_offset }}"></circle>
+                    <circle class="mps-gauge-fill {% if summary.mps_data.overall_mps >= 75 %}stroke-green-500{% elif summary.mps_data.overall_mps >= 50 %}stroke-yellow-500{% else %}stroke-red-500{% endif %}" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="{{ mps_gauge_offset }}" style="stroke: {% if summary.mps_data.overall_mps >= 75 %}#22c55e{% elif summary.mps_data.overall_mps >= 50 %}#eab308{% else %}#ef4444{% endif %}; stroke-dashoffset: {{ mps_gauge_offset }};"></circle>
                 </svg>
                 <div class="absolute inset-0 flex items-center justify-center" style="position:absolute; top:0; left:0; width:140px; height:140px; display:flex; align-items:center; justify-content:center;">
                     <span class="text-2xl font-bold {% if summary.mps_data.overall_mps >= 75 %}text-green-600{% elif summary.mps_data.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.mps_data.overall_mps }}%</span>
@@ -197,8 +197,8 @@
                         <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_possible }}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center gap-2">
-                                <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full {% if cls.mps >= 75 %}bg-green-500{% elif cls.mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.mps }}%"></div>
+                                <div class="progress-bar flex-1 h-4">
+                                    <div class="progress-bar-fill {% if cls.mps >= 75 %}bg-green-500{% elif cls.mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.mps }}%;{% if cls.mps >= 75 %} background-color: #22c55e;{% elif cls.mps >= 50 %} background-color: #eab308;{% else %} background-color: #ef4444;{% endif %}" data-progress-percent="{{ cls.mps }}"></div>
                                 </div>
                                 <span class="text-sm font-bold w-16 text-right {% if cls.mps >= 75 %}text-green-700{% elif cls.mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ cls.mps }}%</span>
                             </div>
@@ -222,8 +222,8 @@
                         <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.mps_data.total_possible_answers }}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center gap-2">
-                                <div class="flex-1 h-4 bg-gray-300 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full bg-indigo-500" style="width: {{ summary.mps_data.overall_mps }}%"></div>
+                                <div class="progress-bar flex-1 h-4">
+                                    <div class="progress-bar-fill bg-indigo-500" style="width: {{ summary.mps_data.overall_mps }}%; background-color: #6366f1;" data-progress-percent="{{ summary.mps_data.overall_mps }}"></div>
                                 </div>
                                 <span class="text-sm font-bold w-16 text-right text-indigo-700">{{ summary.mps_data.overall_mps }}%</span>
                             </div>

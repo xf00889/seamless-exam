@@ -2015,35 +2015,23 @@ def mps_export_word_view(request, exam_id):
 
     doc.add_paragraph()
 
-    # Exam info table
-    info_table = doc.add_table(rows=3, cols=4)
-    info_table.style = 'Table Grid'
-    info_data = [
-        ('School:', '________________________', 'Teacher:', exam.created_by.user.get_full_name()),
-        ('Subject:', exam.subject or 'Not specified', 'No. of Learners:', str(mps_data['total_learners'])),
-        ('Exam:', exam.title, 'No. of Items:', str(mps_data['total_items'])),
+    # Exam info block
+    info_block = [
+        ('School', '________________________'),
+        ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+        ('Subject', exam.subject or 'Not specified'),
+        ('No. of Learners', str(mps_data['total_learners'])),
+        ('Exam', exam.title),
+        ('No. of Items', str(mps_data['total_items'])),
     ]
-    for row_idx, (l1, v1, l2, v2) in enumerate(info_data):
-        row = info_table.rows[row_idx]
-        row.cells[0].text = l1
-        row.cells[0].paragraphs[0].runs[0].bold = True if row.cells[0].paragraphs[0].runs else None
-        row.cells[1].text = v1
-        row.cells[2].text = l2
-        row.cells[2].paragraphs[0].runs[0].bold = True if row.cells[2].paragraphs[0].runs else None
-        row.cells[3].text = v2
-        for cell in row.cells:
-            for paragraph in cell.paragraphs:
-                paragraph.paragraph_format.space_after = Pt(2)
-                paragraph.paragraph_format.space_before = Pt(2)
-                for run in paragraph.runs:
-                    run.font.size = Pt(10)
-
-    # Make label cells bold
-    for row_idx in range(3):
-        for col_idx in [0, 2]:
-            for para in info_table.rows[row_idx].cells[col_idx].paragraphs:
-                for run in para.runs:
-                    run.bold = True
+    for label, value in info_block:
+        paragraph = doc.add_paragraph()
+        paragraph.paragraph_format.space_after = Pt(2)
+        label_run = paragraph.add_run(f'{label}: ')
+        label_run.bold = True
+        label_run.font.size = Pt(10)
+        value_run = paragraph.add_run(str(value))
+        value_run.font.size = Pt(10)
 
     doc.add_paragraph()
 
@@ -2070,25 +2058,6 @@ def mps_export_word_view(request, exam_id):
     level_para = doc.add_paragraph()
     level_para.add_run('Performance Level: ').bold = True
     level_para.add_run(get_performance_level(mps_data['overall_mps']))
-
-    details_table = doc.add_table(rows=3, cols=2)
-    details_table.style = 'Table Grid'
-    detail_rows = [
-        ('Total Correct Answers', str(mps_data['total_correct'])),
-        ('Total Possible Answers', str(mps_data['total_possible_answers'])),
-        ('Breakdown', f'{mps_data["total_learners"]} learners x {mps_data["total_items"]} items'),
-    ]
-    for row_idx, (label, value) in enumerate(detail_rows):
-        row = details_table.rows[row_idx]
-        row.cells[0].text = label
-        row.cells[1].text = value
-        for para in row.cells[0].paragraphs:
-            for run in para.runs:
-                run.bold = True
-                run.font.size = Pt(10)
-        for para in row.cells[1].paragraphs:
-            for run in para.runs:
-                run.font.size = Pt(10)
 
     doc.add_paragraph()
 
@@ -2352,6 +2321,27 @@ def mps_export_word_view(request, exam_id):
         mps_final.add_run(
             f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%'
         ).bold = True
+
+    doc.add_paragraph()
+    prepared_by_para = doc.add_paragraph()
+    prepared_by_para.paragraph_format.space_after = Pt(2)
+    prepared_by_run = prepared_by_para.add_run('Prepared by:')
+    prepared_by_run.bold = True
+    prepared_by_run.font.size = Pt(10)
+
+    signature_line = doc.add_paragraph()
+    signature_line.paragraph_format.space_after = Pt(2)
+    signature_run = signature_line.add_run('________________________________________')
+    signature_run.font.size = Pt(10)
+
+    name_para = doc.add_paragraph()
+    name_para.paragraph_format.space_after = Pt(0)
+    name_label = name_para.add_run('Name of Teacher: ')
+    name_label.bold = True
+    name_label.font.size = Pt(10)
+    name_value = name_para.add_run(exam.created_by.user.get_full_name() or exam.created_by.user.username)
+    name_value.bold = True
+    name_value.font.size = Pt(10)
 
     # Write to response
     output = BytesIO()
