@@ -617,7 +617,30 @@ async function generateInlineQuestion() {
 
         if (response.ok && data.success && data.question) {
             textarea.value = data.question.question_text;
-            textarea.focus();
+
+            // Set points
+            const pointsField = document.getElementById('points');
+            if (pointsField && data.question.points) {
+                pointsField.value = data.question.points;
+            }
+
+            // Trigger type change to create type-specific fields
+            const typeSelect = document.getElementById('question_type');
+            if (typeSelect) {
+                const event = new Event('change');
+                typeSelect.dispatchEvent(event);
+            }
+
+            // Wait for fields to render, then populate options/correct answer
+            setTimeout(() => {
+                if (typeof populateTypeSpecificFields === 'function') {
+                    populateTypeSpecificFields(
+                        data.question.question_type,
+                        data.question.correct_answer,
+                        data.question.options
+                    );
+                }
+            }, 150);
         } else {
             alert(data.error || 'Failed to generate question. Please try again.');
         }
