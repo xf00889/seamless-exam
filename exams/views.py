@@ -1343,6 +1343,34 @@ def item_summary_ai_analyze_view(request, exam_id):
 
 
 @teacher_required
+def mps_entrypoint_view(request):
+    """
+    Entry point for the teacher MPS report.
+    Redirects to the newest exam with a quarter-based MPS report.
+    """
+    from exams.models import Exam
+    from attempts.models import AttemptStatus
+    from services.item_analysis_service import ItemAnalysisService
+
+    teacher = auth_service.get_current_teacher(request)
+
+    candidate_exams = Exam.objects.filter(
+        created_by=teacher,
+        quarter__isnull=False,
+        attempts__status=AttemptStatus.GRADED,
+    ).select_related('quarter').distinct().order_by('-created_at', '-id')
+
+    service = ItemAnalysisService()
+    for exam in candidate_exams:
+        summary_data = service.get_mps_report_summary(exam.id)
+        if summary_data and summary_data.get('has_data'):
+            return redirect('mps_report', exam_id=exam.id)
+
+    messages.info(request, 'No graded quarter MPS reports are available yet.')
+    return redirect('exam_list')
+
+
+@teacher_required
 def mps_report_view(request, exam_id):
     """
     Display a quarter-based DepEd-style MPS (Mean Percentage Score) report.

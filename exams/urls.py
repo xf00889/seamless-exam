@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.exam_list_view, name='exam_list'),
     path('create/', views.exam_create_view, name='exam_create'),
     path('create/test/', views.exam_create_test_view, name='exam_create_test'),
+    path('mps/', views.mps_entrypoint_view, name='mps_entrypoint'),
     path('<int:exam_id>/', views.exam_detail_view, name='exam_detail'),
     path('<int:exam_id>/export-word/', views.exam_export_word_view, name='exam_export_word'),
     path('<int:exam_id>/edit/', views.exam_edit_view, name='exam_edit'),

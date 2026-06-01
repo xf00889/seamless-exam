@@ -4,6 +4,7 @@ Requirements: 1.3, 1.4
 """
 from services.auth_service import AuthenticationService
 from users.models import Teacher
+from django.urls import reverse
 
 
 def navbar_context(request):
@@ -45,6 +46,11 @@ def navbar_context(request):
                 'label': 'Exams',
                 'url': '/exams/',
                 'active': current_path.startswith('/exams/')
+            },
+            {
+                'label': 'MPS',
+                'url': reverse('mps_entrypoint'),
+                'active': current_path.startswith('/exams/') and '/mps/' in current_path,
             },
             {
                 'label': 'Classes',
