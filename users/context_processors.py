@@ -36,6 +36,7 @@ def navbar_context(request):
         )
 
         current_path = request.path
+        is_mps_path = current_path.startswith('/exams/') and '/mps/' in current_path
         context['navbar_nav_links'] = [
             {
                 'label': 'Dashboard',
@@ -45,12 +46,12 @@ def navbar_context(request):
             {
                 'label': 'Exams',
                 'url': '/exams/',
-                'active': current_path.startswith('/exams/')
+                'active': current_path.startswith('/exams/') and not is_mps_path
             },
             {
                 'label': 'MPS',
                 'url': reverse('mps_entrypoint'),
-                'active': current_path.startswith('/exams/') and '/mps/' in current_path,
+                'active': is_mps_path,
             },
             {
                 'label': 'Classes',

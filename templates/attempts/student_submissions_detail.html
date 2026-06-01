@@ -6,9 +6,9 @@
 {% block content %}
 {% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-indigo-500 border-t border-r border-b border-gray-200 p-6 mb-6">
-    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-        <div class="flex items-center">
-            <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-100 mr-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-100">
                 <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm3 7h8m-8 4h8m-8 4h5" />
                 </svg>
@@ -20,14 +20,14 @@
                 </p>
             </div>
         </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-            <a href="{% url 'teacher_pending_grading' %}" class="inline-flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md font-medium transition-colors">
+        <div class="flex flex-wrap justify-start sm:justify-end gap-2">
+            <a href="{% url 'teacher_pending_grading' %}" class="inline-flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors text-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Pending Essay Grading
             </a>
-            <a href="{% url 'teacher_grading_list' %}" class="inline-flex items-center justify-center bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-md font-medium transition-colors">
+            <a href="{% url 'teacher_grading_list' %}" class="inline-flex items-center justify-center bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-md font-medium transition-colors text-sm">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
