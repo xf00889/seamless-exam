@@ -796,8 +796,16 @@ class DashboardService:
                     'data': {}
                 })
             
-            # Get all subjects from exams
-            subjects = list(Exam.objects.values_list('subject', flat=True).distinct().exclude(subject__isnull=True).exclude(subject=''))
+            # Get all subjects from exams - use a set to ensure uniqueness and normalize
+            all_subjects = Exam.objects.values_list('subject', flat=True).exclude(subject__isnull=True).exclude(subject='')
+            # Remove duplicates while preserving order and normalize whitespace
+            seen = set()
+            subjects = []
+            for subject in all_subjects:
+                normalized = str(subject).strip()
+                if normalized and normalized not in seen:
+                    seen.add(normalized)
+                    subjects.append(normalized)
             
             if not subjects:
                 logger.info("No subjects found for passing rate calculation")
@@ -815,6 +823,7 @@ class DashboardService:
             
             for subject in subjects:
                 subject_rates = []
+                subject_normalized = str(subject).strip()
                 
                 for cls in classes:
                     # Get students in this class
@@ -826,10 +835,11 @@ class DashboardService:
                         continue
                     
                     # Get graded attempts for this subject and these students
+                    # Normalize subject comparison to handle case sensitivity
                     subject_attempts = Attempt.objects.filter(
                         student_id__in=student_ids,
                         status=AttemptStatus.GRADED,
-                        exam__subject=subject
+                        exam__subject__iexact=subject_normalized  # Case-insensitive comparison
                     ).select_related('exam').prefetch_related('exam__questions')
                     
                     if not subject_attempts.exists():
@@ -854,7 +864,7 @@ class DashboardService:
                     passing_rate = (passed_count / total_count * 100) if total_count > 0 else 0.0
                     subject_rates.append(round(passing_rate, 2))
                 
-                passing_rate_data[subject] = subject_rates
+                passing_rate_data[subject_normalized] = subject_rates
             
             result = {
                 'sections': section_labels,
