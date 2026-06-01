@@ -102,7 +102,7 @@ class ClassDetailActionTests(TestCase):
         response = self.client.get(reverse('class_detail', args=[self.school_class.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, reverse('student_detail', args=[self.student.id]))
+        self.assertContains(response, reverse('teacher_student_detail', args=[self.student.id]))
         self.assertContains(response, reverse('exam_detail', args=[self.exam.id]))
         self.assertContains(response, 'title="View Student"')
         self.assertContains(response, 'title="View Exam"')

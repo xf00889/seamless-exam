@@ -174,49 +174,40 @@ class ItemAnalysisService:
 
         return quarter_summaries
 
-    def _build_quarter_student_item_matrix(self, exam):
+    def _build_student_item_matrix_for_exams(self, exams, matrix_title):
         """
-        Build a quarter-wide student-by-item matrix that spans all exams in the same quarter.
+        Build a student-by-item response matrix across a list of exams.
         """
-        if not exam.quarter_id:
-            return None
-
-        quarter_exams = list(
-            Exam.objects.filter(
-                created_by=exam.created_by,
-                quarter=exam.quarter
-            ).select_related('quarter', 'created_by__user').prefetch_related('questions').order_by('created_at', 'id')
-        )
-
-        if not quarter_exams:
+        exam_list = list(exams)
+        if not exam_list:
             return None
 
         exam_sections = []
         flattened_items = []
         question_to_exam = {}
 
-        for quarter_exam in quarter_exams:
-            questions = list(quarter_exam.questions.all().order_by('order_index', 'id'))
-            snapshot = self._compute_exam_mps_snapshot(quarter_exam)
+        for current_exam in exam_list:
+            questions = list(current_exam.questions.all().order_by('order_index', 'id'))
+            snapshot = self._compute_exam_mps_snapshot(current_exam)
             section_start = len(flattened_items)
 
             for item_index, question in enumerate(questions, start=1):
                 flattened_items.append({
                     'global_item_no': len(flattened_items) + 1,
-                    'exam_id': quarter_exam.id,
-                    'exam_title': quarter_exam.title,
-                    'exam_subject': quarter_exam.subject or 'Not specified',
+                    'exam_id': current_exam.id,
+                    'exam_title': current_exam.title,
+                    'exam_subject': current_exam.subject or 'Not specified',
                     'exam_item_no': item_index,
                     'question_id': question.id,
                     'question_type': question.get_question_type_display(),
                     'question_text': question.question_text,
                 })
-                question_to_exam[question.id] = quarter_exam.id
+                question_to_exam[question.id] = current_exam.id
 
             exam_sections.append({
-                'exam_id': quarter_exam.id,
-                'title': quarter_exam.title,
-                'subject': quarter_exam.subject or 'Not specified',
+                'exam_id': current_exam.id,
+                'title': current_exam.title,
+                'subject': current_exam.subject or 'Not specified',
                 'item_count': len(questions),
                 'has_data': snapshot['has_data'],
                 'total_learners': snapshot['total_learners'],
@@ -231,9 +222,9 @@ class ItemAnalysisService:
         if not flattened_items:
             return None
 
-        quarter_attempts = list(
+        graded_attempts = list(
             Attempt.objects.filter(
-                exam__in=quarter_exams,
+                exam__in=exam_list,
                 status=AttemptStatus.GRADED
             ).select_related('student', 'student__class_assigned', 'exam').order_by(
                 'student__class_assigned__grade_level',
@@ -248,9 +239,9 @@ class ItemAnalysisService:
 
         attempt_lookup = {
             (attempt.student_id, attempt.exam_id): attempt
-            for attempt in quarter_attempts
+            for attempt in graded_attempts
         }
-        attempt_ids = [attempt.id for attempt in quarter_attempts]
+        attempt_ids = [attempt.id for attempt in graded_attempts]
 
         answer_lookup = {}
         if attempt_ids:
@@ -261,7 +252,7 @@ class ItemAnalysisService:
                 answer_lookup[(attempt_id, question_id)] = is_correct
 
         students_by_id = {}
-        for attempt in quarter_attempts:
+        for attempt in graded_attempts:
             students_by_id[attempt.student_id] = attempt.student
 
         students = []
@@ -304,7 +295,7 @@ class ItemAnalysisService:
             exam_correct = 0
             exam_possible = 0
             for item in exam_items:
-                for attempt in quarter_attempts:
+                for attempt in graded_attempts:
                     if attempt.exam_id != section['exam_id']:
                         continue
                     exam_possible += 1
@@ -315,30 +306,61 @@ class ItemAnalysisService:
             section['overall_mps'] = round((exam_correct / exam_possible) * 100, 2) if exam_possible > 0 else 0
             section['has_data'] = bool(exam_possible)
 
-        quarter_total_correct = sum(section['total_correct'] for section in exam_sections)
-        quarter_total_possible = sum(section['total_possible_answers'] for section in exam_sections)
-        quarter_total_students = len(students)
-        quarter_total_items = len(flattened_items)
-        quarter_overall_mps = round((quarter_total_correct / quarter_total_possible) * 100, 2) if quarter_total_possible > 0 else 0
+        matrix_total_correct = sum(section['total_correct'] for section in exam_sections)
+        matrix_total_possible = sum(section['total_possible_answers'] for section in exam_sections)
+        matrix_total_students = len(students)
+        matrix_total_items = len(flattened_items)
+        matrix_overall_mps = round((matrix_total_correct / matrix_total_possible) * 100, 2) if matrix_total_possible > 0 else 0
 
         per_item_percent = [
-            round((correct_count / quarter_total_students) * 100, 1) if quarter_total_students > 0 else 0
+            round((correct_count / matrix_total_students) * 100, 1) if matrix_total_students > 0 else 0
             for correct_count in per_item_correct
         ]
 
         return {
+            'matrix_title': matrix_title,
             'students': students,
             'items': flattened_items,
             'exam_sections': exam_sections,
             'per_item_correct': per_item_correct,
             'per_item_percent': per_item_percent,
-            'total_items': quarter_total_items,
-            'total_learners': quarter_total_students,
-            'overall_mps': quarter_overall_mps,
-            'total_correct': quarter_total_correct,
-            'total_possible_answers': quarter_total_possible,
-            'quarter_exams': quarter_exams,
+            'total_items': matrix_total_items,
+            'total_learners': matrix_total_students,
+            'overall_mps': matrix_overall_mps,
+            'total_correct': matrix_total_correct,
+            'total_possible_answers': matrix_total_possible,
+            'quarter_exams': exam_list,
         }
+
+    def _build_quarter_student_item_matrix(self, exam):
+        """
+        Build a quarter-wide student-by-item matrix that spans all exams in the same quarter.
+        """
+        if not exam.quarter_id:
+            return None
+
+        quarter_exams = Exam.objects.filter(
+            created_by=exam.created_by,
+            quarter=exam.quarter
+        ).select_related('quarter', 'created_by__user').prefetch_related('questions').order_by('created_at', 'id')
+
+        return self._build_student_item_matrix_for_exams(quarter_exams, 'Quarter')
+
+    def _build_all_quarter_student_item_matrix(self, exam):
+        """
+        Build a student-by-item matrix spanning all quarter-tagged exams for the teacher.
+        """
+        quarter_exams = Exam.objects.filter(
+            created_by=exam.created_by,
+            quarter__isnull=False
+        ).select_related('quarter', 'created_by__user').prefetch_related('questions').order_by(
+            'quarter__order',
+            'quarter__name',
+            'created_at',
+            'id'
+        )
+
+        return self._build_student_item_matrix_for_exams(quarter_exams, 'All Quarters')
 
     def get_mps_report_summary(self, exam_id):
         """
@@ -352,12 +374,24 @@ class ItemAnalysisService:
         quarter_summary = self._build_quarter_summary(exam)
         quarter_summaries = self._build_all_quarter_summaries(exam.created_by)
         quarter_matrix = self._build_quarter_student_item_matrix(exam)
+        all_quarter_matrix = self._build_all_quarter_student_item_matrix(exam)
+        questions = list(exam.questions.all().order_by('order_index', 'id'))
+        student_matrix = self._build_student_item_matrix(
+            exam,
+            questions,
+            Attempt.objects.filter(
+                exam=exam,
+                status=AttemptStatus.GRADED
+            ).select_related('student', 'student__class_assigned')
+        )
 
         return {
             'exam': exam,
             'quarter_summary': quarter_summary,
             'quarter_summaries': quarter_summaries,
             'quarter_matrix': quarter_matrix,
+            'all_quarter_matrix': all_quarter_matrix,
+            'student_matrix': student_matrix,
             'has_data': bool(quarter_summary and quarter_summary.get('has_data')),
         }
 

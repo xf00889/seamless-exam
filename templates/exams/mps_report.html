@@ -277,12 +277,66 @@
     </div>
     {% endif %}
 
-    <!-- Student-by-Item Response Matrix -->
+    <!-- Student-by-Item Response Matrices -->
+    {% if summary.student_matrix and summary.student_matrix.students %}
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">Exam Student-by-Item Response Matrix</h3>
+            <p class="text-xs text-gray-500 mt-1">Original exam-level matrix. 1 = Correct, 0 = Wrong/Skipped.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-xs border-collapse">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
+                        {% for item in summary.student_matrix.items %}
+                        <th class="px-1 py-2 text-center font-medium text-gray-500 border border-gray-200 w-8">{{ item.item_no }}</th>
+                        {% endfor %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in summary.student_matrix.students %}
+                    <tr class="{% cycle '' 'bg-gray-50' %}">
+                        <td class="px-2 py-1 border border-gray-200 text-gray-500 sticky left-0 {% cycle 'bg-white' 'bg-gray-50' %} z-10">{{ forloop.counter }}</td>
+                        <td class="px-2 py-1 border border-gray-200 font-medium text-gray-900 sticky left-6 {% cycle 'bg-white' 'bg-gray-50' %} z-10 whitespace-nowrap">{{ student.name }}</td>
+                        {% for mark in student.responses %}
+                        <td class="px-1 py-1 text-center border border-gray-200 {% if mark == 1 %}text-green-700 bg-green-50{% else %}text-red-600 bg-red-50{% endif %}">{{ mark }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50">{{ student.total_correct }}</td>
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50 {% if student.percent >= 75 %}text-green-700{% elif student.percent >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ student.percent }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-indigo-50">
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">Total Correct per Item</td>
+                        {% for count in summary.student_matrix.per_item_correct %}
+                        <td class="px-1 py-2 text-center border border-gray-200 font-bold">{{ count }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold">{{ summary.student_matrix.total_correct }}</td>
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold text-indigo-700">{{ summary.student_matrix.overall_mps }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">% Correct per Item</td>
+                        {% for pct in summary.student_matrix.per_item_percent %}
+                        <td class="px-1 py-2 text-center border border-gray-200 text-xs {% if pct >= 75 %}text-green-700{% elif pct >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ pct }}%</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 border border-gray-200" colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     {% if summary.quarter_matrix and summary.quarter_matrix.students %}
     <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
         <div class="p-4 border-b bg-gray-50">
             <h3 class="text-lg font-semibold text-gray-900">Quarter Student-by-Item Response Matrix</h3>
-            <p class="text-xs text-gray-500 mt-1">1 = Correct, 0 = Wrong/Skipped. Items are grouped by exam and the header shows each exam's MPS.</p>
+            <p class="text-xs text-gray-500 mt-1">Quarter-wide matrix grouped by exam. 1 = Correct, 0 = Wrong/Skipped.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-xs border-collapse">
@@ -334,6 +388,72 @@
                     <tr>
                         <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">% Correct per Item</td>
                         {% for pct in summary.quarter_matrix.per_item_percent %}
+                        <td class="px-1 py-2 text-center border border-gray-200 text-xs {% if pct >= 75 %}text-green-700{% elif pct >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ pct }}%</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 border border-gray-200" colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.all_quarter_matrix and summary.all_quarter_matrix.students %}
+    <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div class="p-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">All Quarters Student-by-Item Response Matrix</h3>
+            <p class="text-xs text-gray-500 mt-1">Combined matrix across every quarter with graded exams for this teacher.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-xs border-collapse">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
+                        {% for section in summary.all_quarter_matrix.exam_sections %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-indigo-50" colspan="{{ section.item_count }}">
+                            <div class="font-semibold text-gray-900">{{ section.title }}</div>
+                            <div class="text-[10px] text-gray-500">{{ section.overall_mps }}% MPS</div>
+                        </th>
+                        {% endfor %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">%</th>
+                    </tr>
+                    <tr>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
+                        {% for item in summary.all_quarter_matrix.items %}
+                        <th class="px-1 py-2 text-center font-medium text-gray-500 border border-gray-200 w-8">{{ item.item_no }}</th>
+                        {% endfor %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in summary.all_quarter_matrix.students %}
+                    <tr class="{% cycle '' 'bg-gray-50' %}">
+                        <td class="px-2 py-1 border border-gray-200 text-gray-500 sticky left-0 {% cycle 'bg-white' 'bg-gray-50' %} z-10">{{ forloop.counter }}</td>
+                        <td class="px-2 py-1 border border-gray-200 font-medium text-gray-900 sticky left-6 {% cycle 'bg-white' 'bg-gray-50' %} z-10 whitespace-nowrap">{{ student.name }}</td>
+                        {% for mark in student.responses %}
+                        <td class="px-1 py-1 text-center border border-gray-200 {% if mark == 1 %}text-green-700 bg-green-50{% else %}text-red-600 bg-red-50{% endif %}">{{ mark }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50">{{ student.total_correct }}</td>
+                        <td class="px-2 py-1 text-center border border-gray-200 font-bold bg-blue-50 {% if student.percent >= 75 %}text-green-700{% elif student.percent >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ student.percent }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-indigo-50">
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">Total Correct per Item</td>
+                        {% for count in summary.all_quarter_matrix.per_item_correct %}
+                        <td class="px-1 py-2 text-center border border-gray-200 font-bold">{{ count }}</td>
+                        {% endfor %}
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold">{{ summary.all_quarter_matrix.total_correct }}</td>
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold text-indigo-700">{{ summary.all_quarter_matrix.overall_mps }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">% Correct per Item</td>
+                        {% for pct in summary.all_quarter_matrix.per_item_percent %}
                         <td class="px-1 py-2 text-center border border-gray-200 text-xs {% if pct >= 75 %}text-green-700{% elif pct >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ pct }}%</td>
                         {% endfor %}
                         <td class="px-2 py-2 border border-gray-200" colspan="2"></td>

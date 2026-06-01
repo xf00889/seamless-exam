@@ -335,7 +335,9 @@ class QuarterSummaryServiceTests(TestCase):
         self.assertContains(response, '2nd Quarter')
         self.assertContains(response, self.exam_one.title)
         self.assertContains(response, self.exam_two.title)
+        self.assertContains(response, 'Exam Student-by-Item Response Matrix')
         self.assertContains(response, 'Quarter Student-by-Item Response Matrix')
+        self.assertContains(response, 'All Quarters Student-by-Item Response Matrix')
 
 
 
