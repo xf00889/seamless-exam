@@ -1345,8 +1345,8 @@ def item_summary_ai_analyze_view(request, exam_id):
 @teacher_required
 def mps_report_view(request, exam_id):
     """
-    Display DepEd-style MPS (Mean Percentage Score) report for an exam.
-    Shows overall MPS and per-class/section breakdown.
+    Display a quarter-based DepEd-style MPS (Mean Percentage Score) report.
+    The report aggregates all exams in the same quarter as the selected exam.
     """
     from services.item_analysis_service import ItemAnalysisService
 
@@ -1358,7 +1358,7 @@ def mps_report_view(request, exam_id):
         return redirect('exam_list')
 
     service = ItemAnalysisService()
-    summary_data = service.get_item_summary(exam_id)
+    summary_data = service.get_mps_report_summary(exam_id)
 
     if summary_data is None:
         messages.error(request, 'Exam not found')
@@ -1372,8 +1372,9 @@ def mps_report_view(request, exam_id):
     )
 
     mps_gauge_offset = 377
-    if summary_data.get('has_data') and summary_data.get('mps_data'):
-        mps_gauge_offset = round(377 - (377 * summary_data['mps_data']['overall_mps'] / 100))
+    quarter_summary = summary_data.get('quarter_summary')
+    if summary_data.get('has_data') and quarter_summary:
+        mps_gauge_offset = round(377 - (377 * quarter_summary['overall_mps'] / 100))
 
     context = {
         'exam': exam,
@@ -1598,15 +1599,15 @@ def mps_export_excel_view(request, exam_id):
         return redirect('exam_list')
 
     service = ItemAnalysisService()
-    summary_data = service.get_item_summary(exam_id)
+    summary_data = service.get_mps_report_summary(exam_id)
 
     if not summary_data or not summary_data.get('has_data'):
         messages.warning(request, 'No graded attempts to export')
         return redirect('mps_report', exam_id=exam_id)
 
-    mps_data = summary_data['mps_data']
-    items = summary_data['items']
     quarter_summary = summary_data.get('quarter_summary')
+    quarter_summaries = summary_data.get('quarter_summaries') or []
+    quarter_matrix = summary_data.get('quarter_matrix')
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -1643,37 +1644,96 @@ def mps_export_excel_view(request, exam_id):
             return 'Nearing Mastery'
         return 'Low Mastery'
 
-    # --- Sheet 0: Quarter Summary ---
-    if quarter_summary:
-        wsq = wb.create_sheet(title='Quarter Summary')
+    # --- Sheet 0: Quarter Overview ---
+    if quarter_summaries:
+        wso = wb.create_sheet(title='Quarter Overview')
         row = 1
 
         if has_brand:
-            imgq = XlImage(brand_path)
-            imgq.width = 120
-            imgq.height = 60
-            wsq.add_image(imgq, 'A1')
+            imgo = XlImage(brand_path)
+            imgo.width = 120
+            imgo.height = 60
+            wso.add_image(imgo, 'A1')
             row = 5
 
-        wsq.cell(row=row, column=1, value='QUARTER SUMMARY')
-        wsq.cell(row=row, column=1).font = title_font
-        wsq.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        wso.cell(row=row, column=1, value='QUARTER MPS OVERVIEW')
+        wso.cell(row=row, column=1).font = title_font
+        wso.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+        row += 2
+
+        overview_headers = ['Quarter', 'Exam Count', 'Graded Exams', 'Attempts', 'Total Correct', 'Total Possible', 'MPS']
+        for col_idx, h in enumerate(overview_headers, 1):
+            cell = wso.cell(row=row, column=col_idx, value=h)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
         row += 1
 
-        wsq.cell(row=row, column=1, value=f'Quarter: {quarter_summary["quarter_name"]}')
-        wsq.cell(row=row, column=1).font = subheader_font
+        for q_summary in quarter_summaries:
+            row_data = [
+                q_summary['quarter_name'],
+                q_summary['exam_count'],
+                q_summary['graded_exam_count'],
+                q_summary['graded_attempts'],
+                q_summary['total_correct'],
+                q_summary['total_possible_answers'],
+                f"{q_summary['overall_mps']}%",
+            ]
+            for col_idx, value in enumerate(row_data, 1):
+                cell = wso.cell(row=row, column=col_idx, value=value)
+                cell.border = thin_border
+                if col_idx in (2, 3, 4, 5, 6, 7):
+                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 7:
+                    cell.font = get_mps_font(q_summary['overall_mps'])
+            if quarter_summary and q_summary['quarter_id'] == quarter_summary['quarter_id']:
+                for col_idx in range(1, 8):
+                    wso.cell(row=row, column=col_idx).fill = PatternFill(start_color='EEF2FF', end_color='EEF2FF', fill_type='solid')
+            row += 1
+
+        for i, width in enumerate([24, 12, 12, 12, 14, 16, 12], 1):
+            wso.column_dimensions[get_column_letter(i)].width = width
+
+    # --- Sheet 1: Quarter Summary ---
+    ws = wb.create_sheet(title='Quarter Summary')
+    row = 1
+
+    if has_brand:
+        img = XlImage(brand_path)
+        img.width = 120
+        img.height = 60
+        ws.add_image(img, 'A1')
+        row = 5
+
+    ws.cell(row=row, column=1, value='QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT')
+    ws.cell(row=row, column=1).font = title_font
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    row += 2
+
+    if quarter_summary:
+        info_labels = [
+            ('Quarter:', quarter_summary['quarter_name']),
+            ('Subject:', exam.subject or 'Not specified'),
+            ('Teacher:', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+            ('No. of Learners:', str(quarter_summary['graded_attempts'])),
+            ('Quarter Exam Count:', str(quarter_summary['exam_count'])),
+            ('Quarter MPS:', f"{quarter_summary['overall_mps']}%"),
+        ]
+        for label, value in info_labels:
+            ws.cell(row=row, column=1, value=label)
+            ws.cell(row=row, column=1).font = Font(bold=True)
+            ws.cell(row=row, column=2, value=value)
+            row += 1
+
         row += 1
-        wsq.cell(row=row, column=1, value=f'Overall MPS: {quarter_summary["overall_mps"]}%')
-        wsq.cell(row=row, column=1).font = Font(bold=True)
+        ws.cell(row=row, column=1, value='QUARTER SUMMARY')
+        ws.cell(row=row, column=1).font = header_font
         row += 1
-        wsq.cell(row=row, column=1, value=f'Graded Attempts: {quarter_summary["graded_attempts"]}')
-        row += 1
-        wsq.cell(row=row, column=1, value=f'Exams Counted: {quarter_summary["graded_exam_count"]} of {quarter_summary["exam_count"]}')
-        row += 2
 
         quarter_headers = ['Exam', 'Subject', 'Attempts', 'Items', 'MPS']
         for col_idx, h in enumerate(quarter_headers, 1):
-            cell = wsq.cell(row=row, column=col_idx, value=h)
+            cell = ws.cell(row=row, column=col_idx, value=h)
             cell.font = header_text
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal='center')
@@ -1689,7 +1749,7 @@ def mps_export_excel_view(request, exam_id):
                 f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = wsq.cell(row=row, column=col_idx, value=value)
+                cell = ws.cell(row=row, column=col_idx, value=value)
                 cell.border = thin_border
                 if col_idx in (3, 4, 5):
                     cell.alignment = Alignment(horizontal='center')
@@ -1697,67 +1757,13 @@ def mps_export_excel_view(request, exam_id):
                     cell.font = get_mps_font(exam_summary['overall_mps'])
             row += 1
 
-        for i, width in enumerate([28, 22, 12, 10, 12], 1):
-            wsq.column_dimensions[get_column_letter(i)].width = width
-
-    # --- Sheet 1: MPS Summary ---
-    ws = wb.create_sheet(title='MPS Summary')
-    row = 1
-
-    if has_brand:
-        img = XlImage(brand_path)
-        img.width = 120
-        img.height = 60
-        ws.add_image(img, 'A1')
-        row = 5
-
-    ws.cell(row=row, column=1, value='MEAN PERCENTAGE SCORE (MPS) REPORT')
-    ws.cell(row=row, column=1).font = title_font
-    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    row += 2
-
-    info_labels = [
-        ('Exam:', exam.title),
-        ('Subject:', exam.subject or 'Not specified'),
-        ('Quarter:', exam.quarter.name if exam.quarter else 'Not specified'),
-        ('Teacher:', exam.created_by.user.get_full_name()),
-        ('No. of Learners:', str(mps_data['total_learners'])),
-        ('No. of Items:', str(mps_data['total_items'])),
-    ]
-    for label, value in info_labels:
-        ws.cell(row=row, column=1, value=label)
-        ws.cell(row=row, column=1).font = Font(bold=True)
-        ws.cell(row=row, column=2, value=value)
         row += 1
-
-    row += 1
-    ws.cell(row=row, column=1, value='OVERALL MPS')
-    ws.cell(row=row, column=1).font = header_font
-    row += 1
-
-    ws.cell(row=row, column=1, value='Total Correct Answers:')
-    ws.cell(row=row, column=2, value=mps_data['total_correct'])
-    row += 1
-    ws.cell(row=row, column=1, value='Total Possible Answers:')
-    ws.cell(row=row, column=2, value=mps_data['total_possible_answers'])
-    row += 1
-    ws.cell(row=row, column=1, value='MPS:')
-    ws.cell(row=row, column=1).font = Font(bold=True)
-    mps_cell = ws.cell(row=row, column=2, value=f"{mps_data['overall_mps']}%")
-    mps_cell.font = get_mps_font(mps_data['overall_mps'])
-    row += 1
-    ws.cell(row=row, column=1, value='Performance Level:')
-    ws.cell(row=row, column=2, value=get_performance_level(mps_data['overall_mps']))
-    row += 2
-
-    # Per-class breakdown
-    if mps_data['per_class']:
-        ws.cell(row=row, column=1, value='MPS BY CLASS / SECTION')
+        ws.cell(row=row, column=1, value='MPS BY EXAM')
         ws.cell(row=row, column=1).font = header_font
         row += 1
 
-        class_headers = ['Class / Section', 'No. of Learners', 'Total Correct', 'Total Possible', 'MPS', 'Performance Level']
-        for col_idx, h in enumerate(class_headers, 1):
+        exam_headers = ['Exam', 'Learners', 'Total Correct', 'Total Possible', 'MPS', 'Level']
+        for col_idx, h in enumerate(exam_headers, 1):
             cell = ws.cell(row=row, column=col_idx, value=h)
             cell.font = header_text
             cell.fill = header_fill
@@ -1765,45 +1771,26 @@ def mps_export_excel_view(request, exam_id):
             cell.border = thin_border
         row += 1
 
-        for cls in mps_data['per_class']:
+        for exam_summary in quarter_summary['exams']:
             row_data = [
-                cls['class_name'],
-                cls['learners'],
-                cls['total_correct'],
-                cls['total_possible'],
-                f"{cls['mps']}%",
-                get_performance_level(cls['mps']),
+                exam_summary['title'],
+                exam_summary['total_learners'],
+                exam_summary['total_correct'],
+                exam_summary['total_possible_answers'],
+                f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
+                get_performance_level(exam_summary['overall_mps']),
             ]
             for col_idx, value in enumerate(row_data, 1):
                 cell = ws.cell(row=row, column=col_idx, value=value)
                 cell.border = thin_border
-                if col_idx in (2, 3, 4):
+                if col_idx in (2, 3, 4, 5, 6):
                     cell.alignment = Alignment(horizontal='center')
-                if col_idx == 5:
-                    cell.font = get_mps_font(cls['mps'])
-                    cell.alignment = Alignment(horizontal='center')
-                if col_idx == 6:
-                    cell.alignment = Alignment(horizontal='center')
+                if col_idx == 5 and exam_summary['has_data']:
+                    cell.font = get_mps_font(exam_summary['overall_mps'])
             row += 1
 
-        # Overall row
-        overall_row_data = [
-            'OVERALL',
-            mps_data['total_learners'],
-            mps_data['total_correct'],
-            mps_data['total_possible_answers'],
-            f"{mps_data['overall_mps']}%",
-            get_performance_level(mps_data['overall_mps']),
-        ]
-        for col_idx, value in enumerate(overall_row_data, 1):
-            cell = ws.cell(row=row, column=col_idx, value=value)
-            cell.border = thin_border
-            cell.font = Font(bold=True)
-            if col_idx in (2, 3, 4, 5, 6):
-                cell.alignment = Alignment(horizontal='center')
-            if col_idx == 5:
-                cell.font = Font(bold=True, color='1F4E79')
-        row += 1
+        for i, width in enumerate([28, 14, 14, 14, 12, 16], 1):
+            ws.column_dimensions[get_column_letter(i)].width = width
 
     row += 2
     ws.cell(row=row, column=1, value='Prepared by:')
@@ -1817,84 +1804,9 @@ def mps_export_excel_view(request, exam_id):
     ws.cell(row=row, column=2, value=exam.created_by.user.get_full_name() or exam.created_by.user.username)
     ws.cell(row=row, column=2).font = Font(bold=True, size=10)
 
-    col_widths = [25, 15, 15, 15, 12, 18]
-    for i, width in enumerate(col_widths, 1):
-        ws.column_dimensions[get_column_letter(i)].width = width
-
-    # --- Sheet 2: Item Analysis ---
-    ws2 = wb.create_sheet(title='Item Analysis')
-    row = 1
-
-    if has_brand:
-        img2 = XlImage(brand_path)
-        img2.width = 120
-        img2.height = 60
-        ws2.add_image(img2, 'A1')
-        row = 5
-
-    ws2.cell(row=row, column=1, value='ITEM ANALYSIS - CONTRIBUTION TO MPS')
-    ws2.cell(row=row, column=1).font = title_font
-    ws2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
-    row += 1
-
-    ws2.cell(row=row, column=1, value=f'Exam: {exam.title}')
-    ws2.cell(row=row, column=1).font = subheader_font
-    row += 1
-    ws2.cell(row=row, column=1, value=f'No. of Learners: {mps_data["total_learners"]}')
-    row += 2
-
-    item_headers = ['Item No.', 'Question Type', 'No. Correct', 'No. Wrong', 'Skipped', '% Correct', 'Difficulty Level']
-    for col_idx, h in enumerate(item_headers, 1):
-        cell = ws2.cell(row=row, column=col_idx, value=h)
-        cell.font = header_text
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center')
-        cell.border = thin_border
-    row += 1
-
-    for item in items:
-        item_row_data = [
-            item['item_no'],
-            item['question_type'],
-            item['num_correct'],
-            item['num_wrong'],
-            item['num_skipped'],
-            f"{item['percent_correct']}%",
-            item['difficulty_level'],
-        ]
-        for col_idx, value in enumerate(item_row_data, 1):
-            cell = ws2.cell(row=row, column=col_idx, value=value)
-            cell.border = thin_border
-            if col_idx in (1, 3, 4, 5, 6):
-                cell.alignment = Alignment(horizontal='center')
-            if col_idx == 6:
-                pct = item['percent_correct']
-                if pct >= 81:
-                    cell.font = green_font
-                elif pct <= 40:
-                    cell.font = red_font
-        row += 1
-
-    # Totals row
-    row += 1
-    ws2.cell(row=row, column=1, value='TOTAL')
-    ws2.cell(row=row, column=1).font = Font(bold=True)
-    ws2.cell(row=row, column=3, value=mps_data['total_correct'])
-    ws2.cell(row=row, column=3).font = Font(bold=True)
-    ws2.cell(row=row, column=3).alignment = Alignment(horizontal='center')
-    row += 1
-    ws2.cell(row=row, column=1, value=f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%')
-    ws2.cell(row=row, column=1).font = Font(bold=True, size=12)
-    ws2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
-
-    item_col_widths = [10, 22, 12, 12, 10, 12, 18]
-    for i, width in enumerate(item_col_widths, 1):
-        ws2.column_dimensions[get_column_letter(i)].width = width
-
-    # --- Sheet 3: Student-by-Item Matrix ---
-    student_matrix = summary_data.get('student_matrix')
-    if student_matrix and student_matrix['students']:
-        ws3 = wb.create_sheet(title='Student Matrix')
+    # --- Sheet 2: Quarter Matrix ---
+    if quarter_matrix and quarter_matrix['students']:
+        ws3 = wb.create_sheet(title='Quarter Matrix')
         row = 1
 
         if has_brand:
@@ -1904,36 +1816,74 @@ def mps_export_excel_view(request, exam_id):
             ws3.add_image(img3, 'A1')
             row = 5
 
-        ws3.cell(row=row, column=1, value='STUDENT-BY-ITEM RESPONSE MATRIX')
+        ws3.cell(row=row, column=1, value='QUARTER STUDENT-BY-ITEM RESPONSE MATRIX')
         ws3.cell(row=row, column=1).font = title_font
-        ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=quarter_matrix['total_items'] + 4)
         row += 1
-        ws3.cell(row=row, column=1, value=f'Exam: {exam.title}')
+        ws3.cell(row=row, column=1, value=f'Quarter: {quarter_summary["quarter_name"] if quarter_summary else "Not specified"}')
         ws3.cell(row=row, column=1).font = subheader_font
         row += 1
-        ws3.cell(row=row, column=1, value=f'No. of Learners: {student_matrix["total_learners"]} | No. of Items: {student_matrix["total_items"]}')
+        ws3.cell(row=row, column=1, value=f'No. of Learners: {quarter_matrix["total_learners"]} | No. of Items: {quarter_matrix["total_items"]}')
         row += 2
 
-        total_items = student_matrix['total_items']
+        total_items = quarter_matrix['total_items']
+        header_row_1 = row
+        header_row_2 = row + 1
 
-        # Header row: #, Name, Item 1, Item 2, ..., Total, %
-        matrix_headers = ['#', 'Student Name']
-        for i in range(1, total_items + 1):
-            matrix_headers.append(str(i))
-        matrix_headers.extend(['Total', '%'])
-
-        for col_idx, h in enumerate(matrix_headers, 1):
-            cell = ws3.cell(row=row, column=col_idx, value=h)
+        ws3.cell(row=header_row_1, column=1, value='#')
+        ws3.cell(row=header_row_1, column=2, value='Student Name')
+        for cell in (ws3.cell(row=header_row_1, column=1), ws3.cell(row=header_row_1, column=2)):
             cell.font = header_text
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal='center')
             cell.border = thin_border
-        row += 1
+        ws3.merge_cells(start_row=header_row_1, start_column=1, end_row=header_row_2, end_column=1)
+        ws3.merge_cells(start_row=header_row_1, start_column=2, end_row=header_row_2, end_column=2)
 
+        col_cursor = 3
+        for section in quarter_matrix['exam_sections']:
+            if section['item_count'] <= 0:
+                continue
+            start_col = col_cursor
+            end_col = col_cursor + section['item_count'] - 1
+            ws3.cell(row=header_row_1, column=start_col, value=section['title'])
+            ws3.merge_cells(start_row=header_row_1, start_column=start_col, end_row=header_row_1, end_column=end_col)
+            top_cell = ws3.cell(row=header_row_1, column=start_col)
+            top_cell.font = header_text
+            top_cell.fill = header_fill
+            top_cell.alignment = Alignment(horizontal='center')
+            top_cell.border = thin_border
+            ws3.cell(row=header_row_2, column=start_col, value=f"{section['overall_mps']}% MPS")
+            ws3.merge_cells(start_row=header_row_2, start_column=start_col, end_row=header_row_2, end_column=end_col)
+            second_cell = ws3.cell(row=header_row_2, column=start_col)
+            second_cell.font = header_text
+            second_cell.fill = header_fill
+            second_cell.alignment = Alignment(horizontal='center')
+            second_cell.border = thin_border
+            col_cursor += section['item_count']
+
+        total_col = total_items + 3
+        pct_col = total_items + 4
+        for col_idx, label in [(total_col, 'Total'), (pct_col, '%')]:
+            ws3.cell(row=header_row_1, column=col_idx, value=label)
+            ws3.cell(row=header_row_1, column=col_idx).font = header_text
+            ws3.cell(row=header_row_1, column=col_idx).fill = header_fill
+            ws3.cell(row=header_row_1, column=col_idx).alignment = Alignment(horizontal='center')
+            ws3.cell(row=header_row_1, column=col_idx).border = thin_border
+            ws3.merge_cells(start_row=header_row_1, start_column=col_idx, end_row=header_row_2, end_column=col_idx)
+
+        for item_idx, item in enumerate(quarter_matrix['items']):
+            cell = ws3.cell(row=header_row_2, column=item_idx + 3, value=item['exam_item_no'])
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+
+        row = header_row_2 + 1
         green_fill = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
         red_fill = PatternFill(start_color='FCE4EC', end_color='FCE4EC', fill_type='solid')
 
-        for idx, student in enumerate(student_matrix['students'], 1):
+        for idx, student in enumerate(quarter_matrix['students'], 1):
             ws3.cell(row=row, column=1, value=idx)
             ws3.cell(row=row, column=1).border = thin_border
             ws3.cell(row=row, column=1).alignment = Alignment(horizontal='center')
@@ -1947,9 +1897,6 @@ def mps_export_excel_view(request, exam_id):
                 cell.alignment = Alignment(horizontal='center')
                 cell.border = thin_border
                 cell.fill = green_fill if mark == 1 else red_fill
-
-            total_col = total_items + 3
-            pct_col = total_items + 4
 
             cell_total = ws3.cell(row=row, column=total_col, value=student['total_correct'])
             cell_total.font = Font(bold=True)
@@ -1966,7 +1913,6 @@ def mps_export_excel_view(request, exam_id):
 
             row += 1
 
-        # Footer: Total correct per item
         footer_fill = PatternFill(start_color='D6E4F0', end_color='D6E4F0', fill_type='solid')
         ws3.cell(row=row, column=1, value='')
         ws3.cell(row=row, column=2, value='Total Correct')
@@ -1974,7 +1920,7 @@ def mps_export_excel_view(request, exam_id):
         ws3.cell(row=row, column=2).border = thin_border
         ws3.cell(row=row, column=2).fill = footer_fill
 
-        for item_idx, count in enumerate(student_matrix['per_item_correct']):
+        for item_idx, count in enumerate(quarter_matrix['per_item_correct']):
             col = item_idx + 3
             cell = ws3.cell(row=row, column=col, value=count)
             cell.font = Font(bold=True)
@@ -1982,20 +1928,19 @@ def mps_export_excel_view(request, exam_id):
             cell.border = thin_border
             cell.fill = footer_fill
 
-        cell = ws3.cell(row=row, column=total_items + 3, value=mps_data['total_correct'])
+        cell = ws3.cell(row=row, column=total_col, value=quarter_matrix['total_correct'])
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
         cell.border = thin_border
         cell.fill = footer_fill
         row += 1
 
-        # Footer: % correct per item
         ws3.cell(row=row, column=2, value='% Correct')
         ws3.cell(row=row, column=2).font = Font(bold=True)
         ws3.cell(row=row, column=2).border = thin_border
         ws3.cell(row=row, column=2).fill = footer_fill
 
-        for item_idx, pct in enumerate(student_matrix['per_item_percent']):
+        for item_idx, pct in enumerate(quarter_matrix['per_item_percent']):
             col = item_idx + 3
             cell = ws3.cell(row=row, column=col, value=f"{pct}%")
             cell.alignment = Alignment(horizontal='center')
@@ -2006,23 +1951,22 @@ def mps_export_excel_view(request, exam_id):
             elif pct < 50:
                 cell.font = red_font
 
-        cell = ws3.cell(row=row, column=total_items + 4, value=f"{mps_data['overall_mps']}%")
+        cell = ws3.cell(row=row, column=pct_col, value=f"{quarter_matrix['overall_mps']}%")
         cell.font = Font(bold=True, color='1F4E79')
         cell.alignment = Alignment(horizontal='center')
         cell.border = thin_border
         cell.fill = footer_fill
         row += 2
 
-        ws3.cell(row=row, column=1, value=f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%')
+        ws3.cell(row=row, column=1, value=f'MPS = ({quarter_matrix["total_correct"]} / {quarter_matrix["total_possible_answers"]}) x 100 = {quarter_matrix["overall_mps"]}%')
         ws3.cell(row=row, column=1).font = Font(bold=True, size=12)
 
-        # Column widths
         ws3.column_dimensions['A'].width = 5
         ws3.column_dimensions['B'].width = 28
         for i in range(3, total_items + 5):
             ws3.column_dimensions[get_column_letter(i)].width = 5
-        ws3.column_dimensions[get_column_letter(total_items + 3)].width = 8
-        ws3.column_dimensions[get_column_letter(total_items + 4)].width = 8
+        ws3.column_dimensions[get_column_letter(total_col)].width = 8
+        ws3.column_dimensions[get_column_letter(pct_col)].width = 8
 
     # Write to response
     output = BytesIO()
@@ -2061,14 +2005,15 @@ def mps_export_word_view(request, exam_id):
         return redirect('exam_list')
 
     service = ItemAnalysisService()
-    summary_data = service.get_item_summary(exam_id)
+    summary_data = service.get_mps_report_summary(exam_id)
 
     if not summary_data or not summary_data.get('has_data'):
         messages.warning(request, 'No graded attempts to export')
         return redirect('mps_report', exam_id=exam_id)
 
-    mps_data = summary_data['mps_data']
-    items = summary_data['items']
+    quarter_summary = summary_data.get('quarter_summary')
+    quarter_summaries = summary_data.get('quarter_summaries') or []
+    quarter_matrix = summary_data.get('quarter_matrix')
 
     doc = Document()
 
@@ -2077,16 +2022,16 @@ def mps_export_word_view(request, exam_id):
     style.font.size = Pt(11)
     _configure_docx_branding(
         doc,
-        'MEAN PERCENTAGE SCORE (MPS) REPORT',
+        'QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT',
         exam,
         [
-            ('Exam Title', exam.title),
+            ('Quarter', quarter_summary['quarter_name'] if quarter_summary else 'Not specified'),
             ('Subject', exam.subject or 'Not specified'),
             ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
-            ('No. of Learners', mps_data['total_learners']),
-            ('No. of Items', mps_data['total_items']),
+            ('No. of Learners', quarter_summary['graded_attempts'] if quarter_summary else 0),
+            ('Quarter Exams', quarter_summary['exam_count'] if quarter_summary else 0),
         ],
-        'MPS Report',
+        'Quarter MPS Report',
     )
 
     from docx.oxml.ns import qn
@@ -2108,7 +2053,7 @@ def mps_export_word_view(request, exam_id):
         return 'Low Mastery'
 
     # Title
-    title = doc.add_heading('MEAN PERCENTAGE SCORE (MPS) REPORT', level=1)
+    title = doc.add_heading('QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT', level=1)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     doc.add_paragraph()
@@ -2118,10 +2063,10 @@ def mps_export_word_view(request, exam_id):
         ('School', '________________________'),
         ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
         ('Subject', exam.subject or 'Not specified'),
-        ('Quarter', exam.quarter.name if exam.quarter else 'Not specified'),
-        ('No. of Learners', str(mps_data['total_learners'])),
-        ('Exam', exam.title),
-        ('No. of Items', str(mps_data['total_items'])),
+        ('Quarter', quarter_summary['quarter_name'] if quarter_summary else 'Not specified'),
+        ('No. of Learners', str(quarter_summary['graded_attempts'] if quarter_summary else 0)),
+        ('Focus Exam', exam.title),
+        ('No. of Items', str(quarter_summary['total_items'] if quarter_summary else 0)),
     ]
     for label, value in info_block:
         paragraph = doc.add_paragraph()
@@ -2134,38 +2079,59 @@ def mps_export_word_view(request, exam_id):
 
     doc.add_paragraph()
 
-    # Overall MPS section
-    doc.add_heading('Overall MPS', level=2)
-
-    mps_para = doc.add_paragraph()
-    mps_para.add_run('Formula: ').bold = True
-    mps_para.add_run('MPS = (Total Correct Answers / Total Possible Answers) x 100')
-
-    comp_para = doc.add_paragraph()
-    comp_para.add_run('Computation: ').bold = True
-    comp_para.add_run(f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = ')
-    mps_run = comp_para.add_run(f'{mps_data["overall_mps"]}%')
-    mps_run.bold = True
-    mps_run.font.size = Pt(14)
-    if mps_data['overall_mps'] >= 75:
-        mps_run.font.color.rgb = RGBColor(0, 97, 0)
-    elif mps_data['overall_mps'] >= 50:
-        mps_run.font.color.rgb = RGBColor(127, 96, 0)
-    else:
-        mps_run.font.color.rgb = RGBColor(156, 0, 6)
-
-    level_para = doc.add_paragraph()
-    level_para.add_run('Performance Level: ').bold = True
-    level_para.add_run(get_performance_level(mps_data['overall_mps']))
-
-    quarter_summary = summary_data.get('quarter_summary')
-    if quarter_summary:
+    # Quarter overview
+    if quarter_summaries:
+        doc.add_heading('Quarter MPS Overview', level=2)
+        overview_table = doc.add_table(rows=1, cols=7)
+        overview_table.style = 'Table Grid'
+        overview_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        overview_headers = ['Quarter', 'Exam Count', 'Graded Exams', 'Attempts', 'Total Correct', 'Total Possible', 'MPS']
+        header_row = overview_table.rows[0]
+        for idx, h in enumerate(overview_headers):
+            cell = header_row.cells[idx]
+            cell.text = h
+            set_cell_shading(cell, '1F4E79')
+            for para in cell.paragraphs:
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in para.runs:
+                    run.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)
+                    run.font.size = Pt(9)
+        for q_summary in quarter_summaries:
+            row = overview_table.add_row()
+            row_data = [
+                q_summary['quarter_name'],
+                str(q_summary['exam_count']),
+                str(q_summary['graded_exam_count']),
+                str(q_summary['graded_attempts']),
+                str(q_summary['total_correct']),
+                str(q_summary['total_possible_answers']),
+                f"{q_summary['overall_mps']}%",
+            ]
+            for idx, value in enumerate(row_data):
+                cell = row.cells[idx]
+                cell.text = value
+                for para in cell.paragraphs:
+                    if idx > 0:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.font.size = Pt(9)
+                        if idx == 6:
+                            run.bold = True
+                            if q_summary['overall_mps'] >= 75:
+                                run.font.color.rgb = RGBColor(0, 97, 0)
+                            elif q_summary['overall_mps'] >= 50:
+                                run.font.color.rgb = RGBColor(127, 96, 0)
+                            else:
+                                run.font.color.rgb = RGBColor(156, 0, 6)
         doc.add_paragraph()
-        doc.add_heading(f'Quarter Summary - {quarter_summary["quarter_name"]}', level=2)
 
+    # Selected quarter summary
+    if quarter_summary:
+        doc.add_heading(f'Quarter Summary - {quarter_summary["quarter_name"]}', level=2)
         quarter_meta = doc.add_paragraph()
         quarter_meta.paragraph_format.space_after = Pt(2)
-        quarter_meta.add_run('Overall Quarter MPS: ').bold = True
+        quarter_meta.add_run('Quarter MPS: ').bold = True
         quarter_meta.add_run(f'{quarter_summary["overall_mps"]}%')
 
         quarter_meta_2 = doc.add_paragraph()
@@ -2215,16 +2181,14 @@ def mps_export_word_view(request, exam_id):
                             else:
                                 run.font.color.rgb = RGBColor(156, 0, 6)
 
-    # Per-class MPS breakdown
-    if mps_data['per_class']:
-        doc.add_heading('MPS by Class / Section', level=2)
+        doc.add_paragraph()
+        doc.add_heading('MPS by Exam', level=2)
+        exam_table = doc.add_table(rows=1, cols=6)
+        exam_table.style = 'Table Grid'
+        exam_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        class_table = doc.add_table(rows=1, cols=6)
-        class_table.style = 'Table Grid'
-        class_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-        headers = ['Class / Section', 'Learners', 'Total Correct', 'Total Possible', 'MPS', 'Performance Level']
-        header_row = class_table.rows[0]
+        headers = ['Exam', 'Learners', 'Total Correct', 'Total Possible', 'MPS', 'Performance Level']
+        header_row = exam_table.rows[0]
         for idx, h in enumerate(headers):
             cell = header_row.cells[idx]
             cell.text = h
@@ -2236,15 +2200,15 @@ def mps_export_word_view(request, exam_id):
                     run.font.color.rgb = RGBColor(255, 255, 255)
                     run.font.size = Pt(9)
 
-        for cls in mps_data['per_class']:
-            row = class_table.add_row()
+        for exam_summary in quarter_summary['exams']:
+            row = exam_table.add_row()
             row_data = [
-                cls['class_name'],
-                str(cls['learners']),
-                str(cls['total_correct']),
-                str(cls['total_possible']),
-                f"{cls['mps']}%",
-                get_performance_level(cls['mps']),
+                exam_summary['title'],
+                str(exam_summary['total_learners']),
+                str(exam_summary['total_correct']),
+                str(exam_summary['total_possible_answers']),
+                f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
+                get_performance_level(exam_summary['overall_mps']),
             ]
             for idx, value in enumerate(row_data):
                 cell = row.cells[idx]
@@ -2253,140 +2217,26 @@ def mps_export_word_view(request, exam_id):
                     if idx > 0:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for run in para.runs:
-                        run.font.size = Pt(10)
-                        if idx == 4:
+                        run.font.size = Pt(9)
+                        if idx == 4 and exam_summary['has_data']:
                             run.bold = True
-                            if cls['mps'] >= 75:
+                            if exam_summary['overall_mps'] >= 75:
                                 run.font.color.rgb = RGBColor(0, 97, 0)
-                            elif cls['mps'] >= 50:
+                            elif exam_summary['overall_mps'] >= 50:
                                 run.font.color.rgb = RGBColor(127, 96, 0)
                             else:
                                 run.font.color.rgb = RGBColor(156, 0, 6)
 
-        # Overall row
-        overall_row = class_table.add_row()
-        overall_data = [
-            'OVERALL',
-            str(mps_data['total_learners']),
-            str(mps_data['total_correct']),
-            str(mps_data['total_possible_answers']),
-            f"{mps_data['overall_mps']}%",
-            get_performance_level(mps_data['overall_mps']),
-        ]
-        for idx, value in enumerate(overall_data):
-            cell = overall_row.cells[idx]
-            cell.text = value
-            set_cell_shading(cell, 'D6E4F0')
-            for para in cell.paragraphs:
-                if idx > 0:
-                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for run in para.runs:
-                    run.bold = True
-                    run.font.size = Pt(10)
-
-    doc.add_page_break()
-
-    # Item Analysis section
-    doc.add_heading('Item Analysis', level=2)
-
-    item_table = doc.add_table(rows=1, cols=7)
-    item_table.style = 'Table Grid'
-    item_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-    item_headers = ['Item', 'Type', 'Correct', 'Wrong', 'Skipped', '% Correct', 'Difficulty']
-    header_row = item_table.rows[0]
-    for idx, h in enumerate(item_headers):
-        cell = header_row.cells[idx]
-        cell.text = h
-        set_cell_shading(cell, '1F4E79')
-        for para in cell.paragraphs:
-            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            for run in para.runs:
-                run.bold = True
-                run.font.color.rgb = RGBColor(255, 255, 255)
-                run.font.size = Pt(9)
-
-    for item in items:
-        row = item_table.add_row()
-        row_data = [
-            str(item['item_no']),
-            item['question_type'],
-            str(item['num_correct']),
-            str(item['num_wrong']),
-            str(item['num_skipped']),
-            f"{item['percent_correct']}%",
-            item['difficulty_level'],
-        ]
-        for idx, value in enumerate(row_data):
-            cell = row.cells[idx]
-            cell.text = value
-            for para in cell.paragraphs:
-                if idx != 1 and idx != 6:
-                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for run in para.runs:
-                    run.font.size = Pt(9)
-                    if idx == 5:
-                        pct = item['percent_correct']
-                        if pct >= 81:
-                            run.font.color.rgb = RGBColor(0, 97, 0)
-                        elif pct <= 40:
-                            run.font.color.rgb = RGBColor(156, 0, 6)
-
-    doc.add_paragraph()
-    formula_para = doc.add_paragraph()
-    formula_para.add_run(
-        f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%'
-    ).bold = True
-
-    # MPS Interpretation Guide
-    doc.add_paragraph()
-    doc.add_heading('MPS Interpretation Guide', level=2)
-
-    guide_table = doc.add_table(rows=1, cols=3)
-    guide_table.style = 'Table Grid'
-    guide_headers = ['MPS Range', 'Performance Level', 'Interpretation']
-    header_row = guide_table.rows[0]
-    for idx, h in enumerate(guide_headers):
-        cell = header_row.cells[idx]
-        cell.text = h
-        set_cell_shading(cell, '1F4E79')
-        for para in cell.paragraphs:
-            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            for run in para.runs:
-                run.bold = True
-                run.font.color.rgb = RGBColor(255, 255, 255)
-                run.font.size = Pt(10)
-
-    guide_data = [
-        ('75% - 100%', 'Mastered', 'Proceed to enrichment activities.'),
-        ('50% - 74%', 'Nearing Mastery', 'Provide reinforcement and additional practice.'),
-        ('Below 50%', 'Low Mastery', 'Intensive remediation and reteaching needed.'),
-    ]
-    for mps_range, level, interp in guide_data:
-        row = guide_table.add_row()
-        row.cells[0].text = mps_range
-        row.cells[1].text = level
-        row.cells[2].text = interp
-        for cell in row.cells:
-            for para in cell.paragraphs:
-                for run in para.runs:
-                    run.font.size = Pt(10)
-
-    # Student-by-Item Matrix
-    student_matrix = summary_data.get('student_matrix')
-    if student_matrix and student_matrix['students']:
+    # Quarter matrix
+    if quarter_matrix and quarter_matrix['students']:
         doc.add_page_break()
-        doc.add_heading('Student-by-Item Response Matrix', level=2)
+        doc.add_heading('Quarter Student-by-Item Response Matrix', level=2)
 
         matrix_para = doc.add_paragraph()
         matrix_para.add_run('Legend: ').bold = True
         matrix_para.add_run('1 = Correct, 0 = Wrong/Skipped')
 
-        total_items = student_matrix['total_items']
-        num_cols = total_items + 4  # #, Name, items..., Total, %
-
-        # For Word, limit columns to avoid overflow (landscape can fit ~25 items)
-        # If more than 25 items, split into multiple tables
+        total_items = quarter_matrix['total_items']
         max_items_per_table = 25
         item_chunks = []
         for start in range(0, total_items, max_items_per_table):
@@ -2395,26 +2245,36 @@ def mps_export_word_view(request, exam_id):
 
         for chunk_idx, (start_item, end_item) in enumerate(item_chunks):
             chunk_size = end_item - start_item
-            cols_in_chunk = chunk_size + 4  # #, Name, items..., Total, %
+            cols_in_chunk = chunk_size + 4
 
             if chunk_idx > 0:
                 doc.add_paragraph()
                 cont_para = doc.add_paragraph()
                 cont_para.add_run(f'(Continued - Items {start_item + 1} to {end_item})').italic = True
 
-            matrix_table = doc.add_table(rows=1, cols=cols_in_chunk)
+            matrix_table = doc.add_table(rows=2, cols=cols_in_chunk)
             matrix_table.style = 'Table Grid'
+            matrix_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-            # Header
-            m_headers = ['#', 'Student Name']
+            # Base header cells
+            matrix_table.cell(0, 0).text = '#'
+            matrix_table.cell(0, 1).text = 'Student Name'
+            set_cell_shading(matrix_table.cell(0, 0), '1F4E79')
+            set_cell_shading(matrix_table.cell(0, 1), '1F4E79')
+            for cell in (matrix_table.cell(0, 0), matrix_table.cell(0, 1)):
+                for para in cell.paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.size = Pt(7)
+            matrix_table.cell(1, 0).text = ''
+            matrix_table.cell(1, 1).text = ''
+
+            # Item headers
             for i in range(start_item + 1, end_item + 1):
-                m_headers.append(str(i))
-            m_headers.extend(['Total', '%'])
-
-            header_row = matrix_table.rows[0]
-            for idx, h in enumerate(m_headers):
-                cell = header_row.cells[idx]
-                cell.text = h
+                cell = matrix_table.cell(1, i - start_item + 1)
+                cell.text = str(i)
                 set_cell_shading(cell, '1F4E79')
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -2423,8 +2283,22 @@ def mps_export_word_view(request, exam_id):
                         run.font.color.rgb = RGBColor(255, 255, 255)
                         run.font.size = Pt(7)
 
+            # Totals columns
+            matrix_table.cell(0, chunk_size + 2).text = 'Total'
+            matrix_table.cell(0, chunk_size + 3).text = '%'
+            for c in (chunk_size + 2, chunk_size + 3):
+                set_cell_shading(matrix_table.cell(0, c), '1F4E79')
+                for para in matrix_table.cell(0, c).paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.size = Pt(7)
+            matrix_table.cell(1, chunk_size + 2).text = ''
+            matrix_table.cell(1, chunk_size + 3).text = ''
+
             # Student rows
-            for s_idx, student in enumerate(student_matrix['students'], 1):
+            for s_idx, student in enumerate(quarter_matrix['students'], 1):
                 row = matrix_table.add_row()
                 row.cells[0].text = str(s_idx)
                 row.cells[1].text = student['name']
@@ -2439,7 +2313,6 @@ def mps_export_word_view(request, exam_id):
                     else:
                         set_cell_shading(cell, 'FCE4EC')
 
-                # Total and %
                 row.cells[chunk_size + 2].text = str(student['total_correct'])
                 row.cells[chunk_size + 3].text = f"{student['percent']}%"
 
@@ -2448,7 +2321,6 @@ def mps_export_word_view(request, exam_id):
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
                             run.font.size = Pt(7)
-                # Left-align name
                 for para in row.cells[1].paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
@@ -2458,9 +2330,9 @@ def mps_export_word_view(request, exam_id):
             footer_row.cells[1].text = 'Total'
             for item_idx in range(start_item, end_item):
                 col = item_idx - start_item + 2
-                footer_row.cells[col].text = str(student_matrix['per_item_correct'][item_idx])
-            footer_row.cells[chunk_size + 2].text = str(mps_data['total_correct'])
-            footer_row.cells[chunk_size + 3].text = f"{mps_data['overall_mps']}%"
+                footer_row.cells[col].text = str(quarter_matrix['per_item_correct'][item_idx])
+            footer_row.cells[chunk_size + 2].text = str(quarter_matrix['total_correct'])
+            footer_row.cells[chunk_size + 3].text = f"{quarter_matrix['overall_mps']}%"
 
             for cell in footer_row.cells:
                 set_cell_shading(cell, 'D6E4F0')
@@ -2469,12 +2341,6 @@ def mps_export_word_view(request, exam_id):
                     for run in para.runs:
                         run.bold = True
                         run.font.size = Pt(7)
-
-        doc.add_paragraph()
-        mps_final = doc.add_paragraph()
-        mps_final.add_run(
-            f'MPS = ({mps_data["total_correct"]} / {mps_data["total_possible_answers"]}) x 100 = {mps_data["overall_mps"]}%'
-        ).bold = True
 
     doc.add_paragraph()
     prepared_by_para = doc.add_paragraph()

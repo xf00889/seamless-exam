@@ -56,6 +56,61 @@
     </div>
 </div>
 
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white shadow rounded-lg p-5 border-l-4 border-l-emerald-500">
+        <div class="text-sm font-medium text-gray-500">Passing Rate</div>
+        <div class="mt-1 text-3xl font-bold text-emerald-600">{{ performance_summary.pass_rate|floatformat:2 }}%</div>
+        <p class="mt-2 text-sm text-gray-500">{{ performance_summary.passed_attempts }} passed out of {{ performance_summary.graded_attempts }} graded</p>
+    </div>
+    <div class="bg-white shadow rounded-lg p-5 border-l-4 border-l-blue-500">
+        <div class="text-sm font-medium text-gray-500">Passed Attempts</div>
+        <div class="mt-1 text-3xl font-bold text-blue-600">{{ performance_summary.passed_attempts }}</div>
+        <p class="mt-2 text-sm text-gray-500">At or above 60%</p>
+    </div>
+    <div class="bg-white shadow rounded-lg p-5 border-l-4 border-l-red-500">
+        <div class="text-sm font-medium text-gray-500">Failed Attempts</div>
+        <div class="mt-1 text-3xl font-bold text-red-600">{{ performance_summary.failed_attempts }}</div>
+        <p class="mt-2 text-sm text-gray-500">{{ performance_summary.fail_rate|floatformat:2 }}% of graded submissions</p>
+    </div>
+</div>
+
+{% if performance_summary.graded_attempt_count %}
+<section class="bg-white shadow rounded-lg mb-6 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Performance Overview</h2>
+            <p class="text-sm text-gray-500">Passing rate, score spread, and grading outcomes for this student.</p>
+        </div>
+        <p class="text-sm text-gray-500">
+            Highest {{ performance_summary.highest_percentage|floatformat:2 }}% · Lowest {{ performance_summary.lowest_percentage|floatformat:2 }}% · Average {{ performance_summary.average_percentage|floatformat:2 }}%
+        </p>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-lg border border-gray-200 p-4">
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-4">Pass vs Fail</h3>
+                <div class="h-72">
+                    <canvas id="passFailChart" aria-label="Pass and fail chart"></canvas>
+                </div>
+            </div>
+            <div class="rounded-lg border border-gray-200 p-4">
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-4">Score Breakdown</h3>
+                <div class="h-72">
+                    <canvas id="scoreBreakdownChart" aria-label="Score breakdown chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<div class="bg-white shadow rounded-lg p-8 mb-6 text-center">
+    <h2 class="text-lg font-semibold text-gray-900">Performance Overview</h2>
+    <p class="mt-2 text-sm text-gray-500">Charts will appear once the student has graded submissions.</p>
+</div>
+{% endif %}
+
+{{ student_performance_chart_data|json_script:"student-performance-chart-data" }}
+
 {% if exam_groups %}
 <div class="space-y-6">
     {% for group in exam_groups %}
@@ -136,12 +191,88 @@
     {% endfor %}
 </div>
 {% else %}
-<div class="bg-white shadow rounded-lg p-12 text-center">
-    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    <div class="bg-white shadow rounded-lg p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
     </svg>
     <h3 class="mt-2 text-sm font-medium text-gray-900">No submissions yet</h3>
     <p class="mt-1 text-sm text-gray-500">This student has no submitted exams yet.</p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dataNode = document.getElementById('student-performance-chart-data');
+    if (!dataNode || typeof Chart === 'undefined') {
+        return;
+    }
+
+    const chartData = JSON.parse(dataNode.textContent);
+
+    const passFailCanvas = document.getElementById('passFailChart');
+    if (passFailCanvas) {
+        new Chart(passFailCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: chartData.pass_fail.labels,
+                datasets: [{
+                    data: chartData.pass_fail.values,
+                    backgroundColor: ['#22c55e', '#ef4444'],
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    const scoreCanvas = document.getElementById('scoreBreakdownChart');
+    if (scoreCanvas) {
+        new Chart(scoreCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.score_breakdown.labels,
+                datasets: [{
+                    label: 'Score %',
+                    data: chartData.score_breakdown.values,
+                    backgroundColor: '#2563eb',
+                    borderRadius: 6,
+                    maxBarThickness: 48
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function (value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -1,6 +1,7 @@
 import json
 import logging
 import math
+from itertools import groupby
 from decimal import Decimal
 from django.db.models import Count, Q, Sum, Avg, StdDev
 
@@ -97,11 +98,19 @@ class ItemAnalysisService:
         if not exam.quarter_id:
             return None
 
-        quarter_exams = Exam.objects.filter(
-            created_by=exam.created_by,
-            quarter=exam.quarter
-        ).select_related('quarter').prefetch_related('questions').order_by('created_at', 'id')
+        quarter_exams = list(
+            Exam.objects.filter(
+                created_by=exam.created_by,
+                quarter=exam.quarter
+            ).select_related('quarter').prefetch_related('questions').order_by('created_at', 'id')
+        )
 
+        return self._build_quarter_summary_from_exams(quarter_exams, exam.quarter)
+
+    def _build_quarter_summary_from_exams(self, quarter_exams, quarter=None):
+        """
+        Aggregate MPS across a list of exams that belong to the same quarter.
+        """
         exam_summaries = []
         total_correct = 0
         total_possible_answers = 0
@@ -116,18 +125,240 @@ class ItemAnalysisService:
                 total_graded_attempts += snapshot['total_learners']
 
         overall_mps = round((total_correct / total_possible_answers) * 100, 2) if total_possible_answers > 0 else 0
+        total_items = sum(snapshot['total_items'] for snapshot in exam_summaries)
 
         return {
-            'quarter_id': exam.quarter_id,
-            'quarter_name': exam.quarter.name,
-            'exam_count': quarter_exams.count(),
+            'quarter_id': quarter.id if quarter else (quarter_exams[0].quarter_id if quarter_exams else None),
+            'quarter_name': quarter.name if quarter else (quarter_exams[0].quarter.name if quarter_exams and quarter_exams[0].quarter else 'Not specified'),
+            'quarter_order': quarter.order if quarter else (quarter_exams[0].quarter.order if quarter_exams and quarter_exams[0].quarter else 9999),
+            'exam_count': len(quarter_exams),
             'graded_exam_count': sum(1 for snapshot in exam_summaries if snapshot['has_data']),
             'graded_attempts': total_graded_attempts,
+            'total_items': total_items,
             'total_correct': total_correct,
             'total_possible_answers': total_possible_answers,
             'overall_mps': overall_mps,
             'exams': exam_summaries,
             'has_data': bool(total_possible_answers),
+        }
+
+    def _build_all_quarter_summaries(self, teacher):
+        """
+        Build MPS summaries for every quarter that has exams for the given teacher.
+        """
+        quarter_exams = list(
+            Exam.objects.filter(
+                created_by=teacher,
+                quarter__isnull=False
+            ).select_related('quarter').prefetch_related('questions').order_by(
+                'quarter__order',
+                'quarter__name',
+                'created_at',
+                'id'
+            )
+        )
+
+        quarter_summaries = []
+        for _, group in groupby(
+            quarter_exams,
+            key=lambda ex: (
+                ex.quarter_id,
+                ex.quarter.name if ex.quarter else 'Not specified',
+                ex.quarter.order if ex.quarter else 9999,
+            )
+        ):
+            group_exams = list(group)
+            quarter_summaries.append(
+                self._build_quarter_summary_from_exams(group_exams, group_exams[0].quarter)
+            )
+
+        return quarter_summaries
+
+    def _build_quarter_student_item_matrix(self, exam):
+        """
+        Build a quarter-wide student-by-item matrix that spans all exams in the same quarter.
+        """
+        if not exam.quarter_id:
+            return None
+
+        quarter_exams = list(
+            Exam.objects.filter(
+                created_by=exam.created_by,
+                quarter=exam.quarter
+            ).select_related('quarter', 'created_by__user').prefetch_related('questions').order_by('created_at', 'id')
+        )
+
+        if not quarter_exams:
+            return None
+
+        exam_sections = []
+        flattened_items = []
+        question_to_exam = {}
+
+        for quarter_exam in quarter_exams:
+            questions = list(quarter_exam.questions.all().order_by('order_index', 'id'))
+            snapshot = self._compute_exam_mps_snapshot(quarter_exam)
+            section_start = len(flattened_items)
+
+            for item_index, question in enumerate(questions, start=1):
+                flattened_items.append({
+                    'global_item_no': len(flattened_items) + 1,
+                    'exam_id': quarter_exam.id,
+                    'exam_title': quarter_exam.title,
+                    'exam_subject': quarter_exam.subject or 'Not specified',
+                    'exam_item_no': item_index,
+                    'question_id': question.id,
+                    'question_type': question.get_question_type_display(),
+                    'question_text': question.question_text,
+                })
+                question_to_exam[question.id] = quarter_exam.id
+
+            exam_sections.append({
+                'exam_id': quarter_exam.id,
+                'title': quarter_exam.title,
+                'subject': quarter_exam.subject or 'Not specified',
+                'item_count': len(questions),
+                'has_data': snapshot['has_data'],
+                'total_learners': snapshot['total_learners'],
+                'total_items': snapshot['total_items'],
+                'total_correct': snapshot['total_correct'],
+                'total_possible_answers': snapshot['total_possible_answers'],
+                'overall_mps': snapshot['overall_mps'],
+                'start_index': section_start,
+                'end_index': len(flattened_items) - 1,
+            })
+
+        if not flattened_items:
+            return None
+
+        quarter_attempts = list(
+            Attempt.objects.filter(
+                exam__in=quarter_exams,
+                status=AttemptStatus.GRADED
+            ).select_related('student', 'student__class_assigned', 'exam').order_by(
+                'student__class_assigned__grade_level',
+                'student__class_assigned__strand',
+                'student__class_assigned__section',
+                'student__last_name',
+                'student__first_name',
+                'exam__created_at',
+                'exam__id',
+            )
+        )
+
+        attempt_lookup = {
+            (attempt.student_id, attempt.exam_id): attempt
+            for attempt in quarter_attempts
+        }
+        attempt_ids = [attempt.id for attempt in quarter_attempts]
+
+        answer_lookup = {}
+        if attempt_ids:
+            for attempt_id, question_id, is_correct in Answer.objects.filter(
+                attempt_id__in=attempt_ids,
+                question_id__in=question_to_exam.keys()
+            ).values_list('attempt_id', 'question_id', 'is_correct'):
+                answer_lookup[(attempt_id, question_id)] = is_correct
+
+        students_by_id = {}
+        for attempt in quarter_attempts:
+            students_by_id[attempt.student_id] = attempt.student
+
+        students = []
+        per_item_correct = [0] * len(flattened_items)
+
+        for student in sorted(
+            students_by_id.values(),
+            key=lambda student: (
+                student.class_assigned.grade_level if student.class_assigned else 'ZZZ',
+                student.class_assigned.strand if student.class_assigned else 'ZZZ',
+                student.class_assigned.section if student.class_assigned else 'ZZZ',
+                student.last_name,
+                student.first_name,
+            )
+        ):
+            responses = []
+            student_total_correct = 0
+            for item_index, item in enumerate(flattened_items):
+                attempt = attempt_lookup.get((student.id, item['exam_id']))
+                mark = 0
+                if attempt:
+                    mark = 1 if answer_lookup.get((attempt.id, item['question_id']), False) else 0
+                responses.append(mark)
+                student_total_correct += mark
+                per_item_correct[item_index] += mark
+
+            student_percent = round((student_total_correct / len(flattened_items)) * 100, 1) if flattened_items else 0
+            students.append({
+                'name': f"{student.last_name}, {student.first_name}",
+                'school_id': student.school_id,
+                'class_name': str(student.class_assigned) if student.class_assigned else 'N/A',
+                'responses': responses,
+                'total_correct': student_total_correct,
+                'total_items': len(flattened_items),
+                'percent': student_percent,
+            })
+
+        for section in exam_sections:
+            exam_items = flattened_items[section['start_index']:section['end_index'] + 1]
+            exam_correct = 0
+            exam_possible = 0
+            for item in exam_items:
+                for attempt in quarter_attempts:
+                    if attempt.exam_id != section['exam_id']:
+                        continue
+                    exam_possible += 1
+                    if answer_lookup.get((attempt.id, item['question_id']), False):
+                        exam_correct += 1
+            section['total_correct'] = exam_correct
+            section['total_possible_answers'] = exam_possible
+            section['overall_mps'] = round((exam_correct / exam_possible) * 100, 2) if exam_possible > 0 else 0
+            section['has_data'] = bool(exam_possible)
+
+        quarter_total_correct = sum(section['total_correct'] for section in exam_sections)
+        quarter_total_possible = sum(section['total_possible_answers'] for section in exam_sections)
+        quarter_total_students = len(students)
+        quarter_total_items = len(flattened_items)
+        quarter_overall_mps = round((quarter_total_correct / quarter_total_possible) * 100, 2) if quarter_total_possible > 0 else 0
+
+        per_item_percent = [
+            round((correct_count / quarter_total_students) * 100, 1) if quarter_total_students > 0 else 0
+            for correct_count in per_item_correct
+        ]
+
+        return {
+            'students': students,
+            'items': flattened_items,
+            'exam_sections': exam_sections,
+            'per_item_correct': per_item_correct,
+            'per_item_percent': per_item_percent,
+            'total_items': quarter_total_items,
+            'total_learners': quarter_total_students,
+            'overall_mps': quarter_overall_mps,
+            'total_correct': quarter_total_correct,
+            'total_possible_answers': quarter_total_possible,
+            'quarter_exams': quarter_exams,
+        }
+
+    def get_mps_report_summary(self, exam_id):
+        """
+        Build the quarter-based MPS report data used by the report page and exports.
+        """
+        try:
+            exam = Exam.objects.select_related('quarter', 'created_by__user').get(id=exam_id)
+        except Exam.DoesNotExist:
+            return None
+
+        quarter_summary = self._build_quarter_summary(exam)
+        quarter_summaries = self._build_all_quarter_summaries(exam.created_by)
+        quarter_matrix = self._build_quarter_student_item_matrix(exam)
+
+        return {
+            'exam': exam,
+            'quarter_summary': quarter_summary,
+            'quarter_summaries': quarter_summaries,
+            'quarter_matrix': quarter_matrix,
+            'has_data': bool(quarter_summary and quarter_summary.get('has_data')),
         }
 
     def get_item_summary(self, exam_id):

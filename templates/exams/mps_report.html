@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}MPS Report - {{ exam.title }} - Seamless{% endblock %}
+{% block title %}Quarter MPS Report - {{ summary.quarter_summary.quarter_name|default:exam.title }} - Seamless{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/main.css' %}">
@@ -83,31 +83,65 @@
     <!-- Print Header -->
     <div class="print-only bg-white p-6 mb-4 border-b-2 border-gray-300">
         <div class="text-center mb-4">
-            <h2 class="text-xl font-bold uppercase">MEAN PERCENTAGE SCORE (MPS) REPORT</h2>
+            <h2 class="text-xl font-bold uppercase">QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT</h2>
         </div>
         <div class="grid grid-cols-2 gap-2 text-sm">
             <div><strong>School:</strong> _________________________</div>
             <div><strong>Teacher:</strong> {{ exam.created_by.user.get_full_name }}</div>
             <div><strong>Subject:</strong> {{ exam.subject|default:"_________________" }}</div>
-            <div><strong>Quarter:</strong> {{ exam.quarter.name|default:"_________________" }}</div>
-            <div><strong>No. of Learners:</strong> {{ summary.total_learners }}</div>
-            <div><strong>Exam:</strong> {{ exam.title }}</div>
-            <div><strong>No. of Items:</strong> {{ summary.mps_data.total_items }}</div>
+            <div><strong>Quarter:</strong> {{ summary.quarter_summary.quarter_name|default:exam.quarter.name|default:"_________________" }}</div>
+            <div><strong>No. of Learners:</strong> {{ summary.quarter_summary.graded_attempts }}</div>
+            <div><strong>Focus Exam:</strong> {{ exam.title }}</div>
+            <div><strong>No. of Items:</strong> {{ summary.quarter_summary.total_items|default:0 }}</div>
         </div>
     </div>
 
     <!-- Exam Info -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div><span class="font-semibold text-gray-700">Exam:</span> <span class="text-gray-900 ml-1">{{ exam.title }}</span></div>
+            <div><span class="font-semibold text-gray-700">Quarter:</span> <span class="text-gray-900 ml-1">{{ summary.quarter_summary.quarter_name|default:"Not specified" }}</span></div>
+            <div><span class="font-semibold text-gray-700">Focus Exam:</span> <span class="text-gray-900 ml-1">{{ exam.title }}</span></div>
             <div><span class="font-semibold text-gray-700">Subject:</span> <span class="text-gray-900 ml-1">{{ exam.subject|default:"Not specified" }}</span></div>
-            <div><span class="font-semibold text-gray-700">Quarter:</span> <span class="text-gray-900 ml-1">{{ exam.quarter.name|default:"Not specified" }}</span></div>
             <div><span class="font-semibold text-gray-700">Teacher:</span> <span class="text-gray-900 ml-1">{{ exam.created_by.user.get_full_name }}</span></div>
-            <div><span class="font-semibold text-gray-700">No. of Learners:</span> <span class="text-gray-900 ml-1">{{ summary.total_learners }}</span></div>
-            <div><span class="font-semibold text-gray-700">No. of Items:</span> <span class="text-gray-900 ml-1">{{ summary.mps_data.total_items }}</span></div>
-            <div><span class="font-semibold text-gray-700">Total Points:</span> <span class="text-gray-900 ml-1">{{ summary.total_possible }}</span></div>
+            <div><span class="font-semibold text-gray-700">Quarter Learner Entries:</span> <span class="text-gray-900 ml-1">{{ summary.quarter_summary.graded_attempts }}</span></div>
+            <div><span class="font-semibold text-gray-700">Quarter Exam Count:</span> <span class="text-gray-900 ml-1">{{ summary.quarter_summary.exam_count }}</span></div>
+            <div><span class="font-semibold text-gray-700">Quarter MPS:</span> <span class="text-gray-900 ml-1">{{ summary.quarter_summary.overall_mps }}%</span></div>
         </div>
     </div>
+
+    {% if summary.quarter_summaries %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Quarter MPS Overview</h3>
+                <p class="text-xs text-gray-500">All quarters with exams for this teacher</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {% for quarter_report in summary.quarter_summaries %}
+            <div class="rounded-lg border p-4 {% if quarter_report.quarter_id == summary.quarter_summary.quarter_id %}border-indigo-300 bg-indigo-50{% else %}border-gray-200 bg-gray-50{% endif %}">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-semibold text-gray-900">{{ quarter_report.quarter_name }}</div>
+                        <div class="text-xs text-gray-500">{{ quarter_report.exam_count }} exam{{ quarter_report.exam_count|pluralize }}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold {% if quarter_report.overall_mps >= 75 %}text-green-600{% elif quarter_report.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ quarter_report.overall_mps }}%</div>
+                        <div class="text-[10px] uppercase tracking-wide text-gray-500">Quarter MPS</div>
+                    </div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div><span class="font-medium text-gray-700">Attempts:</span> {{ quarter_report.graded_attempts }}</div>
+                    <div><span class="font-medium text-gray-700">Counted:</span> {{ quarter_report.graded_exam_count }}/{{ quarter_report.exam_count }}</div>
+                    <div><span class="font-medium text-gray-700">Correct:</span> {{ quarter_report.total_correct }}</div>
+                    <div><span class="font-medium text-gray-700">Possible:</span> {{ quarter_report.total_possible_answers }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     {% if summary.quarter_summary %}
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -119,6 +153,25 @@
             <div class="text-right">
                 <div class="text-2xl font-bold {% if summary.quarter_summary.overall_mps >= 75 %}text-green-600{% elif summary.quarter_summary.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.quarter_summary.overall_mps }}%</div>
                 <div class="text-xs text-gray-500">Quarter-level MPS</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Graded Attempts</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.graded_attempts }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Exams Counted</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.graded_exam_count }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Correct</div>
+                <div class="text-lg font-bold text-green-700">{{ summary.quarter_summary.total_correct }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Possible</div>
+                <div class="text-lg font-bold text-gray-900">{{ summary.quarter_summary.total_possible_answers }}</div>
             </div>
         </div>
 
@@ -155,80 +208,18 @@
     </div>
     {% endif %}
 
-    <!-- Overall MPS Display -->
-    {% if summary.mps_data %}
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-6">Overall MPS</h3>
-        <div class="flex flex-col md:flex-row items-center gap-8">
-            <!-- Gauge -->
-            <div class="mps-gauge flex-shrink-0">
-                <svg class="mps-gauge-circle" width="140" height="140" viewBox="0 0 140 140">
-                    <circle class="mps-gauge-bg" cx="70" cy="70" r="60"></circle>
-                    <circle class="mps-gauge-fill {% if summary.mps_data.overall_mps >= 75 %}stroke-green-500{% elif summary.mps_data.overall_mps >= 50 %}stroke-yellow-500{% else %}stroke-red-500{% endif %}" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="{{ mps_gauge_offset }}" style="stroke: {% if summary.mps_data.overall_mps >= 75 %}#22c55e{% elif summary.mps_data.overall_mps >= 50 %}#eab308{% else %}#ef4444{% endif %}; stroke-dashoffset: {{ mps_gauge_offset }};"></circle>
-                </svg>
-                <div class="absolute inset-0 flex items-center justify-center" style="position:absolute; top:0; left:0; width:140px; height:140px; display:flex; align-items:center; justify-content:center;">
-                    <span class="text-2xl font-bold {% if summary.mps_data.overall_mps >= 75 %}text-green-600{% elif summary.mps_data.overall_mps >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.mps_data.overall_mps }}%</span>
-                </div>
-            </div>
-
-            <!-- MPS Details -->
-            <div class="flex-1 w-full">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Formula</div>
-                        <div class="text-sm text-gray-800 font-mono">
-                            MPS = (Total Correct / Total Possible) x 100
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Computation</div>
-                        <div class="text-sm text-gray-800 font-mono">
-                            MPS = ({{ summary.mps_data.total_correct }} / {{ summary.mps_data.total_possible_answers }}) x 100 = <strong>{{ summary.mps_data.overall_mps }}%</strong>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Correct Answers</div>
-                        <div class="text-xl font-bold text-green-700">{{ summary.mps_data.total_correct }}</div>
-                        <div class="text-xs text-gray-500">sum of all correct responses across all items</div>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">Total Possible Answers</div>
-                        <div class="text-xl font-bold text-gray-700">{{ summary.mps_data.total_possible_answers }}</div>
-                        <div class="text-xs text-gray-500">{{ summary.mps_data.total_learners }} learners x {{ summary.mps_data.total_items }} items</div>
-                    </div>
-                </div>
-
-                <!-- MPS Interpretation -->
-                <div class="mt-4 p-4 rounded-lg border {% if summary.mps_data.overall_mps >= 75 %}bg-green-50 border-green-200{% elif summary.mps_data.overall_mps >= 50 %}bg-yellow-50 border-yellow-200{% else %}bg-red-50 border-red-200{% endif %}">
-                    <div class="flex items-center gap-2">
-                        {% if summary.mps_data.overall_mps >= 75 %}
-                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        <span class="text-sm font-medium text-green-800">Performance Level: Mastered (75% and above)</span>
-                        {% elif summary.mps_data.overall_mps >= 50 %}
-                        <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                        <span class="text-sm font-medium text-yellow-800">Performance Level: Nearing Mastery (50-74%)</span>
-                        {% else %}
-                        <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-                        <span class="text-sm font-medium text-red-800">Performance Level: Low Mastery (below 50%)</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Per-Class MPS Breakdown -->
-    {% if summary.mps_data.per_class %}
+    <!-- Per-Exam MPS Breakdown -->
+    {% if summary.quarter_summary.exams %}
     <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
         <div class="p-4 border-b bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-900">MPS by Class / Section</h3>
-            <p class="text-xs text-gray-500 mt-1">Breakdown of Mean Percentage Score per class section</p>
+            <h3 class="text-lg font-semibold text-gray-900">MPS by Exam</h3>
+            <p class="text-xs text-gray-500 mt-1">Breakdown of Mean Percentage Score per exam in the selected quarter</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class / Section</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Learners</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Correct</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Possible</th>
@@ -237,26 +228,26 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    {% for cls in summary.mps_data.per_class %}
+                    {% for cls in summary.quarter_summary.exams %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ cls.class_name }}</td>
-                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.learners }}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ cls.title }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_learners }}</td>
                         <td class="px-4 py-3 text-sm text-center text-green-700 font-medium">{{ cls.total_correct }}</td>
-                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_possible }}</td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">{{ cls.total_possible_answers }}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center gap-2">
                                 <div class="progress-bar flex-1 h-4">
-                                    <div class="progress-bar-fill {% if cls.mps >= 75 %}bg-green-500{% elif cls.mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.mps }}%;{% if cls.mps >= 75 %} background-color: #22c55e;{% elif cls.mps >= 50 %} background-color: #eab308;{% else %} background-color: #ef4444;{% endif %}" data-progress-percent="{{ cls.mps }}"></div>
+                                    <div class="progress-bar-fill {% if cls.overall_mps >= 75 %}bg-green-500{% elif cls.overall_mps >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ cls.overall_mps }}%;{% if cls.overall_mps >= 75 %} background-color: #22c55e;{% elif cls.overall_mps >= 50 %} background-color: #eab308;{% else %} background-color: #ef4444;{% endif %}" data-progress-percent="{{ cls.overall_mps }}"></div>
                                 </div>
-                                <span class="text-sm font-bold w-16 text-right {% if cls.mps >= 75 %}text-green-700{% elif cls.mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ cls.mps }}%</span>
+                                <span class="text-sm font-bold w-16 text-right {% if cls.overall_mps >= 75 %}text-green-700{% elif cls.overall_mps >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ cls.overall_mps }}%</span>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-center">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                {% if cls.mps >= 75 %}bg-green-100 text-green-800
-                                {% elif cls.mps >= 50 %}bg-yellow-100 text-yellow-800
+                                {% if cls.overall_mps >= 75 %}bg-green-100 text-green-800
+                                {% elif cls.overall_mps >= 50 %}bg-yellow-100 text-yellow-800
                                 {% else %}bg-red-100 text-red-800{% endif %}">
-                                {% if cls.mps >= 75 %}Mastered{% elif cls.mps >= 50 %}Nearing{% else %}Low{% endif %}
+                                {% if cls.overall_mps >= 75 %}Mastered{% elif cls.overall_mps >= 50 %}Nearing{% else %}Low{% endif %}
                             </span>
                         </td>
                     </tr>
@@ -265,15 +256,15 @@
                 <tfoot class="bg-indigo-50">
                     <tr>
                         <td class="px-4 py-3 text-sm font-bold text-gray-900">Overall</td>
-                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.mps_data.total_learners }}</td>
-                        <td class="px-4 py-3 text-sm text-center font-bold text-green-700">{{ summary.mps_data.total_correct }}</td>
-                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.mps_data.total_possible_answers }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.quarter_summary.graded_attempts }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-green-700">{{ summary.quarter_summary.total_correct }}</td>
+                        <td class="px-4 py-3 text-sm text-center font-bold text-gray-900">{{ summary.quarter_summary.total_possible_answers }}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center gap-2">
                                 <div class="progress-bar flex-1 h-4">
-                                    <div class="progress-bar-fill bg-indigo-500" style="width: {{ summary.mps_data.overall_mps }}%; background-color: #6366f1;" data-progress-percent="{{ summary.mps_data.overall_mps }}"></div>
+                                    <div class="progress-bar-fill bg-indigo-500" style="width: {{ summary.quarter_summary.overall_mps }}%; background-color: #6366f1;" data-progress-percent="{{ summary.quarter_summary.overall_mps }}"></div>
                                 </div>
-                                <span class="text-sm font-bold w-16 text-right text-indigo-700">{{ summary.mps_data.overall_mps }}%</span>
+                                <span class="text-sm font-bold w-16 text-right text-indigo-700">{{ summary.quarter_summary.overall_mps }}%</span>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-center">
@@ -285,14 +276,13 @@
         </div>
     </div>
     {% endif %}
-    {% endif %}
 
     <!-- Student-by-Item Response Matrix -->
-    {% if summary.student_matrix and summary.student_matrix.students %}
+    {% if summary.quarter_matrix and summary.quarter_matrix.students %}
     <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
         <div class="p-4 border-b bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-900">Student-by-Item Response Matrix</h3>
-            <p class="text-xs text-gray-500 mt-1">1 = Correct, 0 = Wrong/Skipped. This is the standard DepEd MPS matrix format.</p>
+            <h3 class="text-lg font-semibold text-gray-900">Quarter Student-by-Item Response Matrix</h3>
+            <p class="text-xs text-gray-500 mt-1">1 = Correct, 0 = Wrong/Skipped. Items are grouped by exam and the header shows each exam's MPS.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-xs border-collapse">
@@ -300,7 +290,19 @@
                     <tr>
                         <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
                         <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
-                        {% for item in summary.items %}
+                        {% for section in summary.quarter_matrix.exam_sections %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-indigo-50" colspan="{{ section.item_count }}">
+                            <div class="font-semibold text-gray-900">{{ section.title }}</div>
+                            <div class="text-[10px] text-gray-500">{{ section.overall_mps }}% MPS</div>
+                        </th>
+                        {% endfor %}
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
+                        <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">%</th>
+                    </tr>
+                    <tr>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-0 bg-gray-50 z-10">#</th>
+                        <th class="px-2 py-2 text-left font-medium text-gray-500 border border-gray-200 sticky left-6 bg-gray-50 z-10 min-w-[160px]">Student Name</th>
+                        {% for item in summary.quarter_matrix.items %}
                         <th class="px-1 py-2 text-center font-medium text-gray-500 border border-gray-200 w-8">{{ item.item_no }}</th>
                         {% endfor %}
                         <th class="px-2 py-2 text-center font-medium text-gray-700 border border-gray-200 bg-blue-50">Total</th>
@@ -308,7 +310,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for student in summary.student_matrix.students %}
+                    {% for student in summary.quarter_matrix.students %}
                     <tr class="{% cycle '' 'bg-gray-50' %}">
                         <td class="px-2 py-1 border border-gray-200 text-gray-500 sticky left-0 {% cycle 'bg-white' 'bg-gray-50' %} z-10">{{ forloop.counter }}</td>
                         <td class="px-2 py-1 border border-gray-200 font-medium text-gray-900 sticky left-6 {% cycle 'bg-white' 'bg-gray-50' %} z-10 whitespace-nowrap">{{ student.name }}</td>
@@ -323,15 +325,15 @@
                 <tfoot class="bg-indigo-50">
                     <tr>
                         <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">Total Correct per Item</td>
-                        {% for count in summary.student_matrix.per_item_correct %}
+                        {% for count in summary.quarter_matrix.per_item_correct %}
                         <td class="px-1 py-2 text-center border border-gray-200 font-bold">{{ count }}</td>
                         {% endfor %}
-                        <td class="px-2 py-2 text-center border border-gray-200 font-bold">{{ summary.mps_data.total_correct }}</td>
-                        <td class="px-2 py-2 text-center border border-gray-200 font-bold text-indigo-700">{{ summary.mps_data.overall_mps }}%</td>
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold">{{ summary.quarter_matrix.total_correct }}</td>
+                        <td class="px-2 py-2 text-center border border-gray-200 font-bold text-indigo-700">{{ summary.quarter_matrix.overall_mps }}%</td>
                     </tr>
                     <tr>
                         <td class="px-2 py-2 border border-gray-200 font-bold sticky left-0 bg-indigo-50 z-10" colspan="2">% Correct per Item</td>
-                        {% for pct in summary.student_matrix.per_item_percent %}
+                        {% for pct in summary.quarter_matrix.per_item_percent %}
                         <td class="px-1 py-2 text-center border border-gray-200 text-xs {% if pct >= 75 %}text-green-700{% elif pct >= 50 %}text-yellow-700{% else %}text-red-700{% endif %}">{{ pct }}%</td>
                         {% endfor %}
                         <td class="px-2 py-2 border border-gray-200" colspan="2"></td>

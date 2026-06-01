@@ -377,6 +377,17 @@ class TeacherGradingSplitViewTests(TestCase):
         self.assertContains(response, self.exam_graded.title)
         self.assertContains(response, 'Pending Essay Grading')
 
+    def test_teacher_student_detail_shows_passing_rate_analytics(self):
+        response = self.client.get(reverse('teacher_student_detail', args=[self.student.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Performance Overview')
+        self.assertContains(response, 'Passing Rate')
+        self.assertContains(response, 'Passed Attempts')
+        self.assertContains(response, 'Failed Attempts')
+        self.assertContains(response, 'passFailChart')
+        self.assertContains(response, 'scoreBreakdownChart')
+
     def test_teacher_pending_grading_queue_shows_ungraded_essays(self):
         response = self.client.get(reverse('teacher_pending_grading'))
 

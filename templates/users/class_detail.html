@@ -144,7 +144,15 @@
                         <div class="text-sm text-gray-500">{{ student.email|default:"N/A" }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div class="flex justify-end items-center">
+                        <div class="flex justify-end items-center gap-3">
+                            <!-- View Student -->
+                            <a href="{% url 'student_detail' student.id %}"
+                               class="text-blue-600 hover:text-blue-900 transition-colors"
+                               title="View Student">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19a3 3 0 10-6 0m6 0H9m6 0a3 3 0 00-6 0m6 0v-2a3 3 0 00-6 0v2m6 0h5m-5 0H4m11-8a4 4 0 11-8 0 4 4 0 018 0zm0 0h5m-5 0v-1a3 3 0 013-3h2" />
+                                </svg>
+                            </a>
                             <!-- Remove Student -->
                             <a href="{% url 'student_remove' student.id %}?class_id={{ class_obj.id }}" 
                                class="text-red-600 hover:text-red-900 transition-colors"
@@ -235,7 +243,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex justify-end items-center">
                             <!-- View Exam -->
-                            <a href="{% url 'exam_edit' exam.id %}" 
+                            <a href="{% url 'exam_detail' exam.id %}" 
                                class="text-blue-600 hover:text-blue-900 transition-colors"
                                title="View Exam">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

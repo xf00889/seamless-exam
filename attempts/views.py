@@ -45,6 +45,105 @@ def _attempt_pending_essay_count(attempt):
     return pending_count
 
 
+PASSING_PERCENT_THRESHOLD = 60.0
+
+
+def _attempt_total_points(attempt, exam_point_cache):
+    """Return the total possible points for an attempt's exam."""
+    if attempt.exam_id not in exam_point_cache:
+        exam_point_cache[attempt.exam_id] = sum(
+            float(question.points) for question in attempt.exam.questions.all()
+        )
+    return exam_point_cache[attempt.exam_id]
+
+
+def _attempt_percentage(attempt, exam_point_cache):
+    """Calculate a percentage score for an attempt."""
+    total_points = _attempt_total_points(attempt, exam_point_cache)
+    if total_points <= 0:
+        return 0.0
+    return round((float(attempt.total_score) / total_points) * 100, 2)
+
+
+def _build_student_performance_data(attempts):
+    """Build per-attempt analytics for the student submissions page."""
+    exam_point_cache = {}
+    attempt_metrics = []
+    graded_percentages = []
+    passed_attempts = 0
+    failed_attempts = 0
+
+    for attempt in attempts:
+        total_points = _attempt_total_points(attempt, exam_point_cache)
+        percentage = _attempt_percentage(attempt, exam_point_cache)
+        pending_essay_count = _attempt_pending_essay_count(attempt)
+        is_graded = attempt.status == AttemptStatus.GRADED
+        is_passed = is_graded and percentage >= PASSING_PERCENT_THRESHOLD
+
+        if is_graded:
+            graded_percentages.append(percentage)
+            if is_passed:
+                passed_attempts += 1
+            else:
+                failed_attempts += 1
+
+        submitted_at = _attempt_timestamp(attempt)
+        attempt_metrics.append({
+            'attempt': attempt,
+            'exam_title': attempt.exam.title,
+            'submitted_display': submitted_at.strftime('%b %d, %Y %I:%M %p') if submitted_at else 'No submission timestamp',
+            'score': float(attempt.total_score),
+            'total_points': total_points,
+            'percentage': percentage,
+            'is_graded': is_graded,
+            'is_passed': is_passed,
+            'status_label': 'Passed' if is_passed else 'Failed' if is_graded else 'Pending',
+            'pending_essay_count': pending_essay_count,
+        })
+
+    graded_attempt_count = len(graded_percentages)
+    pass_rate = round((passed_attempts / graded_attempt_count) * 100, 2) if graded_attempt_count else 0.0
+    fail_rate = round((failed_attempts / graded_attempt_count) * 100, 2) if graded_attempt_count else 0.0
+    average_percentage = round(sum(graded_percentages) / graded_attempt_count, 2) if graded_attempt_count else 0.0
+    highest_percentage = round(max(graded_percentages), 2) if graded_percentages else 0.0
+    lowest_percentage = round(min(graded_percentages), 2) if graded_percentages else 0.0
+
+    attempt_metrics.sort(
+        key=lambda item: (
+            item['attempt'].submitted_at or item['attempt'].started_at or timezone.now(),
+            item['attempt'].exam.title.lower(),
+        ),
+        reverse=True,
+    )
+
+    chart_labels = [metric['exam_title'] for metric in attempt_metrics if metric['is_graded']]
+    chart_values = [metric['percentage'] for metric in attempt_metrics if metric['is_graded']]
+
+    return {
+        'attempt_metrics': attempt_metrics,
+        'summary': {
+            'graded_attempt_count': graded_attempt_count,
+            'passed_attempts': passed_attempts,
+            'failed_attempts': failed_attempts,
+            'pass_rate': pass_rate,
+            'fail_rate': fail_rate,
+            'average_percentage': average_percentage,
+            'highest_percentage': highest_percentage,
+            'lowest_percentage': lowest_percentage,
+        },
+        'chart_data': {
+            'pass_fail': {
+                'labels': ['Passed', 'Failed'],
+                'values': [passed_attempts, failed_attempts],
+            },
+            'score_breakdown': {
+                'labels': chart_labels,
+                'values': chart_values,
+            },
+        },
+    }
+
+
 def _get_teacher_submission_attempts():
     return Attempt.objects.select_related(
         'student',
@@ -54,6 +153,7 @@ def _get_teacher_submission_attempts():
     ).prefetch_related(
         'answers',
         'answers__question',
+        'exam__questions',
     ).filter(
         status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED]
     ).order_by(
@@ -776,6 +876,7 @@ def teacher_student_detail_view(request, student_id):
 
     attempts = list(_get_teacher_submission_attempts().filter(student_id=student_id))
     exam_groups = _build_exam_groups_for_student(attempts)
+    performance_data = _build_student_performance_data(attempts)
 
     total_attempts = len(attempts)
     pending_attempts = sum(1 for attempt in attempts if _attempt_pending_essay_count(attempt) > 0)
@@ -806,6 +907,14 @@ def teacher_student_detail_view(request, student_id):
         'average_score': round(average_score, 2),
         'latest_submission': latest_submission,
         'page_breadcrumbs': breadcrumbs,
+        'attempt_metrics': performance_data['attempt_metrics'],
+        'performance_summary': {
+            'total_attempts': total_attempts,
+            'pending_attempts': pending_attempts,
+            'graded_attempts': graded_attempts,
+            **performance_data['summary'],
+        },
+        'student_performance_chart_data': performance_data['chart_data'],
     }
 
     return render(request, 'attempts/student_submissions_detail.html', context)
