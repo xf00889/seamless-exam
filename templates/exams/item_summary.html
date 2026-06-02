@@ -925,10 +925,10 @@ function getItemQuestionMap() {
 }
 
 function statsTile(label, value, sub, accentClass) {
-    return `<div class="bg-white rounded-lg p-4 border border-gray-200">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">${escapeHtml(label)}</div>
-        <div class="mt-1 text-2xl font-bold ${accentClass || 'text-gray-900'}">${escapeHtml(String(value))}</div>
-        ${sub ? `<div class="text-xs text-gray-500 mt-0.5">${sub}</div>` : ''}
+    return `<div class="bg-white rounded-lg p-4 border border-gray-200" style="background:#fff;border-radius:0.5rem;padding:1rem;border:1px solid #e5e7eb;">
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide" style="font-size:0.75rem;font-weight:500;color:#6b7280;text-transform:uppercase;letter-spacing:0.025em;">${escapeHtml(label)}</div>
+        <div class="mt-1 text-2xl font-bold ${accentClass || 'text-gray-900'}" style="margin-top:0.25rem;font-size:1.5rem;line-height:2rem;font-weight:700;">${escapeHtml(String(value))}</div>
+        ${sub ? `<div class="text-xs text-gray-500 mt-0.5" style="font-size:0.75rem;color:#6b7280;margin-top:0.125rem;">${sub}</div>` : ''}
     </div>`;
 }
 
@@ -955,33 +955,33 @@ function renderAnalysis(analysis, meta) {
     const reviseRaw = (analysis && Array.isArray(analysis.items_to_revise)) ? analysis.items_to_revise : [];
 
     const strengthsHtml = strengths.length
-        ? strengths.map(s => `<li class="flex items-start group">
-            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 mt-0.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        ? strengths.map(s => `<li class="flex items-start group" style="display:flex;align-items:flex-start;list-style:none;">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 mt-0.5" style="flex-shrink:0;width:1.5rem;height:1.5rem;border-radius:9999px;background:#d1fae5;color:#059669;display:flex;align-items:center;justify-content:center;margin-right:0.75rem;margin-top:0.125rem;">
+                <svg class="w-3.5 h-3.5" width="14" height="14" style="width:14px;height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </span>
-            <span class="text-sm text-gray-700 leading-relaxed">${escapeHtml(s)}</span>
+            <span class="text-sm text-gray-700 leading-relaxed" style="font-size:0.875rem;color:#374151;line-height:1.625;">${escapeHtml(s)}</span>
         </li>`).join('')
-        : '<li class="text-sm text-gray-500 italic">No strengths identified.</li>';
+        : '<li class="text-sm text-gray-500 italic" style="font-size:0.875rem;color:#6b7280;font-style:italic;list-style:none;">No strengths identified.</li>';
 
     const areasHtml = areas.length
-        ? areas.map(a => `<li class="flex items-start group">
-            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3 mt-0.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
+        ? areas.map(a => `<li class="flex items-start group" style="display:flex;align-items:flex-start;list-style:none;">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3 mt-0.5" style="flex-shrink:0;width:1.5rem;height:1.5rem;border-radius:9999px;background:#ffedd5;color:#ea580c;display:flex;align-items:center;justify-content:center;margin-right:0.75rem;margin-top:0.125rem;">
+                <svg class="w-3.5 h-3.5" width="14" height="14" style="width:14px;height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
             </span>
-            <span class="text-sm text-gray-700 leading-relaxed">${escapeHtml(a)}</span>
+            <span class="text-sm text-gray-700 leading-relaxed" style="font-size:0.875rem;color:#374151;line-height:1.625;">${escapeHtml(a)}</span>
         </li>`).join('')
-        : '<li class="text-sm text-gray-500 italic">No specific areas for improvement flagged.</li>';
+        : '<li class="text-sm text-gray-500 italic" style="font-size:0.875rem;color:#6b7280;font-style:italic;list-style:none;">No specific areas for improvement flagged.</li>';
 
     const stepCount = steps.length;
     const stepsHtml = stepCount
-        ? steps.map((step, i) => `<li class="relative pl-12 ${i < stepCount - 1 ? 'pb-5' : ''}">
-            ${i < stepCount - 1 ? '<span class="absolute left-5 top-10 bottom-0 w-0.5 bg-gradient-to-b from-indigo-300 to-indigo-100"></span>' : ''}
-            <span class="absolute left-0 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-bold shadow-md">${i + 1}</span>
-            <div class="bg-indigo-50/60 rounded-lg px-4 py-3 border border-indigo-100">
-                <p class="text-sm text-gray-800 leading-relaxed">${escapeHtml(step)}</p>
+        ? steps.map((step, i) => `<li class="relative pl-12 ${i < stepCount - 1 ? 'pb-5' : ''}" style="position:relative;padding-left:3rem;${i < stepCount - 1 ? 'padding-bottom:1.25rem;' : ''}list-style:none;">
+            ${i < stepCount - 1 ? '<span class="absolute left-5 top-10 bottom-0 w-0.5 bg-gradient-to-b from-indigo-300 to-indigo-100" style="position:absolute;left:1.25rem;top:2.5rem;bottom:0;width:2px;background:linear-gradient(to bottom,#a5b4fc,#c7d2fe);"></span>' : ''}
+            <span class="absolute left-0 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-bold shadow-md" style="position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border-radius:9999px;background:linear-gradient(to bottom right,#6366f1,#9333ea);color:#fff;font-size:0.875rem;font-weight:700;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);">${i + 1}</span>
+            <div class="bg-indigo-50/60 rounded-lg px-4 py-3 border border-indigo-100" style="background:rgba(238,242,255,0.6);border-radius:0.5rem;padding:0.75rem 1rem;border:1px solid #e0e7ff;">
+                <p class="text-sm text-gray-800 leading-relaxed" style="font-size:0.875rem;color:#1f2937;line-height:1.625;">${escapeHtml(step)}</p>
             </div>
         </li>`).join('')
-        : '<li class="text-sm text-gray-500 italic">No intervention steps recommended.</li>';
+        : '<li class="text-sm text-gray-500 italic" style="font-size:0.875rem;color:#6b7280;font-style:italic;list-style:none;">No intervention steps recommended.</li>';
 
     let reviseHtml = '';
     if (reviseRaw.length) {
@@ -992,28 +992,28 @@ function renderAnalysis(analysis, meta) {
             const qid = num != null ? qMap[String(num)] : null;
             const editHref = qid ? '{% url "question_edit" 0 %}'.replace('0', String(qid)) : null;
             const linkBlock = editHref
-                ? `<a href="${editHref}" class="text-xs font-medium text-rose-700 hover:text-rose-900 inline-flex items-center gap-1 mt-2">
+                ? `<a href="${editHref}" class="text-xs font-medium text-rose-700 hover:text-rose-900 inline-flex items-center gap-1 mt-2" style="font-size:0.75rem;font-weight:500;color:#be123c;display:inline-flex;align-items:center;gap:0.25rem;margin-top:0.5rem;text-decoration:none;">
                     <svg width="12" height="12" style="width:12px;height:12px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     Edit this item
                    </a>`
-                : `<span class="text-xs text-rose-700/70 mt-2 inline-block">Open Item Summary to edit</span>`;
-            return `<div class="bg-white border border-rose-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-rose-100 text-rose-700 text-xs font-bold">${escapeHtml(num != null ? String(num) : '?')}</span>
-                    <span class="text-sm font-semibold text-rose-900">${escapeHtml(label)}</span>
+                : `<span class="text-xs text-rose-700/70 mt-2 inline-block" style="font-size:0.75rem;color:rgba(190,18,60,0.7);margin-top:0.5rem;display:inline-block;">Open Item Summary to edit</span>`;
+            return `<div class="bg-white border border-rose-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style="background:#fff;border:1px solid #fecdd3;border-radius:0.5rem;padding:0.75rem;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);">
+                <div class="flex items-center gap-2" style="display:flex;align-items:center;gap:0.5rem;">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-rose-100 text-rose-700 text-xs font-bold" style="display:inline-flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:0.375rem;background:#ffe4e6;color:#be123c;font-size:0.75rem;font-weight:700;flex-shrink:0;">${escapeHtml(num != null ? String(num) : '?')}</span>
+                    <span class="text-sm font-semibold text-rose-900" style="font-size:0.875rem;font-weight:600;color:#881337;">${escapeHtml(label)}</span>
                 </div>
                 ${linkBlock}
             </div>`;
         }).join('');
-        reviseHtml = `<section class="mt-6">
-            <div class="flex items-center gap-2 mb-3">
+        reviseHtml = `<section class="mt-6" style="margin-top:1.5rem;">
+            <div class="flex items-center gap-2 mb-3" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
                 <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center" style="flex-shrink:0;width:32px;height:32px;border-radius:0.5rem;background:rgba(254,205,211,1);color:rgba(225,29,72,1);display:flex;align-items:center;justify-content:center;">
                     <svg width="16" height="16" style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 </span>
-                <h4 class="text-sm font-semibold text-rose-900">Items Recommended for Revision</h4>
-                <span class="text-xs text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full font-medium">${reviseRaw.length}</span>
+                <h4 class="text-sm font-semibold text-rose-900" style="font-size:0.875rem;font-weight:600;color:#881337;">Items Recommended for Revision</h4>
+                <span class="text-xs text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full font-medium" style="font-size:0.75rem;color:#e11d48;background:#ffe4e6;padding:0.125rem 0.5rem;border-radius:9999px;font-weight:500;">${reviseRaw.length}</span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" style="display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:0.75rem;">${cards}</div>
         </section>`;
     }
 
@@ -1066,7 +1066,7 @@ function renderAnalysis(analysis, meta) {
                         </div>
                         <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" style="font-size:0.75rem;font-weight:600;color:#047857;background:#d1fae5;padding:0.125rem 0.5rem;border-radius:9999px;">${strengths.length}</span>
                     </div>
-                    <ul class="space-y-3" style="display:flex;flex-direction:column;gap:0.75rem;">${strengthsHtml}</ul>
+                    <ul class="space-y-3" style="display:flex;flex-direction:column;gap:0.75rem;list-style:none;padding:0;margin:0;">${strengthsHtml}</ul>
                 </div>
                 <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-200/60" style="background:linear-gradient(to bottom right,#fff7ed,#fffbeb);border-radius:0.75rem;padding:1.25rem;border:1px solid rgba(253,186,116,0.4);">
                     <div class="flex items-center justify-between mb-3" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
@@ -1078,7 +1078,7 @@ function renderAnalysis(analysis, meta) {
                         </div>
                         <span class="text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full" style="font-size:0.75rem;font-weight:600;color:#c2410c;background:#ffedd5;padding:0.125rem 0.5rem;border-radius:9999px;">${areas.length}</span>
                     </div>
-                    <ul class="space-y-3" style="display:flex;flex-direction:column;gap:0.75rem;">${areasHtml}</ul>
+                    <ul class="space-y-3" style="display:flex;flex-direction:column;gap:0.75rem;list-style:none;padding:0;margin:0;">${areasHtml}</ul>
                 </div>
             </div>
 
@@ -1092,7 +1092,7 @@ function renderAnalysis(analysis, meta) {
                     </div>
                     <span class="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full" style="font-size:0.75rem;font-weight:600;color:#4338ca;background:#e0e7ff;padding:0.125rem 0.5rem;border-radius:9999px;">${stepCount} step${stepCount === 1 ? '' : 's'}</span>
                 </div>
-                <ol class="space-y-0" style="display:flex;flex-direction:column;gap:0;">${stepsHtml}</ol>
+                <ol class="space-y-0" style="display:flex;flex-direction:column;gap:0;list-style:none;padding:0;margin:0;">${stepsHtml}</ol>
             </div>
 
             ${reviseHtml}
@@ -1212,10 +1212,15 @@ function renderCachedAnalysisIfPresent() {
         /* ignore parse errors - keep CTA card visible */
     }
 }
+function _fireRender() {
+    requestAnimationFrame(function () {
+        requestAnimationFrame(renderCachedAnalysisIfPresent);
+    });
+}
 if (document.readyState === 'complete') {
-    renderCachedAnalysisIfPresent();
+    _fireRender();
 } else {
-    window.addEventListener('load', renderCachedAnalysisIfPresent);
+    window.addEventListener('load', _fireRender);
 }
 
 function filterByDifficulty(level) {
