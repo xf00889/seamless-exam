@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Avg
@@ -1275,6 +1276,7 @@ def get_exam_students_view(request, exam_id):
 
 
 @teacher_required
+@ensure_csrf_cookie
 def item_summary_view(request, exam_id):
     """
     Display DepEd-style Item Summary Sheet with item analysis.

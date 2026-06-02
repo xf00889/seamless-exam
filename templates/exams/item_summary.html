@@ -551,7 +551,7 @@
     <div id="aiLoadingState" class="hidden bg-white rounded-lg shadow-md mb-6 overflow-hidden border-l-4 border-l-purple-500">
         <div class="p-4 border-b bg-purple-50">
             <div class="flex items-center">
-                <svg class="h-5 w-5 text-purple-600 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <h3 class="text-lg font-semibold text-purple-900">Generating Teacher's Analysis...</h3>
@@ -559,20 +559,48 @@
         </div>
         <div class="p-8">
             <div class="flex flex-col items-center justify-center">
-                <div class="relative mb-6">
-                    <div class="w-16 h-16 border-4 border-purple-200 rounded-full"></div>
-                    <div class="mps-spinner absolute top-0 left-0"></div>
+                <div class="relative mb-6" style="width:72px;height:72px;">
+                    <svg id="aiSpinnerSvg" width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
+                        <circle cx="36" cy="36" r="30" fill="none" stroke="#e9d5ff" stroke-width="6"/>
+                        <circle cx="36" cy="36" r="30" fill="none" stroke="#7c3aed" stroke-width="6"
+                                stroke-linecap="round" stroke-dasharray="50 200"
+                                transform="rotate(-90 36 36)">
+                            <animateTransform attributeName="transform" type="rotate"
+                                              from="0 36 36" to="360 36 36"
+                                              dur="0.9s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
                 </div>
-                <p class="text-gray-700 font-medium mb-2">AI is analyzing your item summary data</p>
-                <p class="text-sm text-gray-500 text-center max-w-md">This may take 15-45 seconds depending on the AI model. The analysis will include strengths, areas for improvement, and intervention recommendations.</p>
-                <div class="mt-4 flex items-center gap-2">
-                    <div class="flex space-x-1">
-                        <div class="mps-bounce w-2 h-2 bg-purple-400 rounded-full" style="animation-delay: 0s"></div>
-                        <div class="mps-bounce w-2 h-2 bg-purple-400 rounded-full" style="animation-delay: 0.2s"></div>
-                        <div class="mps-bounce w-2 h-2 bg-purple-400 rounded-full" style="animation-delay: 0.4s"></div>
+                <p id="aiStageLabel" class="text-gray-700 font-medium mb-1">Reading item statistics...</p>
+                <p class="text-sm text-gray-500 text-center max-w-md mb-5">
+                    The AI is reviewing your test results and crafting a DepEd-aligned analysis.
+                    This usually takes 15&ndash;45 seconds depending on the model.
+                </p>
+                <div class="w-full max-w-sm mb-4">
+                    <div class="w-full h-2 bg-purple-100 rounded-full overflow-hidden">
+                        <div id="aiProgressBar"
+                             class="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-600 rounded-full"
+                             style="width:0%; transition: width 0.4s ease;"></div>
                     </div>
-                    <span class="text-xs text-gray-400" id="aiTimer">0s elapsed</span>
                 </div>
+                <ul id="aiStageList" class="text-xs text-gray-500 space-y-1 self-start max-w-sm w-full">
+                    <li class="flex items-center" data-stage="0">
+                        <span class="ai-stage-dot inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
+                        Gathering item statistics
+                    </li>
+                    <li class="flex items-center" data-stage="1">
+                        <span class="ai-stage-dot inline-block w-2 h-2 rounded-full bg-gray-300 mr-2"></span>
+                        Analyzing item difficulty patterns
+                    </li>
+                    <li class="flex items-center" data-stage="2">
+                        <span class="ai-stage-dot inline-block w-2 h-2 rounded-full bg-gray-300 mr-2"></span>
+                        Drafting strengths &amp; intervention plan
+                    </li>
+                </ul>
+                <p class="mt-5 text-xs text-gray-400">
+                    <span id="aiTimer">0s elapsed</span>
+                </p>
+                <p class="mt-1 text-xs text-gray-400 italic">Please don't close this tab.</p>
             </div>
         </div>
     </div>
@@ -598,6 +626,57 @@
 {% block extra_js %}
 <script>
 let aiTimerInterval = null;
+let aiStageTimers = [];
+const AI_STAGE_LABELS = [
+    'Reading item statistics...',
+    'Analyzing item difficulty patterns...',
+    'Drafting strengths and intervention plan...'
+];
+const AI_TARGET_SECONDS = 45;
+
+function setAiStage(stageIdx) {
+    const labelEl = document.getElementById('aiStageLabel');
+    if (labelEl && AI_STAGE_LABELS[stageIdx]) {
+        labelEl.textContent = AI_STAGE_LABELS[stageIdx];
+    }
+    const items = document.querySelectorAll('#aiStageList li');
+    items.forEach((li, i) => {
+        const dot = li.querySelector('.ai-stage-dot');
+        if (!dot) return;
+        if (i < stageIdx) {
+            dot.classList.remove('bg-gray-300', 'bg-purple-500');
+            dot.classList.add('bg-green-500');
+            li.classList.add('text-gray-400');
+            li.classList.remove('text-gray-700');
+        } else if (i === stageIdx) {
+            dot.classList.remove('bg-gray-300', 'bg-green-500');
+            dot.classList.add('bg-purple-500');
+            li.classList.add('text-gray-700');
+            li.classList.remove('text-gray-400');
+        } else {
+            dot.classList.remove('bg-purple-500', 'bg-green-500');
+            dot.classList.add('bg-gray-300');
+            li.classList.add('text-gray-500');
+            li.classList.remove('text-gray-700', 'text-gray-400');
+        }
+    });
+}
+
+function resetAiStages() {
+    const items = document.querySelectorAll('#aiStageList li');
+    items.forEach((li) => {
+        const dot = li.querySelector('.ai-stage-dot');
+        if (dot) {
+            dot.classList.remove('bg-purple-500', 'bg-green-500');
+            dot.classList.add('bg-gray-300');
+        }
+        li.classList.remove('text-gray-700', 'text-gray-400');
+        li.classList.add('text-gray-500');
+    });
+    setAiStage(0);
+    const bar = document.getElementById('aiProgressBar');
+    if (bar) bar.style.width = '0%';
+}
 
 function generateAiAnalysis() {
     const ctaCard = document.getElementById('aiCtaCard');
@@ -606,20 +685,40 @@ function generateAiAnalysis() {
     const errorState = document.getElementById('aiErrorState');
     const generateBtn = document.getElementById('aiGenerateBtn');
 
+    if (generateBtn && generateBtn.disabled) return; // prevent double-click
+    if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.classList.add('opacity-60', 'cursor-not-allowed');
+    }
+
     ctaCard.classList.add('hidden');
     loadingState.classList.remove('hidden');
     errorState.classList.add('hidden');
     resultContainer.classList.add('hidden');
+    resetAiStages();
 
     let seconds = 0;
     const timerEl = document.getElementById('aiTimer');
+    const bar = document.getElementById('aiProgressBar');
+    timerEl.textContent = '0s elapsed';
     aiTimerInterval = setInterval(() => {
         seconds++;
         timerEl.textContent = seconds + 's elapsed';
+        const pct = Math.min(95, (seconds / AI_TARGET_SECONDS) * 100);
+        if (bar) bar.style.width = pct + '%';
     }, 1000);
 
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
-                      document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    aiStageTimers.forEach(clearTimeout);
+    aiStageTimers = [];
+    aiStageTimers.push(setTimeout(() => setAiStage(1), 5000));
+    aiStageTimers.push(setTimeout(() => setAiStage(2), 15000));
+
+    const csrfToken = (typeof getCSRFToken === 'function')
+        ? getCSRFToken()
+        : (document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+           document.cookie.split(';').find(c => c.trim().startsWith('exam_csrftoken='))?.split('=')[1] ||
+           document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='))?.split('=')[1] ||
+           '');
 
     fetch('{% url "item_summary_analyze" exam.id %}', {
         method: 'POST',
@@ -630,26 +729,43 @@ function generateAiAnalysis() {
         },
         body: JSON.stringify({})
     })
-    .then(response => {
+    .then(async (response) => {
+        const text = await response.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { /* non-JSON */ }
         if (!response.ok) {
-            return response.json().then(data => { throw new Error(data.error || 'Analysis failed'); });
+            const msg = (data && data.error) || (response.status === 403
+                ? 'Session expired. Please reload the page and try again.'
+                : `Analysis failed (HTTP ${response.status}).`);
+            throw new Error(msg);
         }
-        return response.json();
+        return data || {};
     })
     .then(data => {
         clearInterval(aiTimerInterval);
+        aiStageTimers.forEach(clearTimeout);
+        if (bar) bar.style.width = '100%';
         loadingState.classList.add('hidden');
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
 
-        if (data.success && data.analysis) {
+        if (data && data.success && data.analysis) {
             renderAnalysis(data.analysis);
             resultContainer.classList.remove('hidden');
         } else {
-            showAiError(data.error || 'Unexpected response from AI service');
+            showAiError((data && data.error) || 'Unexpected response from AI service');
         }
     })
     .catch(error => {
         clearInterval(aiTimerInterval);
+        aiStageTimers.forEach(clearTimeout);
         loadingState.classList.add('hidden');
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
         showAiError(error.message || 'Failed to connect to AI service. Please try again.');
     });
 }
