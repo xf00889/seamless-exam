@@ -7,6 +7,7 @@ from django.db.models import Count, Q, Sum, Avg, StdDev
 
 from exams.models import Exam, Question
 from attempts.models import Attempt, Answer, AttemptStatus
+from users.models import Quarter
 
 logger = logging.getLogger(__name__)
 
@@ -388,6 +389,48 @@ class ItemAnalysisService:
             'quarter_summary': quarter_summary,
             'quarter_matrix': quarter_matrix,
             'student_matrix': student_matrix,
+            'has_data': bool(quarter_summary and quarter_summary.get('has_data')),
+        }
+
+    def get_mps_quarter_list(self, teacher):
+        """
+        Build MPS summaries for every quarter that has exams for the given teacher.
+        Returns a list of quarter summary dicts, ordered by quarter order and name.
+        """
+        return self._build_all_quarter_summaries(teacher)
+
+    def get_mps_quarter_summary(self, quarter, teacher):
+        """
+        Build the full MPS report data for a single quarter, used by the
+        per-quarter report page and its Excel/Word exports.
+        """
+        quarter_exams = list(
+            Exam.objects.filter(
+                created_by=teacher,
+                quarter=quarter,
+            ).select_related('quarter', 'created_by__user').prefetch_related('questions').order_by(
+                'created_at', 'id'
+            )
+        )
+
+        if not quarter_exams:
+            return {
+                'quarter': quarter,
+                'quarter_summary': None,
+                'quarter_matrix': None,
+                'representative_exam': None,
+                'has_data': False,
+            }
+
+        representative_exam = quarter_exams[0]
+        quarter_summary = self._build_quarter_summary_from_exams(quarter_exams, quarter)
+        quarter_matrix = self._build_student_item_matrix_for_exams(quarter_exams, 'Quarter')
+
+        return {
+            'quarter': quarter,
+            'representative_exam': representative_exam,
+            'quarter_summary': quarter_summary,
+            'quarter_matrix': quarter_matrix,
             'has_data': bool(quarter_summary and quarter_summary.get('has_data')),
         }
 

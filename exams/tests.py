@@ -327,8 +327,19 @@ class QuarterSummaryServiceTests(TestCase):
         self.assertContains(response, self.exam_one.title)
         self.assertContains(response, self.exam_two.title)
 
-    def test_mps_report_page_shows_quarter_summary(self):
-        response = self.client.get(reverse('mps_report', args=[self.exam_one.id]))
+    def test_mps_quarter_list_page_lists_all_quarters(self):
+        response = self.client.get(reverse('mps_quarter_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '1st Quarter')
+        self.assertContains(response, '2nd Quarter')
+        self.assertContains(response, 'View Report')
+        nav_labels = {link['label']: link for link in response.context['navbar_nav_links']}
+        self.assertTrue(nav_labels['MPS']['active'])
+        self.assertFalse(nav_labels['Exams']['active'])
+
+    def test_mps_quarter_detail_page_shows_quarter_summary(self):
+        response = self.client.get(reverse('mps_quarter_detail', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Quarter Summary')
@@ -336,18 +347,11 @@ class QuarterSummaryServiceTests(TestCase):
         self.assertNotContains(response, '2nd Quarter')
         self.assertContains(response, self.exam_two.title)
         self.assertNotContains(response, self.exam_three.title)
-        self.assertContains(response, 'Exam Student-by-Item Response Matrix')
         self.assertContains(response, 'Quarter Student-by-Item Response Matrix')
         self.assertNotContains(response, 'All Quarters Student-by-Item Response Matrix')
         nav_labels = {link['label']: link for link in response.context['navbar_nav_links']}
         self.assertTrue(nav_labels['MPS']['active'])
         self.assertFalse(nav_labels['Exams']['active'])
-
-    def test_mps_entrypoint_redirects_to_latest_report(self):
-        response = self.client.get(reverse('mps_entrypoint'))
-
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('mps_report', args=[self.exam_three.id]))
 
 
 
@@ -577,7 +581,7 @@ class MpsExportWordTests(TestCase):
         session.save()
 
     def test_mps_export_word_contains_header_and_footer(self):
-        response = self.client.get(reverse('mps_export_word', args=[self.exam.id]))
+        response = self.client.get(reverse('mps_quarter_export_word', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -701,7 +705,7 @@ class MpsExportExcelTests(TestCase):
         session.save()
 
     def test_mps_export_excel_contains_quarter_summary_sheet(self):
-        response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+        response = self.client.get(reverse('mps_quarter_export_excel', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         workbook = load_workbook(BytesIO(response.content))
@@ -735,19 +739,19 @@ class MpsExportExcelTests(TestCase):
         self.assertNotIn('All Quarters Student-by-Item Response Matrix', matrix_values)
 
     def test_mps_export_excel_sanitizes_download_filename(self):
-        self.exam.title = 'Biology\r\nCheck: Quarter/1'
-        self.exam.save(update_fields=['title'])
+        self.quarter.name = 'Quarter 1: Q1/2026'
+        self.quarter.save(update_fields=['name'])
 
-        response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+        response = self.client.get(reverse('mps_quarter_export_excel', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('MPS_Report_Biology_Check_Quarter_1.xlsx', response['Content-Disposition'])
+        self.assertIn('MPS_Report_Quarter_1_Q1_2026.xlsx', response['Content-Disposition'])
 
     def test_mps_export_excel_strips_illegal_cell_characters(self):
         self.exam.title = 'Biology\x0bCheck'
         self.exam.save(update_fields=['title'])
 
-        response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+        response = self.client.get(reverse('mps_quarter_export_excel', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         workbook = load_workbook(BytesIO(response.content))
@@ -763,7 +767,7 @@ class MpsExportExcelTests(TestCase):
         self.exam.title = 'Biology\r\nCheck'
         self.exam.save(update_fields=['title'])
 
-        response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+        response = self.client.get(reverse('mps_quarter_export_excel', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         workbook = load_workbook(BytesIO(response.content))
@@ -777,7 +781,7 @@ class MpsExportExcelTests(TestCase):
 
     def test_mps_export_excel_skips_unreadable_brand_image(self):
         with patch('openpyxl.drawing.image.Image', side_effect=OSError('bad logo')):
-            response = self.client.get(reverse('mps_export_excel', args=[self.exam.id]))
+            response = self.client.get(reverse('mps_quarter_export_excel', args=[self.quarter.id]))
 
         self.assertEqual(response.status_code, 200)
         workbook = load_workbook(BytesIO(response.content))

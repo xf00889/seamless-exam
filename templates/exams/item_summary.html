@@ -154,7 +154,7 @@
                     <p class="text-xs text-gray-500">{{ summary.mps_data.total_correct }} correct / {{ summary.mps_data.total_possible_answers }} possible ({{ summary.mps_data.total_learners }} learners x {{ summary.mps_data.total_items }} items)</p>
                 </div>
             </div>
-            <a href="{% url 'mps_report' exam.id %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-md font-medium transition-colors flex items-center text-sm whitespace-nowrap">
+            <a href="{% url 'mps_quarter_list' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-md font-medium transition-colors flex items-center text-sm whitespace-nowrap">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
                 </svg>

@@ -1344,60 +1344,56 @@ def item_summary_ai_analyze_view(request, exam_id):
 
 
 @teacher_required
-def mps_entrypoint_view(request):
+def mps_quarter_list_view(request):
     """
-    Entry point for the teacher MPS report.
-    Redirects to the newest exam with a quarter-based MPS report.
-    """
-    from exams.models import Exam
-    from attempts.models import AttemptStatus
-    from services.item_analysis_service import ItemAnalysisService
-
-    teacher = auth_service.get_current_teacher(request)
-
-    candidate_exams = Exam.objects.filter(
-        created_by=teacher,
-        quarter__isnull=False,
-        attempts__status=AttemptStatus.GRADED,
-    ).select_related('quarter').distinct().order_by('-created_at', '-id')
-
-    service = ItemAnalysisService()
-    for exam in candidate_exams:
-        summary_data = service.get_mps_report_summary(exam.id)
-        if summary_data and summary_data.get('has_data'):
-            return redirect('mps_report', exam_id=exam.id)
-
-    messages.info(request, 'No graded quarter MPS reports are available yet.')
-    return redirect('exam_list')
-
-
-@teacher_required
-def mps_report_view(request, exam_id):
-    """
-    Display a quarter-based DepEd-style MPS (Mean Percentage Score) report.
-    The report aggregates all exams in the same quarter as the selected exam.
+    List all quarters that have exams for the current teacher, with their
+    overall MPS shown as a summary card per quarter.
     """
     from services.item_analysis_service import ItemAnalysisService
 
-    exam = get_object_or_404(Exam, pk=exam_id)
-
     teacher = auth_service.get_current_teacher(request)
-    if exam.created_by.pk != teacher.pk:
-        messages.error(request, 'You do not have permission to view this exam')
-        return redirect('exam_list')
-
     service = ItemAnalysisService()
-    summary_data = service.get_mps_report_summary(exam_id)
-
-    if summary_data is None:
-        messages.error(request, 'Exam not found')
-        return redirect('exam_list')
+    quarter_summaries = service.get_mps_quarter_list(teacher)
 
     breadcrumbs = build_breadcrumbs(
         ('Dashboard', reverse('teacher_dashboard')),
         ('My Exams', reverse('exam_list')),
-        (exam.title, reverse('exam_takers', args=[exam_id])),
-        'MPS Report'
+        'MPS Report',
+    )
+
+    context = {
+        'quarter_summaries': quarter_summaries,
+        'has_data': any(q.get('has_data') for q in quarter_summaries),
+        'page_breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'exams/mps_quarter_list.html', context)
+
+
+@teacher_required
+def mps_quarter_detail_view(request, quarter_id):
+    """
+    Display a per-quarter DepEd-style MPS (Mean Percentage Score) report.
+    Aggregates all exams belonging to the selected quarter for the teacher.
+    """
+    from services.item_analysis_service import ItemAnalysisService
+    from users.models import Quarter
+
+    quarter = get_object_or_404(Quarter, pk=quarter_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    service = ItemAnalysisService()
+    summary_data = service.get_mps_quarter_summary(quarter, teacher)
+
+    if not summary_data:
+        messages.error(request, 'Quarter not found')
+        return redirect('mps_quarter_list')
+
+    breadcrumbs = build_breadcrumbs(
+        ('Dashboard', reverse('teacher_dashboard')),
+        ('My Exams', reverse('exam_list')),
+        ('MPS Report', reverse('mps_quarter_list')),
+        (quarter.name, None),
     )
 
     mps_gauge_offset = 377
@@ -1406,13 +1402,13 @@ def mps_report_view(request, exam_id):
         mps_gauge_offset = round(377 - (377 * quarter_summary['overall_mps'] / 100))
 
     context = {
-        'exam': exam,
+        'quarter': quarter,
         'summary': summary_data,
         'mps_gauge_offset': mps_gauge_offset,
         'page_breadcrumbs': breadcrumbs,
     }
 
-    return render(request, 'exams/mps_report.html', context)
+    return render(request, 'exams/mps_quarter_detail.html', context)
 
 
 def _configure_docx_branding(document, report_title, exam, meta_lines, footer_label):
@@ -1605,10 +1601,10 @@ def exam_export_word_view(request, exam_id):
 
 @teacher_required
 @require_http_methods(["GET"])
-def mps_export_excel_view(request, exam_id):
+def mps_quarter_export_excel_view(request, quarter_id):
     """
-    Export MPS report to Excel with DepEd-style formatting.
-    Includes overall MPS, per-class breakdown, and item-level data.
+    Export the per-quarter MPS report to Excel with DepEd-style formatting.
+    Includes overall MPS, per-exam breakdown, and item-level data.
     """
     import os
     import re
@@ -1620,20 +1616,22 @@ def mps_export_excel_view(request, exam_id):
     from openpyxl.utils import get_column_letter
     from openpyxl.drawing.image import Image as XlImage
     from services.item_analysis_service import ItemAnalysisService
+    from users.models import Quarter
 
-    exam = get_object_or_404(Exam, pk=exam_id)
+    quarter = get_object_or_404(Quarter, pk=quarter_id)
 
     teacher = auth_service.get_current_teacher(request)
-    if exam.created_by.pk != teacher.pk:
-        messages.error(request, 'Permission denied')
-        return redirect('exam_list')
-
     service = ItemAnalysisService()
-    summary_data = service.get_mps_report_summary(exam_id)
+    summary_data = service.get_mps_quarter_summary(quarter, teacher)
 
     if not summary_data or not summary_data.get('has_data'):
-        messages.warning(request, 'No graded attempts to export')
-        return redirect('mps_report', exam_id=exam_id)
+        messages.warning(request, 'No graded attempts to export for this quarter.')
+        return redirect('mps_quarter_detail', quarter_id=quarter_id)
+
+    representative_exam = summary_data.get('representative_exam')
+    if representative_exam is None:
+        messages.warning(request, 'No exams in this quarter yet.')
+        return redirect('mps_quarter_list')
 
     quarter_summary = summary_data.get('quarter_summary')
     quarter_matrix = summary_data.get('quarter_matrix')
@@ -1712,10 +1710,17 @@ def mps_export_excel_view(request, exam_id):
     row += 2
 
     if quarter_summary:
+        quarter_exam_subjects = sorted({
+            exam_summary['subject']
+            for exam_summary in quarter_summary.get('exams', [])
+            if exam_summary.get('subject')
+        })
+        subject_label = ', '.join(quarter_exam_subjects) if quarter_exam_subjects else 'Not specified'
+
         info_labels = [
             ('Quarter:', quarter_summary['quarter_name']),
-            ('Subject:', exam.subject or 'Not specified'),
-            ('Teacher:', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+            ('Subject:', subject_label),
+            ('Teacher:', representative_exam.created_by.user.get_full_name() or representative_exam.created_by.user.username),
             ('No. of Learners:', str(quarter_summary['graded_attempts'])),
             ('Quarter Exam Count:', str(quarter_summary['exam_count'])),
             ('Quarter MPS:', f"{quarter_summary['overall_mps']}%"),
@@ -1801,7 +1806,7 @@ def mps_export_excel_view(request, exam_id):
     row += 1
     ws.cell(row=row, column=1, value='Name of Teacher:')
     ws.cell(row=row, column=1).font = Font(bold=True, size=10)
-    write_cell(ws, row, 2, exam.created_by.user.get_full_name() or exam.created_by.user.username)
+    write_cell(ws, row, 2, representative_exam.created_by.user.get_full_name() or representative_exam.created_by.user.username)
     ws.cell(row=row, column=2).font = Font(bold=True, size=10)
 
     # --- Sheet 2: Quarter Matrix ---
@@ -1969,7 +1974,7 @@ def mps_export_excel_view(request, exam_id):
     wb.save(output)
     output.seek(0)
 
-    safe_title = safe_export_filename(exam.title)
+    safe_title = safe_export_filename(quarter.name)
     response = HttpResponse(
         output.getvalue(),
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1980,10 +1985,10 @@ def mps_export_excel_view(request, exam_id):
 
 @teacher_required
 @require_http_methods(["GET"])
-def mps_export_word_view(request, exam_id):
+def mps_quarter_export_word_view(request, quarter_id):
     """
-    Export MPS report to Word (DOCX) with DepEd-style formatting.
-    Includes overall MPS, per-class breakdown, and item-level data.
+    Export the per-quarter MPS report to Word (DOCX) with DepEd-style formatting.
+    Includes overall MPS, per-exam breakdown, and item-level data.
     """
     from io import BytesIO
     from django.http import HttpResponse
@@ -1992,20 +1997,22 @@ def mps_export_word_view(request, exam_id):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from services.item_analysis_service import ItemAnalysisService
+    from users.models import Quarter
 
-    exam = get_object_or_404(Exam, pk=exam_id)
+    quarter = get_object_or_404(Quarter, pk=quarter_id)
 
     teacher = auth_service.get_current_teacher(request)
-    if exam.created_by.pk != teacher.pk:
-        messages.error(request, 'Permission denied')
-        return redirect('exam_list')
-
     service = ItemAnalysisService()
-    summary_data = service.get_mps_report_summary(exam_id)
+    summary_data = service.get_mps_quarter_summary(quarter, teacher)
 
     if not summary_data or not summary_data.get('has_data'):
-        messages.warning(request, 'No graded attempts to export')
-        return redirect('mps_report', exam_id=exam_id)
+        messages.warning(request, 'No graded attempts to export for this quarter.')
+        return redirect('mps_quarter_detail', quarter_id=quarter_id)
+
+    representative_exam = summary_data.get('representative_exam')
+    if representative_exam is None:
+        messages.warning(request, 'No exams in this quarter yet.')
+        return redirect('mps_quarter_list')
 
     quarter_summary = summary_data.get('quarter_summary')
     quarter_matrix = summary_data.get('quarter_matrix')
@@ -2018,11 +2025,17 @@ def mps_export_word_view(request, exam_id):
     _configure_docx_branding(
         doc,
         'QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT',
-        exam,
+        representative_exam,
         [
             ('Quarter', quarter_summary['quarter_name'] if quarter_summary else 'Not specified'),
-            ('Subject', exam.subject or 'Not specified'),
-            ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+            ('Subject', ', '.join(
+                sorted({
+                    ex['subject']
+                    for ex in quarter_summary.get('exams', [])
+                    if ex.get('subject')
+                })
+            ) if quarter_summary else 'Not specified'),
+            ('Teacher', representative_exam.created_by.user.get_full_name() or representative_exam.created_by.user.username),
             ('No. of Learners', quarter_summary['graded_attempts'] if quarter_summary else 0),
             ('Quarter Exams', quarter_summary['exam_count'] if quarter_summary else 0),
         ],
@@ -2056,11 +2069,16 @@ def mps_export_word_view(request, exam_id):
     # Exam info block
     info_block = [
         ('School', '________________________'),
-        ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
-        ('Subject', exam.subject or 'Not specified'),
+        ('Teacher', representative_exam.created_by.user.get_full_name() or representative_exam.created_by.user.username),
+        ('Subject', ', '.join(
+            sorted({
+                ex['subject']
+                for ex in quarter_summary.get('exams', [])
+                if ex.get('subject')
+            })
+        ) if quarter_summary else 'Not specified'),
         ('Quarter', quarter_summary['quarter_name'] if quarter_summary else 'Not specified'),
         ('No. of Learners', str(quarter_summary['graded_attempts'] if quarter_summary else 0)),
-        ('Focus Exam', exam.title),
         ('No. of Items', str(quarter_summary['total_items'] if quarter_summary else 0)),
     ]
     for label, value in info_block:
@@ -2307,7 +2325,7 @@ def mps_export_word_view(request, exam_id):
     name_label = name_para.add_run('Name of Teacher: ')
     name_label.bold = True
     name_label.font.size = Pt(10)
-    name_value = name_para.add_run(exam.created_by.user.get_full_name() or exam.created_by.user.username)
+    name_value = name_para.add_run(representative_exam.created_by.user.get_full_name() or representative_exam.created_by.user.username)
     name_value.bold = True
     name_value.font.size = Pt(10)
 
@@ -2316,7 +2334,7 @@ def mps_export_word_view(request, exam_id):
     doc.save(output)
     output.seek(0)
 
-    safe_title = re.sub(r'[\s/\\:]+', '_', (exam.title or '').strip())
+    safe_title = re.sub(r'[\s/\\:]+', '_', (quarter.name or '').strip())
     safe_title = re.sub(r'[^A-Za-z0-9_.-]+', '_', safe_title).strip('._-')[:30] or 'Exam'
     response = HttpResponse(
         output.getvalue(),

@@ -6,7 +6,10 @@ urlpatterns = [
     path('', views.exam_list_view, name='exam_list'),
     path('create/', views.exam_create_view, name='exam_create'),
     path('create/test/', views.exam_create_test_view, name='exam_create_test'),
-    path('mps/', views.mps_entrypoint_view, name='mps_entrypoint'),
+    path('mps/', views.mps_quarter_list_view, name='mps_quarter_list'),
+    path('mps/quarter/<int:quarter_id>/', views.mps_quarter_detail_view, name='mps_quarter_detail'),
+    path('mps/quarter/<int:quarter_id>/export/', views.mps_quarter_export_excel_view, name='mps_quarter_export_excel'),
+    path('mps/quarter/<int:quarter_id>/export-word/', views.mps_quarter_export_word_view, name='mps_quarter_export_word'),
     path('<int:exam_id>/', views.exam_detail_view, name='exam_detail'),
     path('<int:exam_id>/export-word/', views.exam_export_word_view, name='exam_export_word'),
     path('<int:exam_id>/edit/', views.exam_edit_view, name='exam_edit'),
@@ -15,9 +18,6 @@ urlpatterns = [
     path('<int:exam_id>/takers/', views.exam_takers_view, name='exam_takers'),
     path('<int:exam_id>/item-summary/', views.item_summary_view, name='item_summary'),
     path('<int:exam_id>/item-summary/analyze/', views.item_summary_ai_analyze_view, name='item_summary_analyze'),
-    path('<int:exam_id>/mps/', views.mps_report_view, name='mps_report'),
-    path('<int:exam_id>/mps/export/', views.mps_export_excel_view, name='mps_export_excel'),
-    path('<int:exam_id>/mps/export-word/', views.mps_export_word_view, name='mps_export_word'),
     path('<int:exam_id>/students/', views.get_exam_students_view, name='exam_students'),
     
     # Question management URLs
