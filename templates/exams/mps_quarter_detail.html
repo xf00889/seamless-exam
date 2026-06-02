@@ -166,6 +166,27 @@
     </div>
     {% endif %}
 
+    <!-- Visual Summary: MPS by Exam chart -->
+    {% if mps_chart_data.labels %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">MPS by Exam &mdash; Visual</h3>
+                <p class="text-xs text-gray-500">Horizontal bar chart of MPS per exam in {{ quarter.name }}</p>
+            </div>
+            <div class="text-xs text-gray-500 flex items-center gap-3">
+                <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded" style="background:#22c55e"></span>Mastered (&ge;75%)</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded" style="background:#eab308"></span>Nearing (&ge;50%)</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-3 rounded" style="background:#ef4444"></span>Low (&lt;50%)</span>
+            </div>
+        </div>
+        <div class="relative" style="height: {{ mps_chart_data.labels|length }}00px; min-height: 220px; max-height: 520px;">
+            <canvas id="mpsByExamChart"></canvas>
+        </div>
+    </div>
+    {{ mps_chart_data|json_script:"mpsByExamChartData" }}
+    {% endif %}
+
     <!-- Per-Exam MPS Breakdown -->
     {% if summary.quarter_summary.exams %}
     <div class="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
@@ -338,4 +359,67 @@
 
     {% endif %}
 </div>
+
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+(function () {
+    if (typeof Chart === 'undefined') return;
+    const dataNode = document.getElementById('mpsByExamChartData');
+    const canvas = document.getElementById('mpsByExamChart');
+    if (!dataNode || !canvas) return;
+    let chartData;
+    try { chartData = JSON.parse(dataNode.textContent); } catch (e) { return; }
+    if (!chartData || !chartData.labels || !chartData.labels.length) return;
+
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.color = '#374151';
+
+    const ctx = canvas.getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'MPS %',
+                data: chartData.values,
+                backgroundColor: chartData.colors,
+                borderColor: chartData.borders,
+                borderWidth: 1,
+                borderRadius: 4,
+                maxBarThickness: 26
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 600 },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { callback: function (v) { return v + '%'; } },
+                    grid: { color: '#f3f4f6' }
+                },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            const v = ctx.parsed.x;
+                            let level = 'No data';
+                            if (v >= 75) level = 'Mastered';
+                            else if (v >= 50) level = 'Nearing Mastery';
+                            else if (v > 0) level = 'Low Mastery';
+                            return 'MPS: ' + v + '% (' + level + ')';
+                        }
+                    }
+                }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}

@@ -229,3 +229,33 @@ class AIGenerationTask(models.Model):
 
     class Meta:
         db_table = 'exams_ai_generation_task'
+
+
+class ItemAnalysisAIResult(models.Model):
+    """Persistent cache of the AI-generated teacher's analysis for an exam's item summary.
+
+    Stores the full analysis payload (strengths, areas, intervention plan, etc.) so the
+    result is rendered server-side on page load and survives page refreshes / new
+    sessions. Re-running the analysis overwrites the previous result.
+    """
+    exam = models.OneToOneField(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name='ai_analysis_result',
+    )
+    analysis = models.JSONField(default=dict)
+    model_used = models.CharField(max_length=100, blank=True)
+    generated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='generated_item_analyses',
+    )
+    generated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'exams_item_analysis_ai_result'
+
+    def __str__(self):
+        return f"AI Item Analysis for {self.exam.title}"

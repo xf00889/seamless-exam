@@ -151,6 +151,34 @@
     </div>
     {% endif %}
 
+    <!-- Visual Summary Charts -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900">Visual Summary</h3>
+                <p class="text-xs text-gray-500">At-a-glance view of item difficulty and performance</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Item Difficulty Distribution</h4>
+                <div class="relative" style="height: 260px;">
+                    <canvas id="itemDifficultyChart"></canvas>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">Count of items at each difficulty level. A balanced test usually shows a mix.</p>
+            </div>
+            <div>
+                <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Per-Item % Correct</h4>
+                <div class="relative" style="height: 260px;">
+                    <canvas id="itemPercentChart"></canvas>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">Bars below the 50% line indicate items that may need revision or reteaching.</p>
+            </div>
+        </div>
+    </div>
+
+    {{ chart_data|json_script:"itemSummaryChartData" }}
+
     <!-- MPS Quick Summary with link to full report -->
     {% if summary.mps_data %}
     <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg shadow-md p-5 mb-6 border border-indigo-200">
@@ -527,7 +555,7 @@
     </div>
 
     <!-- AI Analysis CTA Card -->
-    <div id="aiCtaCard" class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6 border border-purple-200">
+    <div id="aiCtaCard" class="{% if cached_analysis %}hidden{% else %}bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6 border border-purple-200{% endif %}">
         <div class="flex flex-col sm:flex-row items-center gap-4">
             <div class="flex items-center justify-center h-14 w-14 rounded-full bg-purple-100 flex-shrink-0">
                 <svg class="h-7 w-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -605,8 +633,14 @@
         </div>
     </div>
 
-    <!-- AI Analysis Result (populated via JS) -->
+    <!-- AI Analysis Result (populated via JS, also pre-rendered from server cache) -->
     <div id="aiAnalysisResult" class="hidden mb-6"></div>
+    {% if cached_analysis %}
+    {{ cached_analysis|json_script:"aiCachedAnalysis" }}
+    <script type="application/json" id="aiCachedMeta">{"generated_at": "{{ cached_generated_at|default_if_none:''|escapejs }}", "model_used": "{{ cached_model_used|escapejs }}"}</script>
+    {% endif %}
+    {{ ai_stats|json_script:"aiStatsData" }}
+    {{ item_no_to_question_id_json|json_script:"aiItemQuestionMap" }}
 
     <!-- AI Error State -->
     <div id="aiErrorState" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -752,7 +786,8 @@ function generateAiAnalysis() {
         }
 
         if (data && data.success && data.analysis) {
-            renderAnalysis(data.analysis);
+            const meta = { generated_at: new Date().toISOString(), model_used: data.model_used || '' };
+            renderAnalysis(data.analysis, meta);
             resultContainer.classList.remove('hidden');
         } else {
             showAiError((data && data.error) || 'Unexpected response from AI service');
@@ -778,105 +813,315 @@ function showAiError(message) {
     ctaCard.classList.remove('hidden');
 }
 
-function renderAnalysis(analysis) {
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+}
+
+function fmtItemNo(value) {
+    if (value == null) return '';
+    const n = parseInt(value, 10);
+    if (!isNaN(n)) return 'Item ' + n;
+    return String(value);
+}
+
+function masteryColor(level) {
+    if (level === 'Mastered') return { bg: 'bg-emerald-50', text: 'text-emerald-800', ring: 'ring-emerald-300', dot: 'bg-emerald-500' };
+    if (level === 'Nearing Mastery') return { bg: 'bg-amber-50', text: 'text-amber-800', ring: 'ring-amber-300', dot: 'bg-amber-500' };
+    return { bg: 'bg-rose-50', text: 'text-rose-800', ring: 'ring-rose-300', dot: 'bg-rose-500' };
+}
+
+function masteryBadge(level) {
+    const c = masteryColor(level);
+    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ${c.ring} ${c.bg} ${c.text}">
+        <span class="inline-block w-1.5 h-1.5 rounded-full ${c.dot}"></span>${escapeHtml(level)}
+    </span>`;
+}
+
+function formatRelativeTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (diffSec < 0) return 'just now';
+    if (diffSec < 60) return 'just now';
+    if (diffSec < 3600) {
+        const m = Math.floor(diffSec / 60);
+        return m + ' minute' + (m === 1 ? '' : 's') + ' ago';
+    }
+    if (diffSec < 86400) {
+        const h = Math.floor(diffSec / 3600);
+        return h + ' hour' + (h === 1 ? '' : 's') + ' ago';
+    }
+    if (diffSec < 86400 * 7) {
+        const d2 = Math.floor(diffSec / 86400);
+        return d2 + ' day' + (d2 === 1 ? '' : 's') + ' ago';
+    }
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getStats() {
+    const node = document.getElementById('aiStatsData');
+    if (!node) return { total_items: 0, total_learners: 0, overall_mps: 0, passing_rate: 0, mastery_level: 'Low Mastery' };
+    try { return JSON.parse(node.textContent) || {}; } catch (e) { return {}; }
+}
+
+function getItemQuestionMap() {
+    const node = document.getElementById('aiItemQuestionMap');
+    if (!node) return {};
+    try { return JSON.parse(node.textContent) || {}; } catch (e) { return {}; }
+}
+
+function statsTile(label, value, sub, accentClass) {
+    return `<div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">${escapeHtml(label)}</div>
+        <div class="mt-1 text-2xl font-bold ${accentClass || 'text-gray-900'}">${escapeHtml(String(value))}</div>
+        ${sub ? `<div class="text-xs text-gray-500 mt-0.5">${sub}</div>` : ''}
+    </div>`;
+}
+
+function renderAnalysis(analysis, meta) {
     const container = document.getElementById('aiAnalysisResult');
+    if (!container) return;
 
-    let overallHtml = '';
-    if (analysis.overall_assessment) {
-        overallHtml = `<div class="mb-6 p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300">
-            <p class="text-gray-800 italic">${escapeHtml(analysis.overall_assessment)}</p>
-        </div>`;
-    }
+    const stats = getStats();
+    const qMap = getItemQuestionMap();
+    const generatedAtIso = (meta && meta.generated_at) || '';
+    const modelUsed = (meta && meta.model_used) || '';
+    const relativeTime = formatRelativeTime(generatedAtIso);
+    const absoluteTime = generatedAtIso ? new Date(generatedAtIso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-    let strengthsHtml = '';
-    if (analysis.strengths && analysis.strengths.length) {
-        strengthsHtml = analysis.strengths.map(s =>
-            `<li class="text-sm text-gray-700 flex items-start">
-                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                ${escapeHtml(s)}
-            </li>`
-        ).join('');
-    }
+    const mps = Number(stats.overall_mps || 0);
+    const mpsColor = mps >= 75 ? 'text-emerald-600' : (mps >= 50 ? 'text-amber-600' : 'text-rose-600');
+    const mpsAccent = mps >= 75 ? 'text-emerald-700' : (mps >= 50 ? 'text-amber-700' : 'text-rose-700');
 
-    let areasHtml = '';
-    if (analysis.areas_for_improvement && analysis.areas_for_improvement.length) {
-        areasHtml = analysis.areas_for_improvement.map(a =>
-            `<li class="text-sm text-gray-700 flex items-start">
-                <svg class="w-4 h-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                ${escapeHtml(a)}
-            </li>`
-        ).join('');
-    }
+    const overall = analysis && analysis.overall_assessment ? analysis.overall_assessment : '';
 
-    let interventionHtml = '';
-    if (analysis.intervention_plan && analysis.intervention_plan.length) {
-        interventionHtml = analysis.intervention_plan.map((step, i) =>
-            `<li class="text-sm text-gray-700 flex items-start">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-200 text-blue-800 text-xs font-bold mr-2 mt-0.5 flex-shrink-0">${i + 1}</span>
-                ${escapeHtml(step)}
-            </li>`
-        ).join('');
-    }
+    const strengths = (analysis && Array.isArray(analysis.strengths)) ? analysis.strengths : [];
+    const areas = (analysis && Array.isArray(analysis.areas_for_improvement)) ? analysis.areas_for_improvement : [];
+    const steps = (analysis && Array.isArray(analysis.intervention_plan)) ? analysis.intervention_plan : [];
+    const reviseRaw = (analysis && Array.isArray(analysis.items_to_revise)) ? analysis.items_to_revise : [];
+
+    const strengthsHtml = strengths.length
+        ? strengths.map(s => `<li class="flex items-start group">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 mt-0.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <span class="text-sm text-gray-700 leading-relaxed">${escapeHtml(s)}</span>
+        </li>`).join('')
+        : '<li class="text-sm text-gray-500 italic">No strengths identified.</li>';
+
+    const areasHtml = areas.length
+        ? areas.map(a => `<li class="flex items-start group">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3 mt-0.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01"/></svg>
+            </span>
+            <span class="text-sm text-gray-700 leading-relaxed">${escapeHtml(a)}</span>
+        </li>`).join('')
+        : '<li class="text-sm text-gray-500 italic">No specific areas for improvement flagged.</li>';
+
+    const stepCount = steps.length;
+    const stepsHtml = stepCount
+        ? steps.map((step, i) => `<li class="relative pl-12 ${i < stepCount - 1 ? 'pb-5' : ''}">
+            ${i < stepCount - 1 ? '<span class="absolute left-5 top-10 bottom-0 w-0.5 bg-gradient-to-b from-indigo-300 to-indigo-100"></span>' : ''}
+            <span class="absolute left-0 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-bold shadow-md">${i + 1}</span>
+            <div class="bg-indigo-50/60 rounded-lg px-4 py-3 border border-indigo-100">
+                <p class="text-sm text-gray-800 leading-relaxed">${escapeHtml(step)}</p>
+            </div>
+        </li>`).join('')
+        : '<li class="text-sm text-gray-500 italic">No intervention steps recommended.</li>';
 
     let reviseHtml = '';
-    if (analysis.items_to_revise && analysis.items_to_revise.length) {
-        const badges = analysis.items_to_revise.map(item =>
-            `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-300">${escapeHtml(String(item))}</span>`
-        ).join('');
-        reviseHtml = `<div class="mt-6 bg-red-50 rounded-lg p-4 border border-red-200">
-            <h4 class="font-semibold text-red-800 mb-2 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Items Recommended for Revision
-            </h4>
-            <div class="flex flex-wrap gap-2 mt-2">${badges}</div>
-        </div>`;
+    if (reviseRaw.length) {
+        const cards = reviseRaw.map(item => {
+            const label = fmtItemNo(item);
+            const numMatch = label.match(/(\d+)/);
+            const num = numMatch ? parseInt(numMatch[1], 10) : null;
+            const qid = num != null ? qMap[String(num)] : null;
+            const editHref = qid ? '{% url "question_edit" 0 %}'.replace('0', String(qid)) : null;
+            const linkBlock = editHref
+                ? `<a href="${editHref}" class="text-xs font-medium text-rose-700 hover:text-rose-900 inline-flex items-center gap-1 mt-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit this item
+                   </a>`
+                : `<span class="text-xs text-rose-700/70 mt-2 inline-block">Open Item Summary to edit</span>`;
+            return `<div class="bg-white border border-rose-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md bg-rose-100 text-rose-700 text-xs font-bold">${escapeHtml(num != null ? String(num) : '?')}</span>
+                    <span class="text-sm font-semibold text-rose-900">${escapeHtml(label)}</span>
+                </div>
+                ${linkBlock}
+            </div>`;
+        }).join('');
+        reviseHtml = `<section class="mt-6">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </span>
+                <h4 class="text-sm font-semibold text-rose-900">Items Recommended for Revision</h4>
+                <span class="text-xs text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full font-medium">${reviseRaw.length}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${cards}</div>
+        </section>`;
     }
 
     container.innerHTML = `
-    <div class="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-l-purple-500 print-break">
-        <div class="p-4 border-b bg-purple-50">
-            <div class="flex items-center">
-                <svg class="h-5 w-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                <h3 class="text-lg font-semibold text-purple-900">Teacher's Analysis (AI-Generated)</h3>
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-purple-200 print-break">
+        <div class="bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 px-6 py-5 text-white relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10"></div>
+            <div class="absolute -right-12 -bottom-12 w-40 h-40 rounded-full bg-white/5"></div>
+            <div class="relative flex items-start gap-4">
+                <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-bold tracking-tight">AI Teacher's Analysis</h3>
+                    <p class="text-sm text-purple-100 mt-0.5">DepEd-aligned insights, intervention plan, and revision recommendations</p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-purple-100">
+                        <span class="inline-flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            ${relativeTime ? 'Generated ' + escapeHtml(relativeTime) : 'Recently generated'}
+                            ${absoluteTime ? '<span class="text-purple-200/80">&middot;</span><span class="text-purple-200/80" title="' + escapeHtml(absoluteTime) + '">' + escapeHtml(absoluteTime) + '</span>' : ''}
+                        </span>
+                        ${modelUsed ? '<span class="inline-flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Model: ' + escapeHtml(modelUsed) + '</span>' : ''}
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="p-6">
-            ${overallHtml}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <h4 class="font-semibold text-green-800 mb-3 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Strengths
-                    </h4>
-                    <ul class="space-y-2">${strengthsHtml}</ul>
+
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                ${statsTile('MPS', mps.toFixed(1) + '%', masteryBadge(stats.mastery_level || 'Low Mastery'), mpsAccent)}
+                ${statsTile('Items', stats.total_items || 0, 'across the test')}
+                ${statsTile('Learners', stats.total_learners || 0, (stats.passing_rate ? stats.passing_rate + '% passing' : 'attempts recorded'))}
+                ${statsTile('Generated', relativeTime || 'today', modelUsed ? 'via ' + escapeHtml(modelUsed) : 'cached')}
+            </div>
+
+            ${overall ? `<div class="relative bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200/60">
+                <svg class="absolute top-3 left-3 w-8 h-8 text-purple-300/70" fill="currentColor" viewBox="0 0 24 24"><path d="M7.17 6A5.17 5.17 0 002 11.17V18h6v-6H5c0-1.1.9-2 2-2V6h.17zm10 0A5.17 5.17 0 0012 11.17V18h6v-6h-3c0-1.1.9-2 2-2V6h-.83z"/></svg>
+                <h4 class="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2 pl-10">Overall Assessment</h4>
+                <p class="text-gray-800 leading-relaxed italic">${escapeHtml(overall)}</p>
+            </div>` : ''}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-5 border border-emerald-200/60">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            </span>
+                            <h4 class="text-sm font-bold text-emerald-900">Strengths</h4>
+                        </div>
+                        <span class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">${strengths.length}</span>
+                    </div>
+                    <ul class="space-y-3">${strengthsHtml}</ul>
                 </div>
-                <div class="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                    <h4 class="font-semibold text-orange-800 mb-3 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                        Areas for Improvement
-                    </h4>
-                    <ul class="space-y-2">${areasHtml}</ul>
+                <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-200/60">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-2.5L13.73 4c-.77-.83-1.96-.83-2.73 0L3.34 16.5c-.77.83.19 2.5 1.73 2.5z"/></svg>
+                            </span>
+                            <h4 class="text-sm font-bold text-orange-900">Areas for Improvement</h4>
+                        </div>
+                        <span class="text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">${areas.length}</span>
+                    </div>
+                    <ul class="space-y-3">${areasHtml}</ul>
                 </div>
             </div>
-            <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                    Intervention Plan
-                </h4>
-                <ul class="space-y-2">${interventionHtml}</ul>
+
+            <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border border-indigo-200/60">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500 text-white flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        </span>
+                        <h4 class="text-sm font-bold text-indigo-900">Intervention Plan</h4>
+                    </div>
+                    <span class="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">${stepCount} step${stepCount === 1 ? '' : 's'}</span>
+                </div>
+                <ol class="space-y-0">${stepsHtml}</ol>
             </div>
+
             ${reviseHtml}
+        </div>
+
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-gray-500">AI suggestions are guidance only. Always validate against your own classroom context.</p>
+            <div class="flex items-center gap-2">
+                <button onclick="printAnalysisSection()" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Print
+                </button>
+                <button onclick="clearAiAnalysis()" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-rose-700 px-3 py-1.5 rounded-md border border-gray-200 hover:border-rose-200 hover:bg-rose-50 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                    Clear
+                </button>
+                <button onclick="regenerateAiAnalysis()" id="aiRegenerateBtn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3 py-1.5 rounded-md transition-colors shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Regenerate
+                </button>
+            </div>
         </div>
     </div>`;
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function printAnalysisSection() {
+    window.print();
 }
+
+function clearAiAnalysis() {
+    if (!confirm('Clear the cached AI analysis? You can regenerate it anytime.')) return;
+    const csrfToken = (typeof getCSRFToken === 'function')
+        ? getCSRFToken()
+        : (document.querySelector('[name=csrfmiddlewaretoken]')?.value || '');
+    fetch('{% url "item_summary_analyze_clear" exam.id %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(async (response) => {
+        const text = await response.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { /* non-JSON */ }
+        if (!response.ok) throw new Error((data && data.error) || 'Failed to clear (HTTP ' + response.status + ')');
+        return data || {};
+    })
+    .then(() => {
+        const result = document.getElementById('aiAnalysisResult');
+        const ctaCard = document.getElementById('aiCtaCard');
+        if (result) { result.innerHTML = ''; result.classList.add('hidden'); }
+        if (ctaCard) ctaCard.classList.remove('hidden');
+        const err = document.getElementById('aiErrorState');
+        if (err) err.classList.add('hidden');
+    })
+    .catch(err => {
+        showAiError(err.message || 'Failed to clear analysis.');
+    });
+}
+
+function regenerateAiAnalysis() {
+    const result = document.getElementById('aiAnalysisResult');
+    if (result) result.classList.add('hidden');
+    generateAiAnalysis();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const cachedNode = document.getElementById('aiCachedAnalysis');
+    const cachedMetaNode = document.getElementById('aiCachedMeta');
+    if (!cachedNode) return;
+    try {
+        const analysis = JSON.parse(cachedNode.textContent);
+        const meta = cachedMetaNode ? JSON.parse(cachedMetaNode.textContent) : {};
+        if (analysis && (analysis.overall_assessment || analysis.strengths || analysis.areas_for_improvement || analysis.intervention_plan)) {
+            renderAnalysis(analysis, meta);
+            const result = document.getElementById('aiAnalysisResult');
+            if (result) result.classList.remove('hidden');
+        }
+    } catch (e) {
+        /* ignore parse errors - keep CTA card visible */
+    }
+});
 
 function filterByDifficulty(level) {
     const rows = document.querySelectorAll('.item-row');
@@ -928,5 +1173,106 @@ function toggleGuide() {
         chevron.style.transform = 'rotate(180deg)';
     }
 }
+</script>
+
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+(function () {
+    if (typeof Chart === 'undefined') return;
+    const dataNode = document.getElementById('itemSummaryChartData');
+    if (!dataNode) return;
+    let chartData;
+    try { chartData = JSON.parse(dataNode.textContent); } catch (e) { return; }
+    if (!chartData) return;
+
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.color = '#374151';
+
+    const difficultyCanvas = document.getElementById('itemDifficultyChart');
+    if (difficultyCanvas && chartData.difficulty_labels) {
+        const total = chartData.difficulty_values.reduce((a, b) => a + b, 0);
+        if (total > 0) {
+            new Chart(difficultyCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.difficulty_labels,
+                    datasets: [{
+                        data: chartData.difficulty_values,
+                        backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#f97316', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const value = ctx.parsed;
+                                    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return ctx.label + ': ' + value + ' item' + (value === 1 ? '' : 's') + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    const percentCanvas = document.getElementById('itemPercentChart');
+    if (percentCanvas && chartData.item_labels && chartData.item_labels.length) {
+        const percents = chartData.item_percents;
+        const colors = percents.map(function (p) {
+            if (p >= 75) return 'rgba(34, 197, 94, 0.85)';
+            if (p >= 50) return 'rgba(234, 179, 8, 0.85)';
+            return 'rgba(239, 68, 68, 0.85)';
+        });
+        const borders = percents.map(function (p) {
+            if (p >= 75) return '#16a34a';
+            if (p >= 50) return '#ca8a04';
+            return '#dc2626';
+        });
+        new Chart(percentCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.item_labels,
+                datasets: [{
+                    label: '% Correct',
+                    data: percents,
+                    backgroundColor: colors,
+                    borderColor: borders,
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    maxBarThickness: 18
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } }, grid: { color: '#f3f4f6' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function (ctx) {
+                                const t = chartData.item_types[ctx.dataIndex];
+                                return t ? 'Type: ' + t : '';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+})();
 </script>
 {% endblock %}

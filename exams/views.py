@@ -18,6 +18,7 @@ from services.view_helpers import build_breadcrumbs
 from django.urls import reverse
 import logging
 import re
+import json
 from itertools import groupby
 
 logger = logging.getLogger(__name__)
@@ -1306,9 +1307,47 @@ def item_summary_view(request, exam_id):
         'Item Summary'
     )
 
+    items = summary_data.get('items') or []
+    chart_data = {
+        'difficulty_labels': ['Easy', 'Moderately Easy', 'Average', 'Difficult', 'Very Difficult'],
+        'difficulty_values': [
+            (summary_data.get('difficulty_distribution') or {}).get('Easy', 0),
+            (summary_data.get('difficulty_distribution') or {}).get('Moderately Easy', 0),
+            (summary_data.get('difficulty_distribution') or {}).get('Average', 0),
+            (summary_data.get('difficulty_distribution') or {}).get('Difficult', 0),
+            (summary_data.get('difficulty_distribution') or {}).get('Very Difficult', 0),
+        ],
+        'item_labels': [f"Item {it.get('item_no')}" for it in items],
+        'item_percents': [int(it.get('percent_correct') or 0) for it in items],
+        'item_types': [it.get('question_type', '') for it in items],
+    }
+
+    cached_result = getattr(exam, 'ai_analysis_result', None)
+    cached_analysis = cached_result.analysis if cached_result else None
+    cached_generated_at = cached_result.generated_at if cached_result else None
+    cached_model_used = cached_result.model_used if cached_result else ''
+
+    item_no_to_question_id = {int(it.get('item_no')): int(it.get('question_id')) for it in items if it.get('item_no') is not None and it.get('question_id') is not None}
+
+    overall_stats = summary_data.get('overall_stats') or {}
+    mastery_level = 'Mastered' if overall_stats.get('avg_percent', 0) >= 75 else ('Nearing Mastery' if overall_stats.get('avg_percent', 0) >= 50 else 'Low Mastery')
+    ai_stats = {
+        'total_items': summary_data.get('total_items', 0),
+        'total_learners': summary_data.get('total_learners', 0),
+        'overall_mps': summary_data.get('overall_mps', 0),
+        'passing_rate': overall_stats.get('passing_rate', 0),
+        'mastery_level': mastery_level,
+    }
+
     context = {
         'exam': exam,
         'summary': summary_data,
+        'chart_data': chart_data,
+        'ai_stats': ai_stats,
+        'item_no_to_question_id_json': json.dumps(item_no_to_question_id),
+        'cached_analysis': cached_analysis,
+        'cached_generated_at': cached_generated_at,
+        'cached_model_used': cached_model_used,
         'page_breadcrumbs': breadcrumbs,
     }
 
@@ -1320,9 +1359,12 @@ def item_summary_view(request, exam_id):
 def item_summary_ai_analyze_view(request, exam_id):
     """
     AJAX endpoint to generate AI-powered teacher analysis for item summary.
-    Returns JSON with the analysis results.
+    Returns JSON with the analysis results. Persists the result so it is available
+    on subsequent page loads and survives page refreshes.
     """
     from services.item_analysis_service import ItemAnalysisService
+    from exams.models import ItemAnalysisAIResult
+    from services.ai_generation_service import get_ai_config
 
     exam = get_object_or_404(Exam, pk=exam_id)
 
@@ -1342,7 +1384,33 @@ def item_summary_ai_analyze_view(request, exam_id):
             'error': 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
         }, status=503)
 
-    return JsonResponse({'success': True, 'analysis': analysis})
+    model_used = (get_ai_config() or {}).get('model', '') or ''
+    ItemAnalysisAIResult.objects.update_or_create(
+        exam=exam,
+        defaults={
+            'analysis': analysis,
+            'model_used': model_used,
+            'generated_by': request.user,
+        },
+    )
+
+    return JsonResponse({'success': True, 'analysis': analysis, 'model_used': model_used})
+
+
+@teacher_required
+@require_http_methods(["POST"])
+def item_summary_ai_clear_view(request, exam_id):
+    """AJAX endpoint to delete the cached AI analysis so the next visit is fresh."""
+    from exams.models import ItemAnalysisAIResult
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    ItemAnalysisAIResult.objects.filter(exam=exam).delete()
+    return JsonResponse({'success': True})
 
 
 @teacher_required
@@ -2275,10 +2343,41 @@ def mps_quarter_detail_view(request, quarter_id):
     if summary_data.get('has_data') and quarter_summary:
         mps_gauge_offset = round(377 - (377 * quarter_summary['overall_mps'] / 100))
 
+    mps_chart_data = {
+        'labels': [],
+        'values': [],
+        'colors': [],
+        'borders': [],
+    }
+    if quarter_summary and quarter_summary.get('exams'):
+        for ex in quarter_summary['exams']:
+            label = ex.get('title') or 'Untitled'
+            if ex.get('subject'):
+                label = label + ' (' + ex['subject'] + ')'
+            mps_chart_data['labels'].append(label)
+            if ex.get('has_data'):
+                mps = int(ex.get('overall_mps') or 0)
+                mps_chart_data['values'].append(mps)
+                if mps >= 75:
+                    mps_chart_data['colors'].append('rgba(34, 197, 94, 0.85)')
+                    mps_chart_data['borders'].append('#16a34a')
+                elif mps >= 50:
+                    mps_chart_data['colors'].append('rgba(234, 179, 8, 0.85)')
+                    mps_chart_data['borders'].append('#ca8a04')
+                else:
+                    mps_chart_data['colors'].append('rgba(239, 68, 68, 0.85)')
+                    mps_chart_data['borders'].append('#dc2626')
+            else:
+                mps_chart_data['values'].append(0)
+                mps_chart_data['colors'].append('rgba(209, 213, 219, 0.6)')
+                mps_chart_data['borders'].append('#9ca3af')
+        mps_chart_data['overall_mps'] = int(quarter_summary.get('overall_mps') or 0)
+
     context = {
         'quarter': quarter,
         'summary': summary_data,
         'mps_gauge_offset': mps_gauge_offset,
+        'mps_chart_data': mps_chart_data,
         'page_breadcrumbs': breadcrumbs,
     }
 
