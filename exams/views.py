@@ -1610,32 +1610,19 @@ def mps_export_excel_view(request, exam_id):
     Includes overall MPS, per-class breakdown, and item-level data.
     """
     import os
-    from decimal import Decimal
     from io import BytesIO
     from django.conf import settings
     from django.http import HttpResponse
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XlImage
     from services.item_analysis_service import ItemAnalysisService
-
-    # Safely import XlImage – requires Pillow
-    XlImage = None
-    try:
-        from openpyxl.drawing.image import Image as XlImage
-    except Exception:
-        pass
-
-    def _safe_val(v):
-        """Coerce a value to a type openpyxl can serialise."""
-        if isinstance(v, Decimal):
-            return float(v)
-        return v
 
     exam = get_object_or_404(Exam, pk=exam_id)
 
     teacher = auth_service.get_current_teacher(request)
-    if teacher is None or exam.created_by.pk != teacher.pk:
+    if exam.created_by.pk != teacher.pk:
         messages.error(request, 'Permission denied')
         return redirect('exam_list')
 
@@ -1647,28 +1634,13 @@ def mps_export_excel_view(request, exam_id):
         return redirect('mps_report', exam_id=exam_id)
 
     quarter_summary = summary_data.get('quarter_summary')
-    quarter_summaries = summary_data.get('quarter_summaries') or []
     quarter_matrix = summary_data.get('quarter_matrix')
 
     wb = Workbook()
     wb.remove(wb.active)
 
     brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
-    has_brand = XlImage is not None and os.path.isfile(brand_path)
-
-    def _add_brand_image(sheet, cell_ref='A1'):
-        """Safely add brand image to a sheet; silently skip on failure."""
-        if not has_brand:
-            return False
-        try:
-            img = XlImage(brand_path)
-            img.width = 120
-            img.height = 60
-            sheet.add_image(img, cell_ref)
-            return True
-        except Exception:
-            logger.warning('Could not load brand.png for Excel export', exc_info=True)
-            return False
+    has_brand = os.path.isfile(brand_path)
 
     title_font = Font(name='Calibri', bold=True, size=14)
     header_font = Font(name='Calibri', bold=True, size=12)
@@ -1699,58 +1671,15 @@ def mps_export_excel_view(request, exam_id):
             return 'Nearing Mastery'
         return 'Low Mastery'
 
-    # --- Sheet 0: Quarter Overview ---
-    if quarter_summaries:
-        wso = wb.create_sheet(title='Quarter Overview')
-        row = 1
-
-        if _add_brand_image(wso):
-            row = 5
-
-        wso.cell(row=row, column=1, value='QUARTER MPS OVERVIEW')
-        wso.cell(row=row, column=1).font = title_font
-        wso.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
-        row += 2
-
-        overview_headers = ['Quarter', 'Exam Count', 'Graded Exams', 'Attempts', 'Total Correct', 'Total Possible', 'MPS']
-        for col_idx, h in enumerate(overview_headers, 1):
-            cell = wso.cell(row=row, column=col_idx, value=h)
-            cell.font = header_text
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = thin_border
-        row += 1
-
-        for q_summary in quarter_summaries:
-            row_data = [
-                q_summary['quarter_name'],
-                q_summary['exam_count'],
-                q_summary['graded_exam_count'],
-                q_summary['graded_attempts'],
-                q_summary['total_correct'],
-                q_summary['total_possible_answers'],
-                f"{q_summary['overall_mps']}%",
-            ]
-            for col_idx, value in enumerate(row_data, 1):
-                cell = wso.cell(row=row, column=col_idx, value=_safe_val(value))
-                cell.border = thin_border
-                if col_idx in (2, 3, 4, 5, 6, 7):
-                    cell.alignment = Alignment(horizontal='center')
-                if col_idx == 7:
-                    cell.font = get_mps_font(q_summary['overall_mps'])
-            if quarter_summary and q_summary.get('quarter_id') == quarter_summary.get('quarter_id'):
-                for col_idx in range(1, 8):
-                    wso.cell(row=row, column=col_idx).fill = PatternFill(start_color='EEF2FF', end_color='EEF2FF', fill_type='solid')
-            row += 1
-
-        for i, width in enumerate([24, 12, 12, 12, 14, 16, 12], 1):
-            wso.column_dimensions[get_column_letter(i)].width = width
-
-    # --- Sheet 1: Quarter Summary ---
+    # --- Sheet 0: Quarter Summary ---
     ws = wb.create_sheet(title='Quarter Summary')
     row = 1
 
-    if _add_brand_image(ws):
+    if has_brand:
+        img = XlImage(brand_path)
+        img.width = 120
+        img.height = 60
+        ws.add_image(img, 'A1')
         row = 5
 
     ws.cell(row=row, column=1, value='QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT')
@@ -1796,7 +1725,7 @@ def mps_export_excel_view(request, exam_id):
                 f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=_safe_val(value))
+                cell = ws.cell(row=row, column=col_idx, value=value)
                 cell.border = thin_border
                 if col_idx in (3, 4, 5):
                     cell.alignment = Alignment(horizontal='center')
@@ -1828,7 +1757,7 @@ def mps_export_excel_view(request, exam_id):
                 get_performance_level(exam_summary['overall_mps']),
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=_safe_val(value))
+                cell = ws.cell(row=row, column=col_idx, value=value)
                 cell.border = thin_border
                 if col_idx in (2, 3, 4, 5, 6):
                     cell.alignment = Alignment(horizontal='center')
@@ -1856,7 +1785,11 @@ def mps_export_excel_view(request, exam_id):
         ws3 = wb.create_sheet(title='Quarter Matrix')
         row = 1
 
-        if _add_brand_image(ws3):
+        if has_brand:
+            img3 = XlImage(brand_path)
+            img3.width = 120
+            img3.height = 60
+            ws3.add_image(img3, 'A1')
             row = 5
 
         ws3.cell(row=row, column=1, value='QUARTER STUDENT-BY-ITEM RESPONSE MATRIX')
@@ -2013,12 +1946,7 @@ def mps_export_excel_view(request, exam_id):
 
     # Write to response
     output = BytesIO()
-    try:
-        wb.save(output)
-    except Exception:
-        logger.error('openpyxl failed to save MPS Excel workbook', exc_info=True)
-        messages.error(request, 'Failed to generate Excel file. Please try again.')
-        return redirect('mps_report', exam_id=exam_id)
+    wb.save(output)
     output.seek(0)
 
     safe_title = exam.title.replace(' ', '_')[:30]
@@ -2060,7 +1988,6 @@ def mps_export_word_view(request, exam_id):
         return redirect('mps_report', exam_id=exam_id)
 
     quarter_summary = summary_data.get('quarter_summary')
-    quarter_summaries = summary_data.get('quarter_summaries') or []
     quarter_matrix = summary_data.get('quarter_matrix')
 
     doc = Document()
@@ -2126,53 +2053,6 @@ def mps_export_word_view(request, exam_id):
         value_run.font.size = Pt(10)
 
     doc.add_paragraph()
-
-    # Quarter overview
-    if quarter_summaries:
-        doc.add_heading('Quarter MPS Overview', level=2)
-        overview_table = doc.add_table(rows=1, cols=7)
-        overview_table.style = 'Table Grid'
-        overview_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        overview_headers = ['Quarter', 'Exam Count', 'Graded Exams', 'Attempts', 'Total Correct', 'Total Possible', 'MPS']
-        header_row = overview_table.rows[0]
-        for idx, h in enumerate(overview_headers):
-            cell = header_row.cells[idx]
-            cell.text = h
-            set_cell_shading(cell, '1F4E79')
-            for para in cell.paragraphs:
-                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                for run in para.runs:
-                    run.bold = True
-                    run.font.color.rgb = RGBColor(255, 255, 255)
-                    run.font.size = Pt(9)
-        for q_summary in quarter_summaries:
-            row = overview_table.add_row()
-            row_data = [
-                q_summary['quarter_name'],
-                str(q_summary['exam_count']),
-                str(q_summary['graded_exam_count']),
-                str(q_summary['graded_attempts']),
-                str(q_summary['total_correct']),
-                str(q_summary['total_possible_answers']),
-                f"{q_summary['overall_mps']}%",
-            ]
-            for idx, value in enumerate(row_data):
-                cell = row.cells[idx]
-                cell.text = value
-                for para in cell.paragraphs:
-                    if idx > 0:
-                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    for run in para.runs:
-                        run.font.size = Pt(9)
-                        if idx == 6:
-                            run.bold = True
-                            if q_summary['overall_mps'] >= 75:
-                                run.font.color.rgb = RGBColor(0, 97, 0)
-                            elif q_summary['overall_mps'] >= 50:
-                                run.font.color.rgb = RGBColor(127, 96, 0)
-                            else:
-                                run.font.color.rgb = RGBColor(156, 0, 6)
-        doc.add_paragraph()
 
     # Selected quarter summary
     if quarter_summary:

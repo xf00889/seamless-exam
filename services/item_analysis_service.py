@@ -372,9 +372,7 @@ class ItemAnalysisService:
             return None
 
         quarter_summary = self._build_quarter_summary(exam)
-        quarter_summaries = self._build_all_quarter_summaries(exam.created_by)
         quarter_matrix = self._build_quarter_student_item_matrix(exam)
-        all_quarter_matrix = self._build_all_quarter_student_item_matrix(exam)
         questions = list(exam.questions.all().order_by('order_index', 'id'))
         student_matrix = self._build_student_item_matrix(
             exam,
@@ -388,9 +386,7 @@ class ItemAnalysisService:
         return {
             'exam': exam,
             'quarter_summary': quarter_summary,
-            'quarter_summaries': quarter_summaries,
             'quarter_matrix': quarter_matrix,
-            'all_quarter_matrix': all_quarter_matrix,
             'student_matrix': student_matrix,
             'has_data': bool(quarter_summary and quarter_summary.get('has_data')),
         }
