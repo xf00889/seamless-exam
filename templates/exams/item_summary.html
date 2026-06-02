@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/main.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/modals.css' %}">
 <style>
 @media print {
     .no-print { display: none !important; }
@@ -671,6 +672,38 @@
     {% endif %}
 </div>
 
+<!-- Clear AI Analysis Confirmation Modal -->
+<div id="clearAnalysisModal" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="clearAnalysisTitle">
+    <div class="modal-container">
+        <div class="modal-content">
+            <div class="modal-warning-icon">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+                </svg>
+            </div>
+            <div class="modal-body">
+                <h3 id="clearAnalysisTitle" class="modal-title">Clear AI Analysis?</h3>
+                <div class="modal-body-padded">
+                    <p class="modal-description">
+                        You're about to clear the cached AI Teacher's Analysis for this exam.
+                    </p>
+                    <p class="modal-warning-text">
+                        This will remove the saved analysis. You can regenerate it anytime, but it will take 15&ndash;45 seconds.
+                    </p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeClearAnalysisModal()" class="modal-btn modal-btn-cancel">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirmClearAnalysisBtn" onclick="performClearAnalysis()" class="modal-btn modal-btn-delete">
+                        Clear Analysis
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1084,7 +1117,27 @@ function renderAnalysis(analysis, meta) {
 }
 
 function clearAiAnalysis() {
-    if (!confirm('Clear the cached AI analysis? You can regenerate it anytime.')) return;
+    const modal = document.getElementById('clearAnalysisModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const focusable = modal.querySelector('button');
+        if (focusable) setTimeout(function () { focusable.focus(); }, 30);
+    }
+}
+
+function closeClearAnalysisModal() {
+    const modal = document.getElementById('clearAnalysisModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function performClearAnalysis() {
+    const modal = document.getElementById('clearAnalysisModal');
+    const confirmBtn = document.getElementById('confirmClearAnalysisBtn');
+    if (modal) modal.classList.add('hidden');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-60', 'cursor-not-allowed');
+    }
     const csrfToken = (typeof getCSRFToken === 'function')
         ? getCSRFToken()
         : (document.querySelector('[name=csrfmiddlewaretoken]')?.value || '');
@@ -1109,8 +1162,31 @@ function clearAiAnalysis() {
     })
     .catch(err => {
         showAiError(err.message || 'Failed to clear analysis.');
+    })
+    .finally(() => {
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
     });
 }
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('clearAnalysisModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closeClearAnalysisModal();
+        }
+    }
+});
+
+document.getElementById && document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('clearAnalysisModal');
+    if (!modal) return;
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) closeClearAnalysisModal();
+    });
+});
 
 function regenerateAiAnalysis() {
     const result = document.getElementById('aiAnalysisResult');

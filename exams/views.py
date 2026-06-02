@@ -1494,6 +1494,12 @@ def item_summary_export_excel_view(request, exam_id):
         items = summary_data.get('items') or []
         mps_data = summary_data.get('mps_data') or {}
         student_matrix = summary_data.get('student_matrix') or {}
+        competency_summary = summary_data.get('competency_summary') or []
+
+        cached_result = getattr(exam, 'ai_analysis_result', None)
+        cached_analysis = cached_result.analysis if cached_result else None
+        cached_generated_at = cached_result.generated_at if cached_result else None
+        cached_model_used = cached_result.model_used if cached_result else ''
 
         wb = Workbook()
         wb.remove(wb.active)
@@ -1534,11 +1540,11 @@ def item_summary_export_excel_view(request, exam_id):
         title_font = Font(name='Calibri', bold=True, size=14)
         header_font = Font(name='Calibri', bold=True, size=12)
         subheader_font = Font(name='Calibri', bold=True, size=11)
-        header_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+        header_fill = PatternFill(start_color='1F2937', end_color='1F2937', fill_type='solid')
         header_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
-        green_font = Font(name='Calibri', bold=True, color='006100')
-        yellow_font = Font(name='Calibri', bold=True, color='7F6000')
-        red_font = Font(name='Calibri', bold=True, color='9C0006')
+        green_font = Font(name='Calibri', bold=True, color='15803D')
+        yellow_font = Font(name='Calibri', bold=True, color='B45309')
+        red_font = Font(name='Calibri', bold=True, color='B91C1C')
         thin_border = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),
@@ -1794,8 +1800,8 @@ def item_summary_export_excel_view(request, exam_id):
                 cell.border = thin_border
             row += 1
 
-            green_fill = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
-            red_fill = PatternFill(start_color='FCE4EC', end_color='FCE4EC', fill_type='solid')
+            green_fill = PatternFill(start_color='DCFCE7', end_color='DCFCE7', fill_type='solid')
+            red_fill = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid')
 
             for idx, student in enumerate(student_matrix['students'], 1):
                 ws2.cell(row=row, column=1, value=idx)
@@ -1830,7 +1836,7 @@ def item_summary_export_excel_view(request, exam_id):
 
                 row += 1
 
-            footer_fill = PatternFill(start_color='D6E4F0', end_color='D6E4F0', fill_type='solid')
+            footer_fill = PatternFill(start_color='E5E7EB', end_color='E5E7EB', fill_type='solid')
             ws2.cell(row=row, column=2, value='Total Correct').font = Font(bold=True)
             ws2.cell(row=row, column=2).border = thin_border
             ws2.cell(row=row, column=2).fill = footer_fill
@@ -1866,7 +1872,7 @@ def item_summary_export_excel_view(request, exam_id):
                     cell.font = red_font
 
             cell = ws2.cell(row=row, column=pct_col, value=f"{mps_data.get('overall_mps', 0)}%")
-            cell.font = Font(bold=True, color='1F4E79')
+            cell.font = Font(bold=True, color='1F2937')
             cell.alignment = Alignment(horizontal='center')
             cell.border = thin_border
             cell.fill = footer_fill
@@ -1885,6 +1891,152 @@ def item_summary_export_excel_view(request, exam_id):
                 ws2.column_dimensions[get_column_letter(i)].width = 5
             ws2.column_dimensions[get_column_letter(total_col)].width = 8
             ws2.column_dimensions[get_column_letter(pct_col)].width = 8
+
+        # --- Sheet: AI Analysis ---
+        if cached_analysis:
+            ws3 = wb.create_sheet(title='AI Analysis')
+            row = 1
+            if add_brand_image(ws3, 'A1'):
+                row = 5
+
+            ws3.cell(row=row, column=1, value='AI TEACHER\u2019S ANALYSIS')
+            ws3.cell(row=row, column=1).font = title_font
+            ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+            row += 1
+            ws3.cell(row=row, column=1, value='DepEd-aligned insights, intervention plan, and revision recommendations')
+            ws3.cell(row=row, column=1).font = subheader_font
+            ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+            row += 1
+            if cached_generated_at or cached_model_used:
+                meta_parts = []
+                if cached_generated_at:
+                    meta_parts.append('Generated: ' + cached_generated_at.strftime('%B %d, %Y %I:%M %p'))
+                if cached_model_used:
+                    meta_parts.append('Model: ' + cached_model_used)
+                ws3.cell(row=row, column=1, value=' \u2022 '.join(meta_parts))
+                ws3.cell(row=row, column=1).font = Font(name='Calibri', size=10, color='6B7280', italic=True)
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                row += 1
+            row += 1
+
+            ai_purple_fill = PatternFill(start_color='6D28D9', end_color='6D28D9', fill_type='solid')
+            ai_purple_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+            ai_section_fill = PatternFill(start_color='EDE9FE', end_color='EDE9FE', fill_type='solid')
+            ai_overall_fill = PatternFill(start_color='FAF5FF', end_color='FAF5FF', fill_type='solid')
+            ai_green_fill = PatternFill(start_color='F0FDF4', end_color='F0FDF4', fill_type='solid')
+            ai_orange_fill = PatternFill(start_color='FFF7ED', end_color='FFF7ED', fill_type='solid')
+
+            if cached_analysis.get('overall_assessment'):
+                ws3.cell(row=row, column=1, value='Overall Assessment')
+                ws3.cell(row=row, column=1).font = Font(name='Calibri', bold=True, size=11, color='4C1D95')
+                ws3.cell(row=row, column=1).fill = ai_section_fill
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                row += 1
+                cell = ws3.cell(row=row, column=1, value=cached_analysis['overall_assessment'])
+                cell.font = Font(name='Calibri', size=11, italic=True)
+                cell.fill = ai_overall_fill
+                cell.alignment = Alignment(wrap_text=True, vertical='top')
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                ws3.row_dimensions[row].height = 60
+                row += 2
+
+            strengths = cached_analysis.get('strengths') or []
+            areas = cached_analysis.get('areas_for_improvement') or []
+            if strengths or areas:
+                col_strength = 1
+                col_areas = 3
+                if strengths:
+                    cell = ws3.cell(row=row, column=col_strength, value='Strengths (' + str(len(strengths)) + ')')
+                    cell.font = Font(name='Calibri', bold=True, size=11, color='166534')
+                    cell.fill = ai_green_fill
+                    ws3.merge_cells(start_row=row, start_column=col_strength, end_row=row, end_column=col_strength + 1)
+                if areas:
+                    cell = ws3.cell(row=row, column=col_areas, value='Areas for Improvement (' + str(len(areas)) + ')')
+                    cell.font = Font(name='Calibri', bold=True, size=11, color='9A3412')
+                    cell.fill = ai_orange_fill
+                    ws3.merge_cells(start_row=row, start_column=col_areas, end_row=row, end_column=col_areas + 1)
+                row += 1
+                max_len = max(len(strengths), len(areas), 1)
+                for i in range(max_len):
+                    if i < len(strengths):
+                        cell = ws3.cell(row=row, column=col_strength, value='\u2022 ' + strengths[i])
+                        cell.fill = ai_green_fill
+                        cell.alignment = Alignment(wrap_text=True, vertical='top')
+                        ws3.merge_cells(start_row=row, start_column=col_strength, end_row=row, end_column=col_strength + 1)
+                    if i < len(areas):
+                        cell = ws3.cell(row=row, column=col_areas, value='\u2022 ' + areas[i])
+                        cell.fill = ai_orange_fill
+                        cell.alignment = Alignment(wrap_text=True, vertical='top')
+                        ws3.merge_cells(start_row=row, start_column=col_areas, end_row=row, end_column=col_areas + 1)
+                    ws3.row_dimensions[row].height = 30
+                    row += 1
+                row += 1
+
+            steps = cached_analysis.get('intervention_plan') or []
+            if steps:
+                ws3.cell(row=row, column=1, value='Intervention Plan (' + str(len(steps)) + ' step' + ('s' if len(steps) != 1 else '') + ')')
+                ws3.cell(row=row, column=1).font = Font(name='Calibri', bold=True, size=11, color='1F2937')
+                ws3.cell(row=row, column=1).fill = ai_section_fill
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                row += 1
+                for i, step in enumerate(steps, 1):
+                    cell = ws3.cell(row=row, column=1, value=str(i) + '.')
+                    cell.font = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+                    cell.fill = ai_purple_fill
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                    cell2 = ws3.cell(row=row, column=2, value=step)
+                    cell2.font = Font(name='Calibri', size=11)
+                    cell2.alignment = Alignment(wrap_text=True, vertical='center')
+                    ws3.merge_cells(start_row=row, start_column=2, end_row=row, end_column=4)
+                    ws3.row_dimensions[row].height = 28
+                    row += 1
+                row += 1
+
+            items_to_revise = cached_analysis.get('items_to_revise') or []
+            if items_to_revise:
+                ws3.cell(row=row, column=1, value='Items Recommended for Revision (' + str(len(items_to_revise)) + ')')
+                ws3.cell(row=row, column=1).font = Font(name='Calibri', bold=True, size=11, color='991B1B')
+                ws3.cell(row=row, column=1).fill = ai_section_fill
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                row += 1
+                chips_text = '   '.join('\u2022 ' + str(it) for it in items_to_revise)
+                cell = ws3.cell(row=row, column=1, value=chips_text)
+                cell.font = Font(name='Calibri', size=11, bold=True, color='991B1B')
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+                ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+                ws3.row_dimensions[row].height = 24
+                row += 1
+                row += 1
+
+            cell = ws3.cell(row=row, column=1, value='Note: AI suggestions are guidance only. Always validate against your own classroom context and DepEd curriculum guides before applying.')
+            cell.font = Font(name='Calibri', size=9, italic=True, color='6B7280')
+            ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=4)
+            row += 2
+
+            teacher_name = exam.created_by.user.get_full_name() or exam.created_by.user.username
+            sig_top = row
+            cell_l = ws3.cell(row=sig_top, column=1, value=teacher_name)
+            cell_l.font = Font(name='Calibri', bold=True, size=11)
+            cell_l.alignment = Alignment(horizontal='center')
+            ws3.merge_cells(start_row=sig_top, start_column=1, end_row=sig_top, end_column=2)
+            cell_r = ws3.cell(row=sig_top, column=3, value='______________________________')
+            cell_r.font = Font(name='Calibri', bold=True, size=11)
+            cell_r.alignment = Alignment(horizontal='center')
+            ws3.merge_cells(start_row=sig_top, start_column=3, end_row=sig_top, end_column=4)
+            row += 1
+            cell_l = ws3.cell(row=row, column=1, value='Subject Teacher')
+            cell_l.font = Font(name='Calibri', size=9, color='6B7280')
+            cell_l.alignment = Alignment(horizontal='center')
+            ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+            cell_r = ws3.cell(row=row, column=3, value='School Head / Department Head')
+            cell_r.font = Font(name='Calibri', size=9, color='6B7280')
+            cell_r.alignment = Alignment(horizontal='center')
+            ws3.merge_cells(start_row=row, start_column=3, end_row=row, end_column=4)
+
+            ws3.column_dimensions['A'].width = 24
+            ws3.column_dimensions['B'].width = 24
+            ws3.column_dimensions['C'].width = 24
+            ws3.column_dimensions['D'].width = 24
 
         # Write to response
         output = BytesIO()
@@ -1944,6 +2096,11 @@ def item_summary_export_word_view(request, exam_id):
         competency_summary = summary_data.get('competency_summary') or []
         student_matrix = summary_data.get('student_matrix') or {}
 
+        cached_result = getattr(exam, 'ai_analysis_result', None)
+        cached_analysis = cached_result.analysis if cached_result else None
+        cached_generated_at = cached_result.generated_at if cached_result else None
+        cached_model_used = cached_result.model_used if cached_result else ''
+
         doc = Document()
 
         style = doc.styles['Normal']
@@ -1976,10 +2133,10 @@ def item_summary_export_word_view(request, exam_id):
 
         def get_mps_color(mps_val):
             if mps_val >= 75:
-                return RGBColor(0, 97, 0)
+                return RGBColor(0x15, 0x80, 0x3D)
             elif mps_val >= 50:
-                return RGBColor(127, 96, 0)
-            return RGBColor(156, 0, 6)
+                return RGBColor(0xB4, 0x53, 0x09)
+            return RGBColor(0xB9, 0x1C, 0x1C)
 
         title = doc.add_heading('ITEM SUMMARY SHEET', level=1)
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -1993,7 +2150,7 @@ def item_summary_export_word_view(request, exam_id):
         doc.add_paragraph()
 
         if overall_stats:
-            doc.add_heading('Overall Statistics', level=2)
+            doc.add_heading('I. Overall Statistics', level=2)
             stats_table = doc.add_table(rows=1, cols=2)
             stats_table.style = 'Table Grid'
             stats_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -2001,7 +2158,7 @@ def item_summary_export_word_view(request, exam_id):
             header_cells[0].text = 'Metric'
             header_cells[1].text = 'Value'
             for cell in header_cells:
-                set_cell_shading(cell, '1F4E79')
+                set_cell_shading(cell, '1F2937')
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for run in para.runs:
@@ -2028,14 +2185,14 @@ def item_summary_export_word_view(request, exam_id):
             doc.add_paragraph()
 
         if mps_data:
-            doc.add_heading('Mean Percentage Score (MPS)', level=2)
+            doc.add_heading('II. Mean Percentage Score (MPS)', level=2)
             mps_table = doc.add_table(rows=1, cols=2)
             mps_table.style = 'Table Grid'
             mps_table.alignment = WD_TABLE_ALIGNMENT.CENTER
             mps_table.rows[0].cells[0].text = 'Metric'
             mps_table.rows[0].cells[1].text = 'Value'
             for cell in mps_table.rows[0].cells:
-                set_cell_shading(cell, '1F4E79')
+                set_cell_shading(cell, '1F2937')
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for run in para.runs:
@@ -2066,7 +2223,7 @@ def item_summary_export_word_view(request, exam_id):
             per_class = mps_data.get('per_class') or []
             if per_class:
                 doc.add_paragraph()
-                doc.add_heading('MPS by Class', level=2)
+                doc.add_heading('MPS by Class', level=3)
                 class_table = doc.add_table(rows=1, cols=8)
                 class_table.style = 'Table Grid'
                 class_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -2074,7 +2231,7 @@ def item_summary_export_word_view(request, exam_id):
                 for idx, h in enumerate(class_headers):
                     cell = class_table.rows[0].cells[idx]
                     cell.text = h
-                    set_cell_shading(cell, '1F4E79')
+                    set_cell_shading(cell, '1F2937')
                     for para in cell.paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
@@ -2107,7 +2264,7 @@ def item_summary_export_word_view(request, exam_id):
             doc.add_paragraph()
 
         # Item Analysis
-        doc.add_heading('Item Analysis', level=2)
+        doc.add_heading('III. Item Analysis', level=2)
         item_table = doc.add_table(rows=1, cols=8)
         item_table.style = 'Table Grid'
         item_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -2115,7 +2272,7 @@ def item_summary_export_word_view(request, exam_id):
         for idx, h in enumerate(item_headers):
             cell = item_table.rows[0].cells[idx]
             cell.text = h
-            set_cell_shading(cell, '1F4E79')
+            set_cell_shading(cell, '1F2937')
             for para in cell.paragraphs:
                 para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 for run in para.runs:
@@ -2146,7 +2303,7 @@ def item_summary_export_word_view(request, exam_id):
 
         # Competency Summary
         if competency_summary:
-            doc.add_heading('Competency Summary', level=2)
+            doc.add_heading('IV. Competency Summary', level=2)
             comp_table = doc.add_table(rows=1, cols=5)
             comp_table.style = 'Table Grid'
             comp_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -2154,7 +2311,7 @@ def item_summary_export_word_view(request, exam_id):
             for idx, h in enumerate(comp_headers):
                 cell = comp_table.rows[0].cells[idx]
                 cell.text = h
-                set_cell_shading(cell, '1F4E79')
+                set_cell_shading(cell, '1F2937')
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for run in para.runs:
@@ -2186,7 +2343,7 @@ def item_summary_export_word_view(request, exam_id):
         # Student-by-Item Matrix
         if student_matrix and student_matrix.get('students'):
             doc.add_page_break()
-            doc.add_heading('Student-by-Item Response Matrix', level=2)
+            doc.add_heading('V. Student-by-Item Response Matrix', level=2)
 
             matrix_info = doc.add_paragraph()
             matrix_info.add_run('Legend: ').bold = True
@@ -2212,7 +2369,7 @@ def item_summary_export_word_view(request, exam_id):
                 matrix_table.cell(0, 1).text = 'Student Name'
                 matrix_table.cell(0, 2).text = 'Class'
                 for c in (0, 1, 2):
-                    set_cell_shading(matrix_table.cell(0, c), '1F4E79')
+                    set_cell_shading(matrix_table.cell(0, c), '1F2937')
                     for para in matrix_table.cell(0, c).paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
@@ -2223,7 +2380,7 @@ def item_summary_export_word_view(request, exam_id):
                 for i in range(start_item + 1, end_item + 1):
                     cell = matrix_table.cell(0, i - start_item + 2)
                     cell.text = str(i)
-                    set_cell_shading(cell, '1F4E79')
+                    set_cell_shading(cell, '1F2937')
                     for para in cell.paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
@@ -2234,7 +2391,7 @@ def item_summary_export_word_view(request, exam_id):
                 matrix_table.cell(0, chunk_size + 3).text = 'Total'
                 matrix_table.cell(0, chunk_size + 4).text = '%'
                 for c in (chunk_size + 3, chunk_size + 4):
-                    set_cell_shading(matrix_table.cell(0, c), '1F4E79')
+                    set_cell_shading(matrix_table.cell(0, c), '1F2937')
                     for para in matrix_table.cell(0, c).paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
@@ -2254,9 +2411,9 @@ def item_summary_export_word_view(request, exam_id):
                         cell = row.cells[col]
                         cell.text = str(mark)
                         if mark == 1:
-                            set_cell_shading(cell, 'E2EFDA')
+                            set_cell_shading(cell, 'DCFCE7')
                         else:
-                            set_cell_shading(cell, 'FCE4EC')
+                            set_cell_shading(cell, 'FEE2E2')
 
                     row.cells[chunk_size + 3].text = str(student.get('total_correct', 0))
                     row.cells[chunk_size + 4].text = f"{student.get('percent', 0)}%"
@@ -2282,33 +2439,141 @@ def item_summary_export_word_view(request, exam_id):
                 footer_row.cells[chunk_size + 4].text = f"{mps_data.get('overall_mps', 0)}%"
 
                 for cell in footer_row.cells:
-                    set_cell_shading(cell, 'D6E4F0')
+                    set_cell_shading(cell, 'E5E7EB')
                     for para in cell.paragraphs:
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         for run in para.runs:
                             run.bold = True
                             run.font.size = Pt(7)
 
+        # --- VI. AI Teacher's Analysis ---
+        if cached_analysis:
+            doc.add_page_break()
+            doc.add_heading('VI. AI Teacher\u2019s Analysis', level=2)
+
+            meta_parts = []
+            if cached_generated_at:
+                meta_parts.append('Generated: ' + cached_generated_at.strftime('%B %d, %Y %I:%M %p'))
+            if cached_model_used:
+                meta_parts.append('Model: ' + cached_model_used)
+            if meta_parts:
+                meta_para = doc.add_paragraph()
+                meta_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                meta_run = meta_para.add_run(' \u2022 '.join(meta_parts))
+                meta_run.italic = True
+                meta_run.font.size = Pt(9)
+                meta_run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+            if cached_analysis.get('overall_assessment'):
+                overall_table = doc.add_table(rows=1, cols=1)
+                overall_table.style = 'Table Grid'
+                overall_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                cell = overall_table.rows[0].cells[0]
+                set_cell_shading(cell, 'FAF5FF')
+                p = cell.paragraphs[0]
+                run_label = p.add_run('Overall Assessment\n')
+                run_label.bold = True
+                run_label.font.size = Pt(11)
+                run_label.font.color.rgb = RGBColor(0x4C, 0x1D, 0x95)
+                run_text = p.add_run(cached_analysis['overall_assessment'])
+                run_text.italic = True
+                run_text.font.size = Pt(11)
+                doc.add_paragraph()
+
+            strengths = cached_analysis.get('strengths') or []
+            areas = cached_analysis.get('areas_for_improvement') or []
+            if strengths or areas:
+                sa_table = doc.add_table(rows=1, cols=2)
+                sa_table.style = 'Table Grid'
+                sa_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                for idx, (title_text, items, fill_color, title_color) in enumerate([
+                    ('Strengths (' + str(len(strengths)) + ')', strengths, 'F0FDF4', RGBColor(0x16, 0x65, 0x34)),
+                    ('Areas for Improvement (' + str(len(areas)) + ')', areas, 'FFF7ED', RGBColor(0x9A, 0x34, 0x12)),
+                ]):
+                    cell = sa_table.rows[0].cells[idx]
+                    set_cell_shading(cell, fill_color)
+                    cell.text = ''
+                    p_title = cell.paragraphs[0]
+                    run_t = p_title.add_run(title_text + '\n')
+                    run_t.bold = True
+                    run_t.font.size = Pt(11)
+                    run_t.font.color.rgb = title_color
+                    for s in items:
+                        p_item = cell.add_paragraph()
+                        run_i = p_item.add_run('\u2022 ' + s)
+                        run_i.font.size = Pt(10)
+                doc.add_paragraph()
+
+            steps = cached_analysis.get('intervention_plan') or []
+            if steps:
+                doc.add_heading('Intervention Plan', level=3)
+                step_table = doc.add_table(rows=len(steps), cols=2)
+                step_table.style = 'Table Grid'
+                step_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                for i, step in enumerate(steps, 1):
+                    num_cell = step_table.rows[i - 1].cells[0]
+                    num_cell.text = str(i)
+                    set_cell_shading(num_cell, '6D28D9')
+                    for para in num_cell.paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.size = Pt(11)
+                            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                    text_cell = step_table.rows[i - 1].cells[1]
+                    text_cell.text = step
+                    for para in text_cell.paragraphs:
+                        for run in para.runs:
+                            run.font.size = Pt(10)
+                doc.add_paragraph()
+
+            items_to_revise = cached_analysis.get('items_to_revise') or []
+            if items_to_revise:
+                revise_table = doc.add_table(rows=1, cols=1)
+                revise_table.style = 'Table Grid'
+                revise_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                cell = revise_table.rows[0].cells[0]
+                set_cell_shading(cell, 'FEF2F2')
+                p = cell.paragraphs[0]
+                run_t = p.add_run('Items Recommended for Revision (' + str(len(items_to_revise)) + ')\n')
+                run_t.bold = True
+                run_t.font.size = Pt(11)
+                run_t.font.color.rgb = RGBColor(0x99, 0x1B, 0x1B)
+                chips = '   '.join('\u2022 ' + str(it) for it in items_to_revise)
+                run_c = p.add_run(chips)
+                run_c.font.size = Pt(11)
+                run_c.bold = True
+                run_c.font.color.rgb = RGBColor(0x99, 0x1B, 0x1B)
+                doc.add_paragraph()
+
+            note_para = doc.add_paragraph()
+            note_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            note_run = note_para.add_run('Note: AI suggestions are guidance only. Always validate against your own classroom context and DepEd curriculum guides before applying.')
+            note_run.italic = True
+            note_run.font.size = Pt(9)
+            note_run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+        # --- Signatures block (2-column) ---
         doc.add_paragraph()
-        prepared_by_para = doc.add_paragraph()
-        prepared_by_para.paragraph_format.space_after = Pt(2)
-        prepared_by_run = prepared_by_para.add_run('Prepared by:')
-        prepared_by_run.bold = True
-        prepared_by_run.font.size = Pt(10)
-
-        signature_line = doc.add_paragraph()
-        signature_line.paragraph_format.space_after = Pt(2)
-        signature_run = signature_line.add_run('________________________________________')
-        signature_run.font.size = Pt(10)
-
-        name_para = doc.add_paragraph()
-        name_para.paragraph_format.space_after = Pt(0)
-        name_label = name_para.add_run('Name of Teacher: ')
-        name_label.bold = True
-        name_label.font.size = Pt(10)
-        name_value = name_para.add_run(exam.created_by.user.get_full_name() or exam.created_by.user.username)
-        name_value.bold = True
-        name_value.font.size = Pt(10)
+        teacher_name = exam.created_by.user.get_full_name() or exam.created_by.user.username
+        sig_table = doc.add_table(rows=2, cols=2)
+        sig_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        for c in range(2):
+            sig_table.cell(0, c).text = '\n______________________________________________'
+            sig_table.cell(0, c).paragraphs[0].runs[0].font.size = Pt(11)
+            sig_table.cell(0, c).paragraphs[0].runs[0].bold = True
+        sig_table.cell(0, 0).text = teacher_name + '\n______________________________________________'
+        sig_table.cell(0, 0).paragraphs[0].runs[0].font.size = Pt(11)
+        sig_table.cell(0, 0).paragraphs[0].runs[0].bold = True
+        sig_table.cell(1, 0).text = 'Subject Teacher'
+        sig_table.cell(1, 1).text = 'School Head / Department Head'
+        for c in range(2):
+            for para in sig_table.cell(1, c).paragraphs:
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in para.runs:
+                    run.italic = True
+                    run.font.size = Pt(9)
+                    run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
 
         output = BytesIO()
         doc.save(output)
@@ -3251,7 +3516,7 @@ def mps_quarter_export_word_view(request, quarter_id):
             for i in range(start_item + 1, end_item + 1):
                 cell = matrix_table.cell(1, i - start_item + 1)
                 cell.text = str(i)
-                set_cell_shading(cell, '1F4E79')
+                set_cell_shading(cell, '1F2937')
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     for run in para.runs:
@@ -3285,7 +3550,7 @@ def mps_quarter_export_word_view(request, quarter_id):
                     cell = row.cells[col]
                     cell.text = str(mark)
                     if mark == 1:
-                        set_cell_shading(cell, 'E2EFDA')
+                        set_cell_shading(cell, 'DCFCE7')
                     else:
                         set_cell_shading(cell, 'FCE4EC')
 
