@@ -16,6 +16,7 @@ from services.exam_activation_service import ExamActivationService
 from services.view_helpers import build_breadcrumbs
 from django.urls import reverse
 import logging
+import re
 from itertools import groupby
 
 logger = logging.getLogger(__name__)
@@ -1663,7 +1664,7 @@ def mps_export_excel_view(request, exam_id):
 
     def excel_value(value):
         if isinstance(value, str):
-            return re.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F]', '', value)
+            return re.sub(r'[\x00-\x1F]', '', value)
         return value
 
     def write_cell(worksheet, row_index, column_index, value=None):
@@ -2315,7 +2316,8 @@ def mps_export_word_view(request, exam_id):
     doc.save(output)
     output.seek(0)
 
-    safe_title = exam.title.replace(' ', '_')[:30]
+    safe_title = re.sub(r'[\s/\\:]+', '_', (exam.title or '').strip())
+    safe_title = re.sub(r'[^A-Za-z0-9_.-]+', '_', safe_title).strip('._-')[:30] or 'Exam'
     response = HttpResponse(
         output.getvalue(),
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
