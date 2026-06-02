@@ -36,7 +36,7 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-81fqzw3gj57cl4=-a-k6__e#b4d2g5*$@j0xz7twzx1-4@d!%d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes', 'on')
 
 # Local Network Configuration (Requirement 18.1, 18.2, 18.5)
 # Allow access from local network for offline exam system
