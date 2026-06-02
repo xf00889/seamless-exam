@@ -1344,6 +1344,878 @@ def item_summary_ai_analyze_view(request, exam_id):
 
 
 @teacher_required
+@require_http_methods(["GET"])
+def item_summary_export_excel_view(request, exam_id):
+    """
+    Export the per-exam Item Summary report to Excel with DepEd-style formatting.
+    Includes overall statistics, per-item analysis, competency summary, and the
+    student-by-item response matrix as the per-exam MPS matrix.
+    """
+    import os
+    import re
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XlImage
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to export this exam')
+        return redirect('exam_list')
+
+    try:
+        service = ItemAnalysisService()
+        summary_data = service.get_item_summary(exam_id)
+
+        if not summary_data or not summary_data.get('has_data'):
+            messages.warning(request, 'No graded attempts to export for this exam.')
+            return redirect('item_summary', exam_id=exam_id)
+
+        overall_stats = summary_data.get('overall_stats') or {}
+        items = summary_data.get('items') or []
+        mps_data = summary_data.get('mps_data') or {}
+        student_matrix = summary_data.get('student_matrix') or {}
+
+        wb = Workbook()
+        wb.remove(wb.active)
+
+        brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
+        has_brand = os.path.isfile(brand_path)
+
+        def add_brand_image(worksheet, anchor):
+            if not has_brand:
+                return False
+            try:
+                image = XlImage(brand_path)
+            except Exception as exc:
+                logger.warning('Skipping Item Summary Excel brand image: %s', exc)
+                return False
+            try:
+                image.width = 120
+                image.height = 60
+                worksheet.add_image(image, anchor)
+                return True
+            except Exception as exc:
+                logger.warning('Failed to attach Item Summary Excel brand image: %s', exc)
+                return False
+
+        def safe_export_filename(title):
+            cleaned = re.sub(r'[\s/\\:]+', '_', title.strip())
+            cleaned = re.sub(r'[^A-Za-z0-9_.-]+', '_', cleaned)
+            return cleaned.strip('._-')[:30] or 'Exam'
+
+        def excel_value(value):
+            if isinstance(value, str):
+                return re.sub(r'[\x00-\x1F]', '', value)
+            return value
+
+        def write_cell(worksheet, row_index, column_index, value=None):
+            return worksheet.cell(row=row_index, column=column_index, value=excel_value(value))
+
+        title_font = Font(name='Calibri', bold=True, size=14)
+        header_font = Font(name='Calibri', bold=True, size=12)
+        subheader_font = Font(name='Calibri', bold=True, size=11)
+        header_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+        header_text = Font(name='Calibri', bold=True, size=11, color='FFFFFF')
+        green_font = Font(name='Calibri', bold=True, color='006100')
+        yellow_font = Font(name='Calibri', bold=True, color='7F6000')
+        red_font = Font(name='Calibri', bold=True, color='9C0006')
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        def get_mps_font(mps_val):
+            if mps_val >= 75:
+                return green_font
+            elif mps_val >= 50:
+                return yellow_font
+            return red_font
+
+        # --- Sheet: Item Summary ---
+        ws = wb.create_sheet(title='Item Summary')
+        row = 1
+
+        if add_brand_image(ws, 'A1'):
+            row = 5
+
+        ws.cell(row=row, column=1, value='ITEM SUMMARY SHEET')
+        ws.cell(row=row, column=1).font = title_font
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+        row += 1
+        ws.cell(row=row, column=1, value='Mean Percentage Score (MPS) — Per Exam')
+        ws.cell(row=row, column=1).font = subheader_font
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+        row += 2
+
+        info_labels = [
+            ('Exam:', exam.title),
+            ('Subject:', exam.subject or 'Not specified'),
+            ('Quarter:', exam.quarter.name if exam.quarter else 'Not specified'),
+            ('Teacher:', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+            ('No. of Learners:', str(summary_data.get('total_learners', 0))),
+            ('Total Items:', str(len(items))),
+            ('Total Points:', str(summary_data.get('total_possible', 0))),
+        ]
+        for label, value in info_labels:
+            ws.cell(row=row, column=1, value=label)
+            ws.cell(row=row, column=1).font = Font(bold=True)
+            write_cell(ws, row, 2, value)
+            row += 1
+        row += 1
+
+        if overall_stats:
+            ws.cell(row=row, column=1, value='OVERALL STATISTICS')
+            ws.cell(row=row, column=1).font = header_font
+            row += 1
+            stat_headers = ['Metric', 'Value']
+            for col_idx, h in enumerate(stat_headers, 1):
+                cell = ws.cell(row=row, column=col_idx, value=h)
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            row += 1
+            stat_rows = [
+                ('Average Score', f"{overall_stats.get('avg_score', 0)} / {overall_stats.get('total_possible', 0)} ({overall_stats.get('avg_percent', 0)}%)"),
+                ('Passing Rate (60%)', f"{overall_stats.get('passing_rate', 0)}% ({overall_stats.get('passing_count', 0)} passed, {overall_stats.get('failing_count', 0)} failed)"),
+                ('Highest Score', str(overall_stats.get('highest_score', 0))),
+                ('Lowest Score', str(overall_stats.get('lowest_score', 0))),
+                ('Standard Deviation', str(overall_stats.get('std_dev', 0))),
+            ]
+            for label, value in stat_rows:
+                ws.cell(row=row, column=1, value=label).border = thin_border
+                write_cell(ws, row, 2, value).border = thin_border
+                row += 1
+            row += 1
+
+        if mps_data:
+            ws.cell(row=row, column=1, value='MEAN PERCENTAGE SCORE (MPS)')
+            ws.cell(row=row, column=1).font = header_font
+            row += 1
+            mps_headers = ['Metric', 'Value']
+            for col_idx, h in enumerate(mps_headers, 1):
+                cell = ws.cell(row=row, column=col_idx, value=h)
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            row += 1
+            mps_rows = [
+                ('Overall MPS', f"{mps_data.get('overall_mps', 0)}%"),
+                ('Total Correct', str(mps_data.get('total_correct', 0))),
+                ('Total Possible Answers', str(mps_data.get('total_possible_answers', 0))),
+                ('Number of Learners', str(mps_data.get('total_learners', 0))),
+                ('Number of Items', str(mps_data.get('total_items', 0))),
+            ]
+            for label, value in mps_rows:
+                ws.cell(row=row, column=1, value=label).border = thin_border
+                cell = write_cell(ws, row, 2, value)
+                cell.border = thin_border
+                if label == 'Overall MPS':
+                    cell.font = get_mps_font(mps_data.get('overall_mps', 0))
+                row += 1
+
+            per_class = mps_data.get('per_class') or []
+            if per_class:
+                row += 1
+                ws.cell(row=row, column=1, value='MPS BY CLASS')
+                ws.cell(row=row, column=1).font = header_font
+                row += 1
+                class_headers = ['Class', 'Grade', 'Strand', 'Section', 'Learners', 'Total Correct', 'Total Possible', 'MPS']
+                for col_idx, h in enumerate(class_headers, 1):
+                    cell = ws.cell(row=row, column=col_idx, value=h)
+                    cell.font = header_text
+                    cell.fill = header_fill
+                    cell.alignment = Alignment(horizontal='center')
+                    cell.border = thin_border
+                row += 1
+                for cls_data in per_class:
+                    row_data = [
+                        cls_data.get('class_name', ''),
+                        cls_data.get('grade_level', ''),
+                        cls_data.get('strand', ''),
+                        cls_data.get('section', ''),
+                        cls_data.get('learners', 0),
+                        cls_data.get('total_correct', 0),
+                        cls_data.get('total_possible', 0),
+                        f"{cls_data.get('mps', 0)}%",
+                    ]
+                    for col_idx, value in enumerate(row_data, 1):
+                        cell = write_cell(ws, row, col_idx, value)
+                        cell.border = thin_border
+                        if col_idx >= 5:
+                            cell.alignment = Alignment(horizontal='center')
+                        if col_idx == 8:
+                            cell.font = get_mps_font(cls_data.get('mps', 0))
+                    row += 1
+            row += 1
+
+        # --- Item Analysis table ---
+        ws.cell(row=row, column=1, value='ITEM ANALYSIS')
+        ws.cell(row=row, column=1).font = header_font
+        row += 1
+        item_headers = ['Item', 'Type', 'Correct', 'Wrong', 'Skipped', '% Correct', 'Difficulty', 'Action']
+        for col_idx, h in enumerate(item_headers, 1):
+            cell = ws.cell(row=row, column=col_idx, value=h)
+            cell.font = header_text
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+        row += 1
+        for item in items:
+            row_data = [
+                item.get('item_no', ''),
+                item.get('question_type', ''),
+                item.get('num_correct', 0),
+                item.get('num_wrong', 0),
+                item.get('num_skipped', 0),
+                f"{item.get('percent_correct', 0)}%",
+                item.get('difficulty_level', ''),
+                item.get('action_needed', ''),
+            ]
+            for col_idx, value in enumerate(row_data, 1):
+                cell = write_cell(ws, row, col_idx, value)
+                cell.border = thin_border
+                if col_idx in (1, 3, 4, 5, 6, 7):
+                    cell.alignment = Alignment(horizontal='center')
+            row += 1
+        row += 1
+
+        # --- Competency Summary ---
+        competency_summary = summary_data.get('competency_summary') or []
+        if competency_summary:
+            ws.cell(row=row, column=1, value='COMPETENCY SUMMARY')
+            ws.cell(row=row, column=1).font = header_font
+            row += 1
+            comp_headers = ['Competency / Type', 'Items', 'Avg %', 'Mastery', 'Intervention']
+            for col_idx, h in enumerate(comp_headers, 1):
+                cell = ws.cell(row=row, column=col_idx, value=h)
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            row += 1
+            for comp in competency_summary:
+                row_data = [
+                    comp.get('competency', ''),
+                    comp.get('items', ''),
+                    f"{comp.get('avg_percent', 0)}%",
+                    comp.get('mastery_level', ''),
+                    comp.get('intervention', ''),
+                ]
+                for col_idx, value in enumerate(row_data, 1):
+                    cell = write_cell(ws, row, col_idx, value)
+                    cell.border = thin_border
+                    if col_idx in (3, 4):
+                        cell.alignment = Alignment(horizontal='center')
+                    if col_idx == 3:
+                        cell.font = get_mps_font(comp.get('avg_percent', 0))
+                row += 1
+            row += 1
+
+        for i, width in enumerate([16, 22, 18, 18, 16, 18, 18, 28], 1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+
+        row += 1
+        ws.cell(row=row, column=1, value='Prepared by:').font = Font(bold=True, size=10)
+        row += 1
+        ws.cell(row=row, column=1, value='________________________________________').font = Font(size=10)
+        row += 1
+        ws.cell(row=row, column=1, value='Name of Teacher:').font = Font(bold=True, size=10)
+        write_cell(ws, row, 2, exam.created_by.user.get_full_name() or exam.created_by.user.username)
+        ws.cell(row=row, column=2).font = Font(bold=True, size=10)
+
+        # --- Sheet: Student-by-Item Matrix ---
+        if student_matrix and student_matrix.get('students'):
+            ws2 = wb.create_sheet(title='Student-Item Matrix')
+            row = 1
+
+            if add_brand_image(ws2, 'A1'):
+                row = 5
+
+            ws2.cell(row=row, column=1, value='STUDENT-BY-ITEM RESPONSE MATRIX')
+            ws2.cell(row=row, column=1).font = title_font
+            ws2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=student_matrix['total_items'] + 5)
+            row += 1
+            write_cell(ws2, row, 1, f'Exam: {exam.title}')
+            ws2.cell(row=row, column=1).font = subheader_font
+            row += 1
+            write_cell(ws2, row, 1, f'No. of Learners: {student_matrix["total_learners"]} | No. of Items: {student_matrix["total_items"]} | MPS: {mps_data.get("overall_mps", 0)}%')
+            row += 2
+
+            total_items_count = student_matrix['total_items']
+            ws2.cell(row=row, column=1, value='#')
+            ws2.cell(row=row, column=2, value='Student Name')
+            ws2.cell(row=row, column=3, value='Class')
+            for cell in (
+                ws2.cell(row=row, column=1),
+                ws2.cell(row=row, column=2),
+                ws2.cell(row=row, column=3),
+            ):
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            for item_idx, item in enumerate(items):
+                cell = ws2.cell(row=row, column=item_idx + 4, value=item.get('item_no', ''))
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            total_col = total_items_count + 4
+            pct_col = total_items_count + 5
+            for col_idx, label in [(total_col, 'Total'), (pct_col, '%')]:
+                cell = ws2.cell(row=row, column=col_idx, value=label)
+                cell.font = header_text
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+            row += 1
+
+            green_fill = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
+            red_fill = PatternFill(start_color='FCE4EC', end_color='FCE4EC', fill_type='solid')
+
+            for idx, student in enumerate(student_matrix['students'], 1):
+                ws2.cell(row=row, column=1, value=idx)
+                ws2.cell(row=row, column=1).border = thin_border
+                ws2.cell(row=row, column=1).alignment = Alignment(horizontal='center')
+
+                write_cell(ws2, row, 2, student.get('name', ''))
+                ws2.cell(row=row, column=2).border = thin_border
+
+                write_cell(ws2, row, 3, student.get('class_name', ''))
+                ws2.cell(row=row, column=3).border = thin_border
+
+                for item_idx, mark in enumerate(student.get('responses', [])):
+                    col = item_idx + 4
+                    cell = ws2.cell(row=row, column=col, value=mark)
+                    cell.alignment = Alignment(horizontal='center')
+                    cell.border = thin_border
+                    cell.fill = green_fill if mark == 1 else red_fill
+
+                cell_total = ws2.cell(row=row, column=total_col, value=student.get('total_correct', 0))
+                cell_total.font = Font(bold=True)
+                cell_total.alignment = Alignment(horizontal='center')
+                cell_total.border = thin_border
+
+                cell_pct = ws2.cell(row=row, column=pct_col, value=f"{student.get('percent', 0)}%")
+                cell_pct.alignment = Alignment(horizontal='center')
+                cell_pct.border = thin_border
+                if student.get('percent', 0) >= 75:
+                    cell_pct.font = green_font
+                elif student.get('percent', 0) < 50:
+                    cell_pct.font = red_font
+
+                row += 1
+
+            footer_fill = PatternFill(start_color='D6E4F0', end_color='D6E4F0', fill_type='solid')
+            ws2.cell(row=row, column=2, value='Total Correct').font = Font(bold=True)
+            ws2.cell(row=row, column=2).border = thin_border
+            ws2.cell(row=row, column=2).fill = footer_fill
+
+            for item_idx, count in enumerate(student_matrix.get('per_item_correct', [])):
+                col = item_idx + 4
+                cell = ws2.cell(row=row, column=col, value=count)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+                cell.fill = footer_fill
+
+            cell = ws2.cell(row=row, column=total_col, value=mps_data.get('total_correct', 0))
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+            cell.fill = footer_fill
+            row += 1
+
+            ws2.cell(row=row, column=2, value='% Correct').font = Font(bold=True)
+            ws2.cell(row=row, column=2).border = thin_border
+            ws2.cell(row=row, column=2).fill = footer_fill
+
+            for item_idx, pct in enumerate(student_matrix.get('per_item_percent', [])):
+                col = item_idx + 4
+                cell = ws2.cell(row=row, column=col, value=f"{pct}%")
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+                cell.fill = footer_fill
+                if pct >= 75:
+                    cell.font = green_font
+                elif pct < 50:
+                    cell.font = red_font
+
+            cell = ws2.cell(row=row, column=pct_col, value=f"{mps_data.get('overall_mps', 0)}%")
+            cell.font = Font(bold=True, color='1F4E79')
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = thin_border
+            cell.fill = footer_fill
+            row += 2
+
+            ws2.cell(
+                row=row,
+                column=1,
+                value=f'MPS = ({mps_data.get("total_correct", 0)} / {mps_data.get("total_possible_answers", 0)}) x 100 = {mps_data.get("overall_mps", 0)}%'
+            ).font = Font(bold=True, size=12)
+
+            ws2.column_dimensions['A'].width = 5
+            ws2.column_dimensions['B'].width = 28
+            ws2.column_dimensions['C'].width = 16
+            for i in range(4, total_items_count + 6):
+                ws2.column_dimensions[get_column_letter(i)].width = 5
+            ws2.column_dimensions[get_column_letter(total_col)].width = 8
+            ws2.column_dimensions[get_column_letter(pct_col)].width = 8
+
+        # Write to response
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        safe_title = safe_export_filename(exam.title)
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="Item_Summary_{safe_title}.xlsx"'
+        return response
+    except Exception:
+        logger.exception('Failed to build Item Summary Excel export for exam %s', exam_id)
+        messages.error(request, 'Unable to generate Excel export. Please try again or contact support.')
+        return redirect('item_summary', exam_id=exam_id)
+
+
+@teacher_required
+@require_http_methods(["GET"])
+def item_summary_export_word_view(request, exam_id):
+    """
+    Export the per-exam Item Summary report to Word (DOCX) with DepEd-style formatting.
+    Includes overall statistics, per-item analysis, competency summary, and the
+    student-by-item response matrix as the per-exam MPS matrix.
+    """
+    import os
+    import re
+    from io import BytesIO
+    from django.conf import settings
+    from django.http import HttpResponse
+    from docx import Document
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to export this exam')
+        return redirect('exam_list')
+
+    try:
+        service = ItemAnalysisService()
+        summary_data = service.get_item_summary(exam_id)
+
+        if not summary_data or not summary_data.get('has_data'):
+            messages.warning(request, 'No graded attempts to export for this exam.')
+            return redirect('item_summary', exam_id=exam_id)
+
+        overall_stats = summary_data.get('overall_stats') or {}
+        items = summary_data.get('items') or []
+        mps_data = summary_data.get('mps_data') or {}
+        competency_summary = summary_data.get('competency_summary') or []
+        student_matrix = summary_data.get('student_matrix') or {}
+
+        doc = Document()
+
+        style = doc.styles['Normal']
+        style.font.name = 'Calibri'
+        style.font.size = Pt(11)
+        _configure_docx_branding(
+            doc,
+            'ITEM SUMMARY SHEET',
+            exam,
+            [
+                ('Subject', exam.subject or 'Not specified'),
+                ('Quarter', exam.quarter.name if exam.quarter else 'Not specified'),
+                ('Teacher', exam.created_by.user.get_full_name() or exam.created_by.user.username),
+                ('No. of Learners', summary_data.get('total_learners', 0)),
+                ('Total Items', len(items)),
+            ],
+            'Item Summary',
+        )
+
+        from docx.oxml.ns import qn
+
+        def set_cell_shading(cell, color):
+            shading_elm = cell._element.get_or_add_tcPr()
+            shading = shading_elm.makeelement(qn('w:shd'), {
+                qn('w:val'): 'clear',
+                qn('w:color'): 'auto',
+                qn('w:fill'): color,
+            })
+            shading_elm.append(shading)
+
+        def get_mps_color(mps_val):
+            if mps_val >= 75:
+                return RGBColor(0, 97, 0)
+            elif mps_val >= 50:
+                return RGBColor(127, 96, 0)
+            return RGBColor(156, 0, 6)
+
+        title = doc.add_heading('ITEM SUMMARY SHEET', level=1)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        subtitle = doc.add_paragraph()
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle_run = subtitle.add_run('Mean Percentage Score (MPS) — Per Exam')
+        subtitle_run.italic = True
+        subtitle_run.font.size = Pt(11)
+
+        doc.add_paragraph()
+
+        if overall_stats:
+            doc.add_heading('Overall Statistics', level=2)
+            stats_table = doc.add_table(rows=1, cols=2)
+            stats_table.style = 'Table Grid'
+            stats_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            header_cells = stats_table.rows[0].cells
+            header_cells[0].text = 'Metric'
+            header_cells[1].text = 'Value'
+            for cell in header_cells:
+                set_cell_shading(cell, '1F4E79')
+                for para in cell.paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.size = Pt(10)
+
+            stats_rows = [
+                ('Average Score', f"{overall_stats.get('avg_score', 0)} / {overall_stats.get('total_possible', 0)} ({overall_stats.get('avg_percent', 0)}%)"),
+                ('Passing Rate (60%)', f"{overall_stats.get('passing_rate', 0)}% ({overall_stats.get('passing_count', 0)} passed, {overall_stats.get('failing_count', 0)} failed)"),
+                ('Highest Score', str(overall_stats.get('highest_score', 0))),
+                ('Lowest Score', str(overall_stats.get('lowest_score', 0))),
+                ('Standard Deviation', str(overall_stats.get('std_dev', 0))),
+            ]
+            for label, value in stats_rows:
+                row = stats_table.add_row()
+                row.cells[0].text = label
+                row.cells[1].text = value
+                for run in row.cells[0].paragraphs[0].runs:
+                    run.bold = True
+                    run.font.size = Pt(10)
+                for run in row.cells[1].paragraphs[0].runs:
+                    run.font.size = Pt(10)
+            doc.add_paragraph()
+
+        if mps_data:
+            doc.add_heading('Mean Percentage Score (MPS)', level=2)
+            mps_table = doc.add_table(rows=1, cols=2)
+            mps_table.style = 'Table Grid'
+            mps_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            mps_table.rows[0].cells[0].text = 'Metric'
+            mps_table.rows[0].cells[1].text = 'Value'
+            for cell in mps_table.rows[0].cells:
+                set_cell_shading(cell, '1F4E79')
+                for para in cell.paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.size = Pt(10)
+
+            mps_rows = [
+                ('Overall MPS', f"{mps_data.get('overall_mps', 0)}%"),
+                ('Total Correct', str(mps_data.get('total_correct', 0))),
+                ('Total Possible Answers', str(mps_data.get('total_possible_answers', 0))),
+                ('Number of Learners', str(mps_data.get('total_learners', 0))),
+                ('Number of Items', str(mps_data.get('total_items', 0))),
+            ]
+            for label, value in mps_rows:
+                row = mps_table.add_row()
+                row.cells[0].text = label
+                row.cells[1].text = value
+                for run in row.cells[0].paragraphs[0].runs:
+                    run.bold = True
+                    run.font.size = Pt(10)
+                for run in row.cells[1].paragraphs[0].runs:
+                    run.font.size = Pt(10)
+                    if label == 'Overall MPS':
+                        run.bold = True
+                        run.font.color.rgb = get_mps_color(mps_data.get('overall_mps', 0))
+
+            per_class = mps_data.get('per_class') or []
+            if per_class:
+                doc.add_paragraph()
+                doc.add_heading('MPS by Class', level=2)
+                class_table = doc.add_table(rows=1, cols=8)
+                class_table.style = 'Table Grid'
+                class_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                class_headers = ['Class', 'Grade', 'Strand', 'Section', 'Learners', 'Total Correct', 'Total Possible', 'MPS']
+                for idx, h in enumerate(class_headers):
+                    cell = class_table.rows[0].cells[idx]
+                    cell.text = h
+                    set_cell_shading(cell, '1F4E79')
+                    for para in cell.paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.color.rgb = RGBColor(255, 255, 255)
+                            run.font.size = Pt(9)
+                for cls_data in per_class:
+                    row = class_table.add_row()
+                    row_data = [
+                        str(cls_data.get('class_name', '')),
+                        str(cls_data.get('grade_level', '')),
+                        str(cls_data.get('strand', '')),
+                        str(cls_data.get('section', '')),
+                        str(cls_data.get('learners', 0)),
+                        str(cls_data.get('total_correct', 0)),
+                        str(cls_data.get('total_possible', 0)),
+                        f"{cls_data.get('mps', 0)}%",
+                    ]
+                    for idx, value in enumerate(row_data):
+                        cell = row.cells[idx]
+                        cell.text = value
+                        for para in cell.paragraphs:
+                            if idx > 0:
+                                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            for run in para.runs:
+                                run.font.size = Pt(9)
+                                if idx == 7:
+                                    run.bold = True
+                                    run.font.color.rgb = get_mps_color(cls_data.get('mps', 0))
+            doc.add_paragraph()
+
+        # Item Analysis
+        doc.add_heading('Item Analysis', level=2)
+        item_table = doc.add_table(rows=1, cols=8)
+        item_table.style = 'Table Grid'
+        item_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        item_headers = ['Item', 'Type', 'Correct', 'Wrong', 'Skipped', '% Correct', 'Difficulty', 'Action']
+        for idx, h in enumerate(item_headers):
+            cell = item_table.rows[0].cells[idx]
+            cell.text = h
+            set_cell_shading(cell, '1F4E79')
+            for para in cell.paragraphs:
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in para.runs:
+                    run.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)
+                    run.font.size = Pt(9)
+        for item in items:
+            row = item_table.add_row()
+            row_data = [
+                str(item.get('item_no', '')),
+                str(item.get('question_type', '')),
+                str(item.get('num_correct', 0)),
+                str(item.get('num_wrong', 0)),
+                str(item.get('num_skipped', 0)),
+                f"{item.get('percent_correct', 0)}%",
+                str(item.get('difficulty_level', '')),
+                str(item.get('action_needed', '')),
+            ]
+            for idx, value in enumerate(row_data):
+                cell = row.cells[idx]
+                cell.text = value
+                for para in cell.paragraphs:
+                    if idx in (0, 2, 3, 4, 5, 6):
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.font.size = Pt(9)
+        doc.add_paragraph()
+
+        # Competency Summary
+        if competency_summary:
+            doc.add_heading('Competency Summary', level=2)
+            comp_table = doc.add_table(rows=1, cols=5)
+            comp_table.style = 'Table Grid'
+            comp_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            comp_headers = ['Competency / Type', 'Items', 'Avg %', 'Mastery', 'Intervention']
+            for idx, h in enumerate(comp_headers):
+                cell = comp_table.rows[0].cells[idx]
+                cell.text = h
+                set_cell_shading(cell, '1F4E79')
+                for para in cell.paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    for run in para.runs:
+                        run.bold = True
+                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.size = Pt(9)
+            for comp in competency_summary:
+                row = comp_table.add_row()
+                row_data = [
+                    str(comp.get('competency', '')),
+                    str(comp.get('items', '')),
+                    f"{comp.get('avg_percent', 0)}%",
+                    str(comp.get('mastery_level', '')),
+                    str(comp.get('intervention', '')),
+                ]
+                for idx, value in enumerate(row_data):
+                    cell = row.cells[idx]
+                    cell.text = value
+                    for para in cell.paragraphs:
+                        if idx in (2, 3):
+                            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.font.size = Pt(9)
+                            if idx == 2:
+                                run.bold = True
+                                run.font.color.rgb = get_mps_color(comp.get('avg_percent', 0))
+            doc.add_paragraph()
+
+        # Student-by-Item Matrix
+        if student_matrix and student_matrix.get('students'):
+            doc.add_page_break()
+            doc.add_heading('Student-by-Item Response Matrix', level=2)
+
+            matrix_info = doc.add_paragraph()
+            matrix_info.add_run('Legend: ').bold = True
+            matrix_info.add_run('1 = Correct, 0 = Wrong/Skipped')
+
+            total_items_count = student_matrix['total_items']
+            max_items_per_table = 25
+
+            for chunk_idx, start_item in enumerate(range(0, total_items_count, max_items_per_table)):
+                end_item = min(start_item + max_items_per_table, total_items_count)
+                chunk_size = end_item - start_item
+
+                if chunk_idx > 0:
+                    cont_para = doc.add_paragraph()
+                    cont_para.add_run(f'(Continued - Items {start_item + 1} to {end_item})').italic = True
+
+                cols_in_chunk = chunk_size + 5
+                matrix_table = doc.add_table(rows=1, cols=cols_in_chunk)
+                matrix_table.style = 'Table Grid'
+                matrix_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+                matrix_table.cell(0, 0).text = '#'
+                matrix_table.cell(0, 1).text = 'Student Name'
+                matrix_table.cell(0, 2).text = 'Class'
+                for c in (0, 1, 2):
+                    set_cell_shading(matrix_table.cell(0, c), '1F4E79')
+                    for para in matrix_table.cell(0, c).paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.color.rgb = RGBColor(255, 255, 255)
+                            run.font.size = Pt(7)
+
+                for i in range(start_item + 1, end_item + 1):
+                    cell = matrix_table.cell(0, i - start_item + 2)
+                    cell.text = str(i)
+                    set_cell_shading(cell, '1F4E79')
+                    for para in cell.paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.color.rgb = RGBColor(255, 255, 255)
+                            run.font.size = Pt(7)
+
+                matrix_table.cell(0, chunk_size + 3).text = 'Total'
+                matrix_table.cell(0, chunk_size + 4).text = '%'
+                for c in (chunk_size + 3, chunk_size + 4):
+                    set_cell_shading(matrix_table.cell(0, c), '1F4E79')
+                    for para in matrix_table.cell(0, c).paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.color.rgb = RGBColor(255, 255, 255)
+                            run.font.size = Pt(7)
+
+                for s_idx, student in enumerate(student_matrix['students'], 1):
+                    row = matrix_table.add_row()
+                    row.cells[0].text = str(s_idx)
+                    row.cells[1].text = student.get('name', '')
+                    row.cells[2].text = student.get('class_name', '')
+
+                    for item_idx in range(start_item, end_item):
+                        col = item_idx - start_item + 3
+                        mark = student['responses'][item_idx]
+                        cell = row.cells[col]
+                        cell.text = str(mark)
+                        if mark == 1:
+                            set_cell_shading(cell, 'E2EFDA')
+                        else:
+                            set_cell_shading(cell, 'FCE4EC')
+
+                    row.cells[chunk_size + 3].text = str(student.get('total_correct', 0))
+                    row.cells[chunk_size + 4].text = f"{student.get('percent', 0)}%"
+
+                    for cell in row.cells:
+                        for para in cell.paragraphs:
+                            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            for run in para.runs:
+                                run.font.size = Pt(7)
+                    for para in row.cells[1].paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    for para in row.cells[2].paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+                footer_row = matrix_table.add_row()
+                footer_row.cells[0].text = ''
+                footer_row.cells[1].text = 'Total'
+                footer_row.cells[2].text = ''
+                for item_idx in range(start_item, end_item):
+                    col = item_idx - start_item + 3
+                    footer_row.cells[col].text = str(student_matrix['per_item_correct'][item_idx])
+                footer_row.cells[chunk_size + 3].text = str(mps_data.get('total_correct', 0))
+                footer_row.cells[chunk_size + 4].text = f"{mps_data.get('overall_mps', 0)}%"
+
+                for cell in footer_row.cells:
+                    set_cell_shading(cell, 'D6E4F0')
+                    for para in cell.paragraphs:
+                        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for run in para.runs:
+                            run.bold = True
+                            run.font.size = Pt(7)
+
+        doc.add_paragraph()
+        prepared_by_para = doc.add_paragraph()
+        prepared_by_para.paragraph_format.space_after = Pt(2)
+        prepared_by_run = prepared_by_para.add_run('Prepared by:')
+        prepared_by_run.bold = True
+        prepared_by_run.font.size = Pt(10)
+
+        signature_line = doc.add_paragraph()
+        signature_line.paragraph_format.space_after = Pt(2)
+        signature_run = signature_line.add_run('________________________________________')
+        signature_run.font.size = Pt(10)
+
+        name_para = doc.add_paragraph()
+        name_para.paragraph_format.space_after = Pt(0)
+        name_label = name_para.add_run('Name of Teacher: ')
+        name_label.bold = True
+        name_label.font.size = Pt(10)
+        name_value = name_para.add_run(exam.created_by.user.get_full_name() or exam.created_by.user.username)
+        name_value.bold = True
+        name_value.font.size = Pt(10)
+
+        output = BytesIO()
+        doc.save(output)
+        output.seek(0)
+
+        safe_title = re.sub(r'[\s/\\:]+', '_', (exam.title or '').strip())
+        safe_title = re.sub(r'[^A-Za-z0-9_.-]+', '_', safe_title).strip('._-')[:30] or 'Exam'
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="Item_Summary_{safe_title}.docx"'
+        return response
+    except Exception:
+        logger.exception('Failed to build Item Summary Word export for exam %s', exam_id)
+        messages.error(request, 'Unable to generate Word export. Please try again or contact support.')
+        return redirect('item_summary', exam_id=exam_id)
+
+
+@teacher_required
 def mps_quarter_list_view(request):
     """
     List all quarters that have exams for the current teacher, with their
@@ -1847,20 +2719,14 @@ def mps_quarter_export_excel_view(request, quarter_id):
                 continue
             start_col = col_cursor
             end_col = col_cursor + section['item_count'] - 1
-            write_cell(ws3, header_row_1, start_col, section['title'])
+            section_title = f"{section['title']} ({section['overall_mps']}% MPS)"
+            write_cell(ws3, header_row_1, start_col, section_title)
             ws3.merge_cells(start_row=header_row_1, start_column=start_col, end_row=header_row_1, end_column=end_col)
             top_cell = ws3.cell(row=header_row_1, column=start_col)
             top_cell.font = header_text
             top_cell.fill = header_fill
-            top_cell.alignment = Alignment(horizontal='center')
+            top_cell.alignment = Alignment(horizontal='center', wrap_text=True)
             top_cell.border = thin_border
-            write_cell(ws3, header_row_2, start_col, f"{section['overall_mps']}% MPS")
-            ws3.merge_cells(start_row=header_row_2, start_column=start_col, end_row=header_row_2, end_column=end_col)
-            second_cell = ws3.cell(row=header_row_2, column=start_col)
-            second_cell.font = header_text
-            second_cell.fill = header_fill
-            second_cell.alignment = Alignment(horizontal='center')
-            second_cell.border = thin_border
             col_cursor += section['item_count']
 
         total_col = total_items + 3

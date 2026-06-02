@@ -551,6 +551,7 @@ def exam_take_view(request, attempt_id):
     return render(request, 'attempts/exam_take.html', context)
 
 
+@ensure_csrf_cookie
 def exam_review_view(request, attempt_id):
     """
     Display review page showing all questions and answers before final submission.
