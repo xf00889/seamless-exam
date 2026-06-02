@@ -24,6 +24,7 @@ urlpatterns = [
     path('teacher/grading/<int:attempt_id>/', views.teacher_grading_view, name='teacher_grading'),
     path('teacher/grading/essay/<int:answer_id>/grade/', views.grade_essay_view, name='grade_essay'),
     path('teacher/grading/essay/<int:answer_id>/update/', views.update_essay_score_view, name='update_essay_score'),
+    path('teacher/grading/essay/<int:answer_id>/ai-grade/', views.ai_grade_essay_view, name='ai_grade_essay'),
     
     # Teacher dashboard and analytics URLs
     path('teacher/dashboard/', views.teacher_dashboard_view, name='teacher_dashboard'),

@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.core.paginator import Paginator
 from itertools import groupby
 from exams.models import Exam
-from attempts.models import Attempt, AttemptStatus
+from attempts.models import Attempt, Answer, AttemptStatus
 from services.exam_service import ExamService
 from services.attempt_service import AttemptService
 from services.answer_service import AnswerService
@@ -16,8 +16,11 @@ from services.data_integrity_service import DataIntegrityService
 from services.tab_monitoring_service import TabMonitoringService
 from services.activity_log_service import ActivityLogService
 from services.view_helpers import build_breadcrumbs
+from services.auth_service import AuthenticationService
 import json
 import logging
+
+auth_service = AuthenticationService()
 
 logger = logging.getLogger('services')
 
@@ -958,76 +961,90 @@ def teacher_grading_view(request, attempt_id):
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in as a teacher to access grading')
         return redirect('teacher_login')
-    
+
     # Import grading service
     from services.grading_service import GradingService
     from users.models import Student
     from exams.models import QuestionType
-    
-    grading_service_instance = GradingService()
-    
-    # Get attempt with answers and questions
-    from repositories.attempt_repository import AttemptRepository
-    attempt_repository = AttemptRepository()
-    attempt = attempt_repository.get_with_answers_and_questions(attempt_id)
-    
-    if not attempt:
-        messages.error(request, 'Attempt not found')
-        return redirect('teacher_grading_list')
-    
-    # Verify attempt is submitted
-    if attempt.status == AttemptStatus.IN_PROGRESS:
-        messages.warning(request, 'This exam has not been submitted yet')
-        return redirect('teacher_grading_list')
-    
-    # Get student info
-    try:
-        student = Student.objects.get(id=attempt.student_id)
-    except Student.DoesNotExist:
-        messages.error(request, 'Student not found')
-        return redirect('teacher_grading_list')
-    
-    # Get exam info
-    exam = exam_service.get_exam_with_questions(attempt.exam_id)
-    if not exam:
-        messages.error(request, 'Exam not found')
-        return redirect('teacher_grading_list')
-    
-    # Get grading status
-    grading_status = grading_service_instance.get_grading_status(attempt_id)
 
-    breadcrumbs = build_breadcrumbs(
-        ('Dashboard', reverse('teacher_dashboard')),
-        ('Student Submissions', reverse('teacher_grading_list')),
-        (student.get_full_name(), reverse('teacher_student_detail', args=[student.id])),
-        'Grade Essay',
-    )
-    
-    # Prepare questions with answers
-    questions_data = []
-    for answer in attempt.answers.all():
-        question = answer.question
-        
-        # Include all questions for context, but highlight essays
-        question_info = {
-            'answer': answer,
-            'question': question,
-            'is_essay': question.question_type == QuestionType.ESSAY,
-            'is_graded': answer.is_correct is not None,
-            'answer_text': answer.answer_text.get('value', '') if isinstance(answer.answer_text, dict) else answer.answer_text
+    try:
+        grading_service_instance = GradingService()
+
+        # Get attempt with answers and questions
+        from repositories.attempt_repository import AttemptRepository
+        attempt_repository = AttemptRepository()
+        attempt = attempt_repository.get_with_answers_and_questions(attempt_id)
+
+        if not attempt:
+            messages.error(request, 'Attempt not found')
+            return redirect('teacher_grading_list')
+
+        # Verify attempt is submitted
+        if attempt.status == AttemptStatus.IN_PROGRESS:
+            messages.warning(request, 'This exam has not been submitted yet')
+            return redirect('teacher_grading_list')
+
+        # Get student info
+        try:
+            student = Student.objects.get(id=attempt.student_id)
+        except Student.DoesNotExist:
+            messages.error(request, 'Student not found')
+            return redirect('teacher_grading_list')
+
+        # Get exam info
+        exam = exam_service.get_exam_with_questions(attempt.exam_id)
+        if not exam:
+            messages.error(request, 'Exam not found')
+            return redirect('teacher_grading_list')
+
+        # Get grading status
+        grading_status = grading_service_instance.get_grading_status(attempt_id)
+
+        breadcrumbs = build_breadcrumbs(
+            ('Dashboard', reverse('teacher_dashboard')),
+            ('Student Submissions', reverse('teacher_grading_list')),
+            (student.get_full_name(), reverse('teacher_student_detail', args=[student.id])),
+            'Grade Essay',
+        )
+
+        # Prepare questions with answers
+        questions_data = []
+        for answer in attempt.answers.all():
+            question = answer.question
+
+            # Include all questions for context, but highlight essays
+            raw_answer_text = answer.answer_text
+            if isinstance(raw_answer_text, dict):
+                answer_text = raw_answer_text.get('value', '') or raw_answer_text.get('answer', '') or ''
+            else:
+                answer_text = raw_answer_text or ''
+
+            question_info = {
+                'answer': answer,
+                'question': question,
+                'is_essay': question.question_type == QuestionType.ESSAY,
+                'is_graded': answer.is_correct is not None,
+                'answer_text': answer_text,
+            }
+            questions_data.append(question_info)
+
+        context = {
+            'attempt': attempt,
+            'student': student,
+            'exam': exam,
+            'questions_data': questions_data,
+            'grading_status': grading_status,
+            'page_breadcrumbs': breadcrumbs,
         }
-        questions_data.append(question_info)
-    
-    context = {
-        'attempt': attempt,
-        'student': student,
-        'exam': exam,
-        'questions_data': questions_data,
-        'grading_status': grading_status,
-        'page_breadcrumbs': breadcrumbs,
-    }
-    
-    return render(request, 'attempts/grading.html', context)
+
+        return render(request, 'attempts/grading.html', context)
+    except Exception as e:
+        logger.exception('teacher_grading_view failed for attempt_id=%s', attempt_id)
+        from django.conf import settings as _settings
+        if _settings.DEBUG:
+            raise
+        messages.error(request, f'Could not load grading page: {e}')
+        return redirect('teacher_grading_list')
 
 
 @require_http_methods(["POST"])
@@ -1128,6 +1145,70 @@ def update_essay_score_view(request, answer_id):
         return JsonResponse({'error': f'Invalid points value: {str(e)}'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["POST"])
+def ai_grade_essay_view(request, answer_id):
+    """
+    AI-powered essay grade suggestion endpoint (AJAX).
+    Returns a suggested score and feedback; does NOT auto-save.
+    The teacher reviews and confirms via the existing grade_essay / update_essay_score endpoints.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+
+    from exams.models import QuestionType
+    from services.ai_essay_grader_service import grade_essay_with_ai
+
+    answer = get_object_or_404(Answer, pk=answer_id)
+    question = answer.question
+
+    if question.question_type != QuestionType.ESSAY:
+        return JsonResponse({'error': 'AI grading is only available for essay questions.'}, status=400)
+
+    try:
+        teacher = auth_service.get_current_teacher(request)
+    except Exception:
+        teacher = None
+    if teacher is None or answer.attempt.exam.created_by_id != teacher.pk:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    exam = answer.attempt.exam
+    student = answer.attempt.student
+    grade_level = ''
+    if student and student.class_assigned_id:
+        ca = student.class_assigned
+        grade_level = f"Grade {ca.grade_level}" + (f" - {ca.strand}" if ca.strand else '') + (f" - {ca.section}" if ca.section else '')
+
+    try:
+        result = grade_essay_with_ai(
+            question_text=question.question_text or '',
+            answer_text=answer.answer_text,
+            max_points=float(question.points or 0),
+            exam_title=exam.title or '',
+            subject=exam.subject or '',
+            grade_level=grade_level,
+        )
+    except Exception as e:
+        logger.exception('AI essay grading crashed')
+        return JsonResponse({'error': f'AI grading failed: {e}'}, status=500)
+
+    if 'error' in result:
+        code = result.get('code', 'unknown')
+        status = 503 if code in ('no_api_key', 'no_config', 'auth_failed', 'http_error', 'network', 'rate_limited', 'timeout') else 500
+        return JsonResponse({'error': result['error'], 'code': code}, status=status)
+
+    return JsonResponse({
+        'success': True,
+        'points_earned': result['points_earned'],
+        'max_points': float(question.points or 0),
+        'feedback': result.get('feedback', ''),
+        'reasoning': result.get('reasoning', ''),
+        'is_blank': result.get('is_blank', False),
+        'is_off_topic': result.get('is_off_topic', False),
+        'breakdown': result.get('breakdown', {}),
+        'model_used': result.get('model_used', ''),
+    })
 
 
 
