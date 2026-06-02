@@ -1610,6 +1610,7 @@ def mps_export_excel_view(request, exam_id):
     Includes overall MPS, per-class breakdown, and item-level data.
     """
     import os
+    import re
     from io import BytesIO
     from django.conf import settings
     from django.http import HttpResponse
@@ -1641,6 +1642,32 @@ def mps_export_excel_view(request, exam_id):
 
     brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
     has_brand = os.path.isfile(brand_path)
+
+    def add_brand_image(worksheet, anchor):
+        if not has_brand:
+            return False
+        try:
+            image = XlImage(brand_path)
+        except (OSError, ValueError) as exc:
+            logger.warning('Skipping MPS Excel brand image: %s', exc)
+            return False
+        image.width = 120
+        image.height = 60
+        worksheet.add_image(image, anchor)
+        return True
+
+    def safe_export_filename(title):
+        cleaned = re.sub(r'[\s/\\:]+', '_', title.strip())
+        cleaned = re.sub(r'[^A-Za-z0-9_.-]+', '_', cleaned)
+        return cleaned.strip('._-')[:30] or 'Exam'
+
+    def excel_value(value):
+        if isinstance(value, str):
+            return re.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F]', '', value)
+        return value
+
+    def write_cell(worksheet, row_index, column_index, value=None):
+        return worksheet.cell(row=row_index, column=column_index, value=excel_value(value))
 
     title_font = Font(name='Calibri', bold=True, size=14)
     header_font = Font(name='Calibri', bold=True, size=12)
@@ -1675,11 +1702,7 @@ def mps_export_excel_view(request, exam_id):
     ws = wb.create_sheet(title='Quarter Summary')
     row = 1
 
-    if has_brand:
-        img = XlImage(brand_path)
-        img.width = 120
-        img.height = 60
-        ws.add_image(img, 'A1')
+    if add_brand_image(ws, 'A1'):
         row = 5
 
     ws.cell(row=row, column=1, value='QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT')
@@ -1699,7 +1722,7 @@ def mps_export_excel_view(request, exam_id):
         for label, value in info_labels:
             ws.cell(row=row, column=1, value=label)
             ws.cell(row=row, column=1).font = Font(bold=True)
-            ws.cell(row=row, column=2, value=value)
+            write_cell(ws, row, 2, value)
             row += 1
 
         row += 1
@@ -1725,7 +1748,7 @@ def mps_export_excel_view(request, exam_id):
                 f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell = write_cell(ws, row, col_idx, value)
                 cell.border = thin_border
                 if col_idx in (3, 4, 5):
                     cell.alignment = Alignment(horizontal='center')
@@ -1757,7 +1780,7 @@ def mps_export_excel_view(request, exam_id):
                 get_performance_level(exam_summary['overall_mps']),
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell = write_cell(ws, row, col_idx, value)
                 cell.border = thin_border
                 if col_idx in (2, 3, 4, 5, 6):
                     cell.alignment = Alignment(horizontal='center')
@@ -1777,7 +1800,7 @@ def mps_export_excel_view(request, exam_id):
     row += 1
     ws.cell(row=row, column=1, value='Name of Teacher:')
     ws.cell(row=row, column=1).font = Font(bold=True, size=10)
-    ws.cell(row=row, column=2, value=exam.created_by.user.get_full_name() or exam.created_by.user.username)
+    write_cell(ws, row, 2, exam.created_by.user.get_full_name() or exam.created_by.user.username)
     ws.cell(row=row, column=2).font = Font(bold=True, size=10)
 
     # --- Sheet 2: Quarter Matrix ---
@@ -1785,21 +1808,17 @@ def mps_export_excel_view(request, exam_id):
         ws3 = wb.create_sheet(title='Quarter Matrix')
         row = 1
 
-        if has_brand:
-            img3 = XlImage(brand_path)
-            img3.width = 120
-            img3.height = 60
-            ws3.add_image(img3, 'A1')
+        if add_brand_image(ws3, 'A1'):
             row = 5
 
         ws3.cell(row=row, column=1, value='QUARTER STUDENT-BY-ITEM RESPONSE MATRIX')
         ws3.cell(row=row, column=1).font = title_font
         ws3.merge_cells(start_row=row, start_column=1, end_row=row, end_column=quarter_matrix['total_items'] + 4)
         row += 1
-        ws3.cell(row=row, column=1, value=f'Quarter: {quarter_summary["quarter_name"] if quarter_summary else "Not specified"}')
+        write_cell(ws3, row, 1, f'Quarter: {quarter_summary["quarter_name"] if quarter_summary else "Not specified"}')
         ws3.cell(row=row, column=1).font = subheader_font
         row += 1
-        ws3.cell(row=row, column=1, value=f'No. of Learners: {quarter_matrix["total_learners"]} | No. of Items: {quarter_matrix["total_items"]}')
+        write_cell(ws3, row, 1, f'No. of Learners: {quarter_matrix["total_learners"]} | No. of Items: {quarter_matrix["total_items"]}')
         row += 2
 
         total_items = quarter_matrix['total_items']
@@ -1822,14 +1841,14 @@ def mps_export_excel_view(request, exam_id):
                 continue
             start_col = col_cursor
             end_col = col_cursor + section['item_count'] - 1
-            ws3.cell(row=header_row_1, column=start_col, value=section['title'])
+            write_cell(ws3, header_row_1, start_col, section['title'])
             ws3.merge_cells(start_row=header_row_1, start_column=start_col, end_row=header_row_1, end_column=end_col)
             top_cell = ws3.cell(row=header_row_1, column=start_col)
             top_cell.font = header_text
             top_cell.fill = header_fill
             top_cell.alignment = Alignment(horizontal='center')
             top_cell.border = thin_border
-            ws3.cell(row=header_row_2, column=start_col, value=f"{section['overall_mps']}% MPS")
+            write_cell(ws3, header_row_2, start_col, f"{section['overall_mps']}% MPS")
             ws3.merge_cells(start_row=header_row_2, start_column=start_col, end_row=header_row_2, end_column=end_col)
             second_cell = ws3.cell(row=header_row_2, column=start_col)
             second_cell.font = header_text
@@ -1864,7 +1883,7 @@ def mps_export_excel_view(request, exam_id):
             ws3.cell(row=row, column=1).border = thin_border
             ws3.cell(row=row, column=1).alignment = Alignment(horizontal='center')
 
-            ws3.cell(row=row, column=2, value=student['name'])
+            write_cell(ws3, row, 2, student['name'])
             ws3.cell(row=row, column=2).border = thin_border
 
             for item_idx, mark in enumerate(student['responses']):
@@ -1949,7 +1968,7 @@ def mps_export_excel_view(request, exam_id):
     wb.save(output)
     output.seek(0)
 
-    safe_title = exam.title.replace(' ', '_')[:30]
+    safe_title = safe_export_filename(exam.title)
     response = HttpResponse(
         output.getvalue(),
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
