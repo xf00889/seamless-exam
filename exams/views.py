@@ -1308,14 +1308,20 @@ def item_summary_view(request, exam_id):
     )
 
     items = summary_data.get('items') or []
+    difficulty_dist = summary_data.get('difficulty_distribution') or {}
+    def _dist_count(level):
+        entry = difficulty_dist.get(level)
+        if isinstance(entry, dict):
+            return int(entry.get('count', 0) or 0)
+        return int(entry or 0)
     chart_data = {
         'difficulty_labels': ['Easy', 'Moderately Easy', 'Average', 'Difficult', 'Very Difficult'],
         'difficulty_values': [
-            (summary_data.get('difficulty_distribution') or {}).get('Easy', 0),
-            (summary_data.get('difficulty_distribution') or {}).get('Moderately Easy', 0),
-            (summary_data.get('difficulty_distribution') or {}).get('Average', 0),
-            (summary_data.get('difficulty_distribution') or {}).get('Difficult', 0),
-            (summary_data.get('difficulty_distribution') or {}).get('Very Difficult', 0),
+            _dist_count('Easy'),
+            _dist_count('Moderately Easy'),
+            _dist_count('Average'),
+            _dist_count('Difficult'),
+            _dist_count('Very Difficult'),
         ],
         'item_labels': [f"Item {it.get('item_no')}" for it in items],
         'item_percents': [int(it.get('percent_correct') or 0) for it in items],
