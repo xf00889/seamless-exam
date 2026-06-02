@@ -1336,11 +1336,12 @@ def item_summary_view(request, exam_id):
     item_no_to_question_id = {str(int(it.get('item_no'))): int(it.get('question_id')) for it in items if it.get('item_no') is not None and it.get('question_id') is not None}
 
     overall_stats = summary_data.get('overall_stats') or {}
+    mps_data = summary_data.get('mps_data') or {}
     mastery_level = 'Mastered' if overall_stats.get('avg_percent', 0) >= 75 else ('Nearing Mastery' if overall_stats.get('avg_percent', 0) >= 50 else 'Low Mastery')
     ai_stats = {
         'total_items': summary_data.get('total_items', 0),
         'total_learners': summary_data.get('total_learners', 0),
-        'overall_mps': summary_data.get('overall_mps', 0),
+        'overall_mps': mps_data.get('overall_mps', 0),
         'passing_rate': overall_stats.get('passing_rate', 0),
         'mastery_level': mastery_level,
     }
@@ -1543,6 +1544,27 @@ def item_summary_export_excel_view(request, exam_id):
         def write_cell(worksheet, row_index, column_index, value=None):
             return worksheet.cell(row=row_index, column=column_index, value=excel_value(value))
 
+        def auto_fit_columns(worksheet, start_col, end_col, max_width=42, min_width=10, padding=2):
+            """Auto-size columns based on the widest content in each column.
+            Excel column width units roughly equal the number of characters that
+            fit using the default font (Calibri 11). We add a small padding so
+            wrapped headers are not flush against the right border.
+            """
+            for col_idx in range(start_col, end_col + 1):
+                letter = get_column_letter(col_idx)
+                longest = 0
+                for cell in worksheet[letter]:
+                    if cell.value is None:
+                        continue
+                    val = str(cell.value)
+                    if val.startswith('='):
+                        continue
+                    longest = max(longest, len(val))
+                if longest == 0:
+                    worksheet.column_dimensions[letter].width = min_width
+                    continue
+                worksheet.column_dimensions[letter].width = max(min_width, min(max_width, longest + padding))
+
         title_font = Font(name='Calibri', bold=True, size=14)
         header_font = Font(name='Calibri', bold=True, size=12)
         subheader_font = Font(name='Calibri', bold=True, size=11)
@@ -1715,40 +1737,50 @@ def item_summary_export_excel_view(request, exam_id):
             row += 1
         row += 1
 
-        # --- Competency Summary ---
+        # --- Competency Summary (non-tabular, DepEd style) ---
         competency_summary = summary_data.get('competency_summary') or []
         if competency_summary:
             ws.cell(row=row, column=1, value='COMPETENCY SUMMARY')
             ws.cell(row=row, column=1).font = header_font
             row += 1
-            comp_headers = ['Competency / Type', 'Items', 'Avg %', 'Mastery', 'Intervention']
-            for col_idx, h in enumerate(comp_headers, 1):
-                cell = ws.cell(row=row, column=col_idx, value=h)
-                cell.font = header_text
-                cell.fill = header_fill
-                cell.alignment = Alignment(horizontal='center')
-                cell.border = thin_border
-            row += 1
+            comp_label_font = Font(name='Calibri', bold=True, size=11)
+            comp_value_font = Font(name='Calibri', size=11)
             for comp in competency_summary:
-                row_data = [
-                    comp.get('competency', ''),
-                    comp.get('items', ''),
-                    f"{comp.get('avg_percent', 0)}%",
-                    comp.get('mastery_level', ''),
-                    comp.get('intervention', ''),
-                ]
-                for col_idx, value in enumerate(row_data, 1):
-                    cell = write_cell(ws, row, col_idx, value)
-                    cell.border = thin_border
-                    if col_idx in (3, 4):
-                        cell.alignment = Alignment(horizontal='center')
-                    if col_idx == 3:
-                        cell.font = get_mps_font(comp.get('avg_percent', 0))
-                row += 1
-            row += 1
+                competency_text = str(comp.get('competency', ''))
+                items_text = str(comp.get('items', ''))
+                avg_percent = comp.get('avg_percent', 0)
+                mastery_text = str(comp.get('mastery_level', ''))
+                intervention_text = str(comp.get('intervention', ''))
 
-        for i, width in enumerate([16, 22, 18, 18, 16, 18, 18, 28], 1):
-            ws.column_dimensions[get_column_letter(i)].width = width
+                line_cell = ws.cell(row=row, column=1, value=competency_text)
+                line_cell.font = comp_label_font
+                line_cell.alignment = Alignment(wrap_text=True, vertical='top')
+                ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+                row += 1
+
+                detail_cell = ws.cell(
+                    row=row,
+                    column=1,
+                    value=(
+                        '   Items: ' + items_text + '   |   '
+                        'Average: ' + f"{avg_percent}%" + '   |   '
+                        'Mastery: ' + mastery_text + '   |   '
+                        'Intervention: ' + intervention_text
+                    ),
+                )
+                detail_cell.font = comp_value_font
+                detail_cell.alignment = Alignment(wrap_text=True, vertical='top', indent=1)
+                ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
+                if avg_percent >= 75:
+                    detail_cell.font = Font(name='Calibri', size=11, color='15803D', bold=True)
+                elif avg_percent >= 50:
+                    detail_cell.font = Font(name='Calibri', size=11, color='B45309', bold=True)
+                else:
+                    detail_cell.font = Font(name='Calibri', size=11, color='B91C1C', bold=True)
+                row += 1
+                row += 1
+
+        auto_fit_columns(ws, 1, 8, max_width=42, min_width=10, padding=2)
 
         row += 1
         ws.cell(row=row, column=1, value='Prepared by:').font = Font(bold=True, size=10)
@@ -2076,7 +2108,8 @@ def item_summary_export_word_view(request, exam_id):
     from django.conf import settings
     from django.http import HttpResponse
     from docx import Document
-    from docx.shared import Pt, RGBColor
+    from docx.shared import Cm, Mm, Pt, RGBColor
+    from docx.enum.section import WD_ORIENT
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from services.item_analysis_service import ItemAnalysisService
@@ -2126,6 +2159,15 @@ def item_summary_export_word_view(request, exam_id):
             'Item Summary',
         )
 
+        section = doc.sections[0]
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width = Mm(297)
+        section.page_height = Mm(210)
+        section.top_margin = Cm(1.5)
+        section.bottom_margin = Cm(1.5)
+        section.left_margin = Cm(1.5)
+        section.right_margin = Cm(1.5)
+
         from docx.oxml.ns import qn
 
         def set_cell_shading(cell, color):
@@ -2144,14 +2186,57 @@ def item_summary_export_word_view(request, exam_id):
                 return RGBColor(0xB4, 0x53, 0x09)
             return RGBColor(0xB9, 0x1C, 0x1C)
 
-        title = doc.add_heading('ITEM SUMMARY SHEET', level=1)
+        # --- DepEd-style header ---
+        header_lines = [
+            ('Republic of the Philippines', 10, False, RGBColor(0x37, 0x41, 0x51)),
+            ('Department of Education', 10, True, RGBColor(0x37, 0x41, 0x51)),
+            ('Seamless Exam System', 9, False, RGBColor(0x6B, 0x72, 0x80)),
+        ]
+        for text, size, bold, color in header_lines:
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.space_before = Pt(0)
+            run = p.add_run(text)
+            run.font.size = Pt(size)
+            run.bold = bold
+            run.font.color.rgb = color
+
+        title = doc.add_paragraph()
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title.paragraph_format.space_before = Pt(8)
+        title.paragraph_format.space_after = Pt(0)
+        title_run = title.add_run('ITEM SUMMARY SHEET')
+        title_run.bold = True
+        title_run.font.size = Pt(16)
+        title_run.font.color.rgb = RGBColor(0x1F, 0x29, 0x37)
 
         subtitle = doc.add_paragraph()
         subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle.paragraph_format.space_before = Pt(0)
+        subtitle.paragraph_format.space_after = Pt(2)
         subtitle_run = subtitle.add_run('Mean Percentage Score (MPS) — Per Exam')
         subtitle_run.italic = True
         subtitle_run.font.size = Pt(11)
+        subtitle_run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+        meta_info = doc.add_paragraph()
+        meta_info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        meta_info.paragraph_format.space_after = Pt(8)
+        meta_info_run = meta_info.add_run(
+            f"{exam.title}   |   {exam.subject or 'Not specified'}   |   "
+            f"{exam.quarter.name if exam.quarter else 'N/A'}   |   "
+            f"SY {exam.school_year if hasattr(exam, 'school_year') and exam.school_year else 'N/A'}"
+        )
+        meta_info_run.font.size = Pt(9)
+        meta_info_run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+
+        divider = doc.add_paragraph()
+        divider.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        divider.paragraph_format.space_after = Pt(8)
+        divider_run = divider.add_run('_' * 72)
+        divider_run.font.size = Pt(8)
+        divider_run.font.color.rgb = RGBColor(0xD1, 0xD5, 0xDB)
 
         doc.add_paragraph()
 
@@ -2307,43 +2392,35 @@ def item_summary_export_word_view(request, exam_id):
                         run.font.size = Pt(9)
         doc.add_paragraph()
 
-        # Competency Summary
+        # Competency Summary (non-tabular, DepEd style)
         if competency_summary:
             doc.add_heading('IV. Competency Summary', level=2)
-            comp_table = doc.add_table(rows=1, cols=5)
-            comp_table.style = 'Table Grid'
-            comp_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-            comp_headers = ['Competency / Type', 'Items', 'Avg %', 'Mastery', 'Intervention']
-            for idx, h in enumerate(comp_headers):
-                cell = comp_table.rows[0].cells[idx]
-                cell.text = h
-                set_cell_shading(cell, '1F2937')
-                for para in cell.paragraphs:
-                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    for run in para.runs:
-                        run.bold = True
-                        run.font.color.rgb = RGBColor(255, 255, 255)
-                        run.font.size = Pt(9)
             for comp in competency_summary:
-                row = comp_table.add_row()
-                row_data = [
-                    str(comp.get('competency', '')),
-                    str(comp.get('items', '')),
-                    f"{comp.get('avg_percent', 0)}%",
-                    str(comp.get('mastery_level', '')),
-                    str(comp.get('intervention', '')),
-                ]
-                for idx, value in enumerate(row_data):
-                    cell = row.cells[idx]
-                    cell.text = value
-                    for para in cell.paragraphs:
-                        if idx in (2, 3):
-                            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        for run in para.runs:
-                            run.font.size = Pt(9)
-                            if idx == 2:
-                                run.bold = True
-                                run.font.color.rgb = get_mps_color(comp.get('avg_percent', 0))
+                competency_text = str(comp.get('competency', ''))
+                items_text = str(comp.get('items', ''))
+                avg_percent = comp.get('avg_percent', 0)
+                mastery_text = str(comp.get('mastery_level', ''))
+                intervention_text = str(comp.get('intervention', ''))
+
+                heading_para = doc.add_paragraph()
+                heading_para.paragraph_format.space_after = Pt(2)
+                heading_para.paragraph_format.space_before = Pt(6)
+                heading_run = heading_para.add_run(competency_text)
+                heading_run.bold = True
+                heading_run.font.size = Pt(11)
+
+                detail_para = doc.add_paragraph()
+                detail_para.paragraph_format.space_after = Pt(2)
+                detail_para.paragraph_format.left_indent = Pt(18)
+                detail_run = detail_para.add_run(
+                    'Items: ' + items_text + '   |   '
+                    'Average: ' + f"{avg_percent}%" + '   |   '
+                    'Mastery: ' + mastery_text + '   |   '
+                    'Intervention: ' + intervention_text
+                )
+                detail_run.font.size = Pt(10)
+                detail_run.bold = True
+                detail_run.font.color.rgb = get_mps_color(avg_percent)
             doc.add_paragraph()
 
         # Student-by-Item Matrix
@@ -3274,7 +3351,8 @@ def mps_quarter_export_word_view(request, quarter_id):
     from io import BytesIO
     from django.http import HttpResponse
     from docx import Document
-    from docx.shared import Pt, RGBColor
+    from docx.shared import Cm, Mm, Pt, RGBColor
+    from docx.enum.section import WD_ORIENT
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from services.item_analysis_service import ItemAnalysisService
@@ -3322,6 +3400,15 @@ def mps_quarter_export_word_view(request, quarter_id):
         ],
         'Quarter MPS Report',
     )
+
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width = Mm(297)
+    section.page_height = Mm(210)
+    section.top_margin = Cm(1.5)
+    section.bottom_margin = Cm(1.5)
+    section.left_margin = Cm(1.5)
+    section.right_margin = Cm(1.5)
 
     from docx.oxml.ns import qn
 
