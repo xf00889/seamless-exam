@@ -2011,7 +2011,7 @@ def export_scores_excel_view(request):
             student = attempt.student
             score = float(attempt.total_score)
             percentage = (score / total_possible * 100) if total_possible > 0 else 0
-            class_name = student.class_assigned.name if student.class_assigned else 'N/A'
+            class_name = str(student.class_assigned) if student.class_assigned else 'N/A'
 
             row_data = [
                 idx,

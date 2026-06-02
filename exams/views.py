@@ -1330,10 +1330,10 @@ def item_summary_view(request, exam_id):
 
     cached_result = getattr(exam, 'ai_analysis_result', None)
     cached_analysis = cached_result.analysis if cached_result else None
-    cached_generated_at = cached_result.generated_at if cached_result else None
+    cached_generated_at = cached_result.generated_at.isoformat() if cached_result and cached_result.generated_at else None
     cached_model_used = cached_result.model_used if cached_result else ''
 
-    item_no_to_question_id = {int(it.get('item_no')): int(it.get('question_id')) for it in items if it.get('item_no') is not None and it.get('question_id') is not None}
+    item_no_to_question_id = {str(int(it.get('item_no'))): int(it.get('question_id')) for it in items if it.get('item_no') is not None and it.get('question_id') is not None}
 
     overall_stats = summary_data.get('overall_stats') or {}
     mastery_level = 'Mastered' if overall_stats.get('avg_percent', 0) >= 75 else ('Nearing Mastery' if overall_stats.get('avg_percent', 0) >= 50 else 'Low Mastery')
@@ -1350,7 +1350,7 @@ def item_summary_view(request, exam_id):
         'summary': summary_data,
         'chart_data': chart_data,
         'ai_stats': ai_stats,
-        'item_no_to_question_id_json': json.dumps(item_no_to_question_id),
+        'item_no_to_question_id_json': item_no_to_question_id,
         'cached_analysis': cached_analysis,
         'cached_generated_at': cached_generated_at,
         'cached_model_used': cached_model_used,
@@ -1378,29 +1378,35 @@ def item_summary_ai_analyze_view(request, exam_id):
     if exam.created_by.pk != teacher.pk:
         return JsonResponse({'error': 'Permission denied'}, status=403)
 
-    service = ItemAnalysisService()
-    summary_data = service.get_item_summary(exam_id)
+    try:
+        service = ItemAnalysisService()
+        summary_data = service.get_item_summary(exam_id)
 
-    if not summary_data or not summary_data.get('has_data'):
-        return JsonResponse({'error': 'No graded attempts available for analysis'}, status=400)
+        if not summary_data or not summary_data.get('has_data'):
+            return JsonResponse({'error': 'No graded attempts available for analysis'}, status=400)
 
-    analysis = service.generate_ai_analysis(summary_data)
-    if analysis is None:
+        analysis = service.generate_ai_analysis(summary_data)
+        if analysis is None:
+            return JsonResponse({
+                'error': 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
+            }, status=503)
+
+        model_used = (get_ai_config() or {}).get('model', '') or ''
+        ItemAnalysisAIResult.objects.update_or_create(
+            exam=exam,
+            defaults={
+                'analysis': analysis,
+                'model_used': model_used,
+                'generated_by': request.user,
+            },
+        )
+
+        return JsonResponse({'success': True, 'analysis': analysis, 'model_used': model_used})
+    except Exception as e:
+        logger.exception('AI analyze failed for exam %s', exam_id)
         return JsonResponse({
-            'error': 'AI analysis unavailable. Check your AI API settings in Superadmin > AI Settings.'
-        }, status=503)
-
-    model_used = (get_ai_config() or {}).get('model', '') or ''
-    ItemAnalysisAIResult.objects.update_or_create(
-        exam=exam,
-        defaults={
-            'analysis': analysis,
-            'model_used': model_used,
-            'generated_by': request.user,
-        },
-    )
-
-    return JsonResponse({'success': True, 'analysis': analysis, 'model_used': model_used})
+            'error': 'AI analysis failed: ' + str(e),
+        }, status=500)
 
 
 @teacher_required
