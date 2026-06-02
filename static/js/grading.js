@@ -12,15 +12,27 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function initializeGrading() {
     const gradeButtons = document.querySelectorAll('.grade-essay-btn');
-    
+
     gradeButtons.forEach(button => {
         button.addEventListener('click', handleGradeEssay);
     });
-    
+
     // Add input validation for points
     const pointsInputs = document.querySelectorAll('.essay-points-input');
     pointsInputs.forEach(input => {
         input.addEventListener('input', validatePoints);
+    });
+
+    // AI Grade buttons
+    const aiButtons = document.querySelectorAll('.ai-grade-essay-btn');
+    aiButtons.forEach(button => {
+        button.addEventListener('click', handleAiGradeEssay);
+    });
+
+    // Dismiss button for AI grade feedback panel
+    const dismissButtons = document.querySelectorAll('.ai-grade-dismiss');
+    dismissButtons.forEach(button => {
+        button.addEventListener('click', handleAiGradeDismiss);
     });
 }
 
@@ -194,4 +206,114 @@ function showSuccess(message) {
  */
 function showError(message) {
     NotificationManager.error(message, 3000);
+}
+
+
+/**
+ * Handle AI grade essay button click.
+ * Fetches a suggested score and feedback from the AI service,
+ * then populates the points input and feedback textarea as a DRAFT.
+ * The teacher still must click "Save Grade" to confirm.
+ */
+async function handleAiGradeEssay(event) {
+    const button = event.currentTarget;
+    const answerId = button.getAttribute('data-answer-id');
+    const url = button.getAttribute('data-ai-grade-url');
+    if (!url) {
+        showError('AI grade URL not configured for this answer.');
+        return;
+    }
+
+    const labelEl = button.querySelector('.ai-grade-label');
+    const originalLabel = labelEl ? labelEl.textContent : 'AI Grade';
+    const pointsInput = document.querySelector(`.essay-points-input[data-answer-id="${answerId}"]`);
+    const feedbackInput = document.querySelector(`.essay-feedback-input[data-answer-id="${answerId}"]`);
+    const feedbackPanel = document.querySelector(`.ai-grade-feedback[data-answer-id="${answerId}"]`);
+
+    // Disable button + show loading
+    button.disabled = true;
+    if (labelEl) labelEl.textContent = 'Grading...';
+    button.style.opacity = '0.7';
+    button.style.cursor = 'wait';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({}),
+        });
+
+        const raw = await response.text();
+        let data = null;
+        try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* non-JSON */ }
+
+        if (!response.ok || !data || !data.success) {
+            const msg = (data && data.error) || `AI grading failed (HTTP ${response.status})`;
+            showError(msg);
+            return;
+        }
+
+        if (pointsInput) {
+            pointsInput.value = data.points_earned;
+            pointsInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (feedbackInput && data.feedback) {
+            feedbackInput.value = data.feedback;
+        }
+
+        if (feedbackPanel) {
+            const reasoningEl = feedbackPanel.querySelector('.ai-grade-reasoning');
+            const suggestedEl = feedbackPanel.querySelector('.ai-grade-suggested');
+            const metaEl = feedbackPanel.querySelector('.ai-grade-meta');
+
+            if (reasoningEl) {
+                let prefix = 'AI suggestion';
+                if (data.is_blank) prefix = 'Blank answer';
+                else if (data.is_off_topic) prefix = 'Off-topic answer';
+                reasoningEl.textContent = prefix + ' — review and edit before saving.';
+            }
+            if (suggestedEl) {
+                const pts = Number(data.points_earned || 0).toFixed(2);
+                const max = Number(data.max_points || 0).toFixed(2);
+                let txt = `Suggested score: ${pts} / ${max}`;
+                if (data.reasoning) txt += ' — ' + data.reasoning;
+                suggestedEl.textContent = txt;
+            }
+            if (metaEl) {
+                const bd = data.breakdown || {};
+                const parts = [];
+                if (bd.relevance != null) parts.push(`Relevance ${bd.relevance}/10`);
+                if (bd.correctness != null) parts.push(`Correctness ${bd.correctness}/10`);
+                if (bd.depth != null) parts.push(`Depth ${bd.depth}/10`);
+                if (data.model_used) parts.push('Model: ' + data.model_used);
+                metaEl.textContent = parts.join(' · ');
+            }
+
+            feedbackPanel.classList.remove('hidden');
+        }
+
+        if (window.NotificationManager) {
+            const pts = Number(data.points_earned || 0).toFixed(2);
+            const max = Number(data.max_points || 0).toFixed(2);
+            window.NotificationManager.success(`AI suggested ${pts} / ${max}. Review and Save Grade.`, 3500);
+        }
+    } catch (error) {
+        console.error('AI grade error:', error);
+        showError('Network error. Could not reach AI service.');
+    } finally {
+        button.disabled = false;
+        if (labelEl) labelEl.textContent = originalLabel;
+        button.style.opacity = '';
+        button.style.cursor = '';
+    }
+}
+
+function handleAiGradeDismiss(event) {
+    const button = event.currentTarget;
+    const panel = button.closest('.ai-grade-feedback');
+    if (panel) panel.classList.add('hidden');
 }

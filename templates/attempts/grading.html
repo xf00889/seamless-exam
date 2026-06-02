@@ -185,12 +185,44 @@
                         <span class="text-gray-500">Not yet graded</span>
                     {% endif %}
                 </div>
-                
-                <button type="button" 
-                        class="grade-essay-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        data-answer-id="{{ data.answer.id }}">
-                    {% if data.is_graded %}Update Grade{% else %}Save Grade{% endif %}
-                </button>
+
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                            class="ai-grade-essay-btn inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                            data-answer-id="{{ data.answer.id }}"
+                            data-ai-grade-url="{% url 'ai_grade_essay' data.answer.id %}"
+                            title="Get an AI-suggested score (lenient, you can edit before saving)"
+                            style="background:linear-gradient(to right,#7c3aed,#4f46e5);transition:filter 0.15s ease;"
+                            onmouseover="this.style.filter='brightness(1.1)'"
+                            onmouseout="this.style.filter='brightness(1)'">
+                        <svg class="ai-grade-icon w-4 h-4" width="16" height="16" style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                        </svg>
+                        <span class="ai-grade-label">AI Grade</span>
+                    </button>
+
+                    <button type="button"
+                            class="grade-essay-btn px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-answer-id="{{ data.answer.id }}">
+                        {% if data.is_graded %}Update Grade{% else %}Save Grade{% endif %}
+                    </button>
+                </div>
+            </div>
+
+            <div class="ai-grade-feedback hidden mt-3 rounded-md border border-purple-200 bg-purple-50/60 p-3 text-sm text-purple-900" data-answer-id="{{ data.answer.id }}">
+                <div class="flex items-start gap-2">
+                    <svg width="16" height="16" style="width:16px;height:16px;flex-shrink:0;color:#7c3aed;margin-top:2px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold mb-1 ai-grade-reasoning"></div>
+                        <div class="ai-grade-suggested text-purple-800/90 text-xs"></div>
+                        <div class="ai-grade-meta text-purple-700/70 text-xs mt-1"></div>
+                    </div>
+                    <button type="button" class="ai-grade-dismiss text-purple-500 hover:text-purple-700" aria-label="Dismiss">
+                        <svg width="14" height="14" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
         {% elif data.is_graded %}
