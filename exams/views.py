@@ -1610,19 +1610,32 @@ def mps_export_excel_view(request, exam_id):
     Includes overall MPS, per-class breakdown, and item-level data.
     """
     import os
+    from decimal import Decimal
     from io import BytesIO
     from django.conf import settings
     from django.http import HttpResponse
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
-    from openpyxl.drawing.image import Image as XlImage
     from services.item_analysis_service import ItemAnalysisService
+
+    # Safely import XlImage – requires Pillow
+    XlImage = None
+    try:
+        from openpyxl.drawing.image import Image as XlImage
+    except Exception:
+        pass
+
+    def _safe_val(v):
+        """Coerce a value to a type openpyxl can serialise."""
+        if isinstance(v, Decimal):
+            return float(v)
+        return v
 
     exam = get_object_or_404(Exam, pk=exam_id)
 
     teacher = auth_service.get_current_teacher(request)
-    if exam.created_by.pk != teacher.pk:
+    if teacher is None or exam.created_by.pk != teacher.pk:
         messages.error(request, 'Permission denied')
         return redirect('exam_list')
 
@@ -1641,7 +1654,21 @@ def mps_export_excel_view(request, exam_id):
     wb.remove(wb.active)
 
     brand_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'brand.png')
-    has_brand = os.path.isfile(brand_path)
+    has_brand = XlImage is not None and os.path.isfile(brand_path)
+
+    def _add_brand_image(sheet, cell_ref='A1'):
+        """Safely add brand image to a sheet; silently skip on failure."""
+        if not has_brand:
+            return False
+        try:
+            img = XlImage(brand_path)
+            img.width = 120
+            img.height = 60
+            sheet.add_image(img, cell_ref)
+            return True
+        except Exception:
+            logger.warning('Could not load brand.png for Excel export', exc_info=True)
+            return False
 
     title_font = Font(name='Calibri', bold=True, size=14)
     header_font = Font(name='Calibri', bold=True, size=12)
@@ -1677,11 +1704,7 @@ def mps_export_excel_view(request, exam_id):
         wso = wb.create_sheet(title='Quarter Overview')
         row = 1
 
-        if has_brand:
-            imgo = XlImage(brand_path)
-            imgo.width = 120
-            imgo.height = 60
-            wso.add_image(imgo, 'A1')
+        if _add_brand_image(wso):
             row = 5
 
         wso.cell(row=row, column=1, value='QUARTER MPS OVERVIEW')
@@ -1709,13 +1732,13 @@ def mps_export_excel_view(request, exam_id):
                 f"{q_summary['overall_mps']}%",
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = wso.cell(row=row, column=col_idx, value=value)
+                cell = wso.cell(row=row, column=col_idx, value=_safe_val(value))
                 cell.border = thin_border
                 if col_idx in (2, 3, 4, 5, 6, 7):
                     cell.alignment = Alignment(horizontal='center')
                 if col_idx == 7:
                     cell.font = get_mps_font(q_summary['overall_mps'])
-            if quarter_summary and q_summary['quarter_id'] == quarter_summary['quarter_id']:
+            if quarter_summary and q_summary.get('quarter_id') == quarter_summary.get('quarter_id'):
                 for col_idx in range(1, 8):
                     wso.cell(row=row, column=col_idx).fill = PatternFill(start_color='EEF2FF', end_color='EEF2FF', fill_type='solid')
             row += 1
@@ -1727,11 +1750,7 @@ def mps_export_excel_view(request, exam_id):
     ws = wb.create_sheet(title='Quarter Summary')
     row = 1
 
-    if has_brand:
-        img = XlImage(brand_path)
-        img.width = 120
-        img.height = 60
-        ws.add_image(img, 'A1')
+    if _add_brand_image(ws):
         row = 5
 
     ws.cell(row=row, column=1, value='QUARTER MEAN PERCENTAGE SCORE (MPS) REPORT')
@@ -1777,7 +1796,7 @@ def mps_export_excel_view(request, exam_id):
                 f"{exam_summary['overall_mps']}%" if exam_summary['has_data'] else 'No data',
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell = ws.cell(row=row, column=col_idx, value=_safe_val(value))
                 cell.border = thin_border
                 if col_idx in (3, 4, 5):
                     cell.alignment = Alignment(horizontal='center')
@@ -1809,7 +1828,7 @@ def mps_export_excel_view(request, exam_id):
                 get_performance_level(exam_summary['overall_mps']),
             ]
             for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=row, column=col_idx, value=value)
+                cell = ws.cell(row=row, column=col_idx, value=_safe_val(value))
                 cell.border = thin_border
                 if col_idx in (2, 3, 4, 5, 6):
                     cell.alignment = Alignment(horizontal='center')
@@ -1837,11 +1856,7 @@ def mps_export_excel_view(request, exam_id):
         ws3 = wb.create_sheet(title='Quarter Matrix')
         row = 1
 
-        if has_brand:
-            img3 = XlImage(brand_path)
-            img3.width = 120
-            img3.height = 60
-            ws3.add_image(img3, 'A1')
+        if _add_brand_image(ws3):
             row = 5
 
         ws3.cell(row=row, column=1, value='QUARTER STUDENT-BY-ITEM RESPONSE MATRIX')
@@ -1998,7 +2013,12 @@ def mps_export_excel_view(request, exam_id):
 
     # Write to response
     output = BytesIO()
-    wb.save(output)
+    try:
+        wb.save(output)
+    except Exception:
+        logger.error('openpyxl failed to save MPS Excel workbook', exc_info=True)
+        messages.error(request, 'Failed to generate Excel file. Please try again.')
+        return redirect('mps_report', exam_id=exam_id)
     output.seek(0)
 
     safe_title = exam.title.replace(' ', '_')[:30]

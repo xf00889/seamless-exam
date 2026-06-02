@@ -338,6 +338,15 @@ class QuarterSummaryServiceTests(TestCase):
         self.assertContains(response, 'Exam Student-by-Item Response Matrix')
         self.assertContains(response, 'Quarter Student-by-Item Response Matrix')
         self.assertContains(response, 'All Quarters Student-by-Item Response Matrix')
+        nav_labels = {link['label']: link for link in response.context['navbar_nav_links']}
+        self.assertTrue(nav_labels['MPS']['active'])
+        self.assertFalse(nav_labels['Exams']['active'])
+
+    def test_mps_entrypoint_redirects_to_latest_report(self):
+        response = self.client.get(reverse('mps_entrypoint'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('mps_report', args=[self.exam_three.id]))
 
 
 
@@ -399,7 +408,7 @@ class ExamDetailPageTests(TestCase):
         content = response.content.decode('utf-8')
 
         self.assertContains(response, 'Exam Details: Algebra Quiz')
-        self.assertContains(response, 'px-3 py-2 text-sm font-medium')
+        self.assertContains(response, 'px-4 py-2 text-sm font-medium')
         self.assertContains(response, 'Edit Exam')
         self.assertContains(response, 'Edit Questions')
         self.assertContains(response, 'View Takers')
