@@ -17,6 +17,7 @@ urlpatterns = [
     path('<int:exam_id>/delete/', views.exam_delete_view, name='exam_delete'),
     path('<int:exam_id>/takers/', views.exam_takers_view, name='exam_takers'),
     path('<int:exam_id>/item-summary/', views.item_summary_view, name='item_summary'),
+    path('<int:exam_id>/item-summary/print/', views.item_summary_print_view, name='item_summary_print'),
     path('<int:exam_id>/item-summary/analyze/', views.item_summary_ai_analyze_view, name='item_summary_analyze'),
     path('<int:exam_id>/item-summary/analyze/clear/', views.item_summary_ai_clear_view, name='item_summary_analyze_clear'),
     path('<int:exam_id>/item-summary/export/', views.item_summary_export_excel_view, name='item_summary_export_excel'),

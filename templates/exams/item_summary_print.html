@@ -1,0 +1,561 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Item Summary - {{ exam.title }} - Print</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 14mm 12mm 18mm 12mm;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+            .avoid-break { page-break-inside: avoid; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #f3f4f6;
+            font-family: 'Times New Roman', Times, serif;
+            color: #111827;
+            font-size: 11pt;
+            line-height: 1.45;
+        }
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: #1f2937;
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+        }
+        .toolbar .left { display: flex; gap: 12px; align-items: center; }
+        .toolbar .actions { display: flex; gap: 8px; }
+        .toolbar button, .toolbar a {
+            background: #4f46e5;
+            color: white;
+            border: 0;
+            padding: 7px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .toolbar button:hover, .toolbar a:hover { background: #4338ca; }
+        .toolbar .secondary { background: #4b5563; }
+        .toolbar .secondary:hover { background: #374151; }
+        .page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0;
+            margin: 16px auto;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            padding: 14mm 12mm;
+        }
+        @media print {
+            html, body { background: white; }
+            .page { box-shadow: none; margin: 0; width: auto; min-height: 0; padding: 0; }
+        }
+        .deped-header {
+            text-align: center;
+            border-bottom: 2px solid #111827;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .deped-header .rep { font-size: 10pt; font-weight: 600; letter-spacing: 0.5px; }
+        .deped-header .dept { font-size: 13pt; font-weight: 700; margin-top: 2px; }
+        .deped-header .region { font-size: 9.5pt; font-style: italic; margin-top: 2px; }
+        .deped-header .form-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 12px;
+            letter-spacing: 1px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 16px;
+            margin: 14px 0 18px 0;
+            font-size: 10.5pt;
+        }
+        .meta-grid .field { display: flex; gap: 4px; }
+        .meta-grid .field strong { min-width: 110px; }
+        .section-title {
+            font-size: 11.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #1f2937;
+            color: white;
+            padding: 5px 10px;
+            margin: 14px 0 8px 0;
+            border-radius: 2px;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+        .stats-table th, .stats-table td {
+            border: 1px solid #4b5563;
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 10pt;
+        }
+        .stats-table th {
+            background: #e5e7eb;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+        .stats-table .num { font-size: 13pt; font-weight: 700; }
+        .num-green { color: #15803d; }
+        .num-amber { color: #b45309; }
+        .num-red { color: #b91c1c; }
+        .num-gray { color: #1f2937; }
+        .item-table, .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 9.5pt;
+        }
+        .item-table th, .item-table td,
+        .comp-table th, .comp-table td {
+            border: 1px solid #4b5563;
+            padding: 4px 6px;
+        }
+        .item-table th, .comp-table th {
+            background: #e5e7eb;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 8.5pt;
+        }
+        .item-table td.center, .comp-table td.center { text-align: center; }
+        .badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 8px;
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border: 1px solid transparent;
+        }
+        .badge-easy { background: #dcfce7; color: #166534; border-color: #86efac; }
+        .badge-mod { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+        .badge-avg { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+        .badge-diff { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+        .badge-vdiff { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 18px;
+            font-size: 10pt;
+        }
+        .legend-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+        .legend-row .range { font-weight: 700; min-width: 70px; }
+        .ai-box {
+            border: 2px solid #6d28d9;
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .ai-box .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #c4b5fd;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 9.5pt;
+            color: #4c1d95;
+        }
+        .ai-box .ai-header strong { color: #4c1d95; }
+        .ai-section-title {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 10.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1f2937;
+            margin: 8px 0 4px 0;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 2px;
+        }
+        .ai-overall {
+            background: #faf5ff;
+            border-left: 3px solid #7c3aed;
+            padding: 8px 10px;
+            font-style: italic;
+            margin: 6px 0 10px 0;
+        }
+        .ai-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 6px 0 8px 0;
+        }
+        .ai-card {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 6px 8px;
+        }
+        .ai-card.green { background: #f0fdf4; border-color: #86efac; }
+        .ai-card.orange { background: #fff7ed; border-color: #fdba74; }
+        .ai-card h5 {
+            margin: 0 0 4px 0;
+            font-size: 9.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .ai-card.green h5 { color: #166534; }
+        .ai-card.orange h5 { color: #9a3412; }
+        .ai-card ul { margin: 0; padding-left: 16px; }
+        .ai-card li { font-size: 9.5pt; margin-bottom: 2px; }
+        .ai-intervention ol { margin: 0; padding-left: 18px; }
+        .ai-intervention li {
+            font-size: 10pt;
+            margin-bottom: 4px;
+            padding-left: 4px;
+        }
+        .ai-intervention ol { counter-reset: step; }
+        .ai-revise {
+            margin-top: 6px;
+            font-size: 9.5pt;
+        }
+        .ai-revise .revise-chip {
+            display: inline-block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            border-radius: 3px;
+            padding: 1px 8px;
+            font-weight: 700;
+            font-size: 9pt;
+            margin-right: 4px;
+        }
+        .ai-footer-note {
+            font-size: 8.5pt;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 6px;
+            border-top: 1px dashed #d1d5db;
+            padding-top: 4px;
+        }
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 28px;
+            font-size: 10.5pt;
+        }
+        .signature-block { text-align: center; }
+        .signature-line {
+            border-top: 1px solid #111827;
+            margin-top: 38px;
+            padding-top: 4px;
+            font-weight: 700;
+        }
+        .signature-block .label {
+            font-size: 8.5pt;
+            font-weight: 400;
+            color: #4b5563;
+            margin-top: 1px;
+        }
+        .page-footer {
+            position: fixed;
+            bottom: 6mm;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 8.5pt;
+            color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .page-footer .pagenum:after { content: counter(page); }
+        @media print {
+            .page-footer { position: fixed; bottom: 6mm; }
+        }
+        .no-data-notice {
+            border: 1px dashed #9ca3af;
+            padding: 10px 14px;
+            border-radius: 4px;
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            font-size: 10pt;
+        }
+        .quick-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        .quick-stats-table th, .quick-stats-table td {
+            border: 1px solid #d1d5db;
+            padding: 3px 6px;
+        }
+        .quick-stats-table th { background: #f3f4f6; text-align: left; font-weight: 700; }
+        .quick-stats-table .pct { text-align: right; font-weight: 700; font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+    <div class="toolbar no-print">
+        <div class="left">
+            <span><strong>Item Summary Print Preview</strong> &middot; {{ exam.title }}</span>
+        </div>
+        <div class="actions">
+            <button onclick="window.print()">🖨️ Print</button>
+            <a class="secondary" href="{% url 'item_summary' exam.id %}">← Back</a>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="deped-header">
+            <div class="rep">Republic of the Philippines</div>
+            <div class="dept">Department of Education</div>
+            <div class="region">Seamless Exam System &middot; Item Analysis Report</div>
+            <div class="form-title">Item Summary Sheet</div>
+        </div>
+
+        <div class="meta-grid">
+            <div class="field"><strong>School:</strong> <span>______________________________</span></div>
+            <div class="field"><strong>Teacher:</strong> <span>{{ exam.created_by.user.get_full_name|default:exam.created_by.user.username }}</span></div>
+            <div class="field"><strong>Subject:</strong> <span>{{ exam.subject|default:'_________________' }}</span></div>
+            <div class="field"><strong>Quarter:</strong> <span>{{ exam.quarter.name|default:'_________________' }}</span></div>
+            <div class="field"><strong>No. of Learners:</strong> <span>{{ summary.total_learners }}</span></div>
+            <div class="field"><strong>Exam:</strong> <span>{{ exam.title }}</span></div>
+            <div class="field"><strong>Date Administered:</strong> <span>______________________</span></div>
+            <div class="field"><strong>Date Generated:</strong> <span>{% now "F j, Y" %}</span></div>
+        </div>
+
+        <div class="section-title">I. Overall Statistics</div>
+        {% if summary.overall_stats %}
+        <table class="stats-table avoid-break">
+            <thead>
+                <tr>
+                    <th>Average Score</th>
+                    <th>Passing Rate</th>
+                    <th>Highest</th>
+                    <th>Lowest</th>
+                    <th>Std Dev</th>
+                    <th>Failed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="num {% if summary.overall_stats.avg_percent >= 75 %}num-green{% elif summary.overall_stats.avg_percent >= 50 %}num-amber{% else %}num-red{% endif %}">{{ summary.overall_stats.avg_percent }}%</div>
+                        <div style="font-size:8.5pt; color:#6b7280;">{{ summary.overall_stats.avg_score }}/{{ summary.overall_stats.total_possible }}</div>
+                    </td>
+                    <td>
+                        <div class="num {% if summary.overall_stats.passing_rate >= 75 %}num-green{% elif summary.overall_stats.passing_rate >= 50 %}num-amber{% else %}num-red{% endif %}">{{ summary.overall_stats.passing_rate }}%</div>
+                        <div style="font-size:8.5pt; color:#6b7280;">{{ summary.overall_stats.passing_count }} of {{ summary.total_learners }}</div>
+                    </td>
+                    <td><div class="num num-green">{{ summary.overall_stats.highest_score }}</div><div style="font-size:8.5pt; color:#6b7280;">out of {{ summary.overall_stats.total_possible }}</div></td>
+                    <td><div class="num num-red">{{ summary.overall_stats.lowest_score }}</div><div style="font-size:8.5pt; color:#6b7280;">out of {{ summary.overall_stats.total_possible }}</div></td>
+                    <td><div class="num num-gray">{{ summary.overall_stats.std_dev }}</div><div style="font-size:8.5pt; color:#6b7280;">score spread</div></td>
+                    <td><div class="num num-red">{{ summary.overall_stats.failing_count }}</div><div style="font-size:8.5pt; color:#6b7280;">below 60%</div></td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size:9pt; color:#4b5563; margin-top:2px;">
+            <strong>MPS (Mean Percentage Score):</strong> {{ summary.overall_mps }}%
+        </div>
+        {% else %}
+        <div class="no-data-notice">No overall statistics available.</div>
+        {% endif %}
+
+        <div class="section-title">II. Item Analysis</div>
+        {% if summary.items %}
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th style="width:6%;">Item</th>
+                    <th style="width:14%;">Type</th>
+                    <th style="width:8%;">Correct</th>
+                    <th style="width:8%;">Wrong</th>
+                    <th style="width:8%;">Skipped</th>
+                    <th style="width:8%;">% Corr.</th>
+                    <th style="width:18%;">Difficulty</th>
+                    <th>Action Needed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in summary.items %}
+                <tr>
+                    <td class="center" style="font-weight:700;">{{ item.item_no }}</td>
+                    <td>{{ item.question_type }}</td>
+                    <td class="center" style="color:#15803d; font-weight:700;">{{ item.num_correct }}</td>
+                    <td class="center" style="color:#b91c1c; font-weight:700;">{{ item.num_wrong }}</td>
+                    <td class="center" style="color:#6b7280;">{% if item.num_skipped > 0 %}{{ item.num_skipped }}{% else %}-{% endif %}</td>
+                    <td class="center" style="font-weight:700;">{{ item.percent_correct }}%</td>
+                    <td class="center">
+                        {% if item.difficulty_level == 'Easy' %}<span class="badge badge-easy">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Moderately Easy' %}<span class="badge badge-mod">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Average' %}<span class="badge badge-avg">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Difficult' %}<span class="badge badge-diff">{{ item.difficulty_level }}</span>
+                        {% else %}<span class="badge badge-vdiff">{{ item.difficulty_level }}</span>{% endif %}
+                    </td>
+                    <td>{{ item.action_needed }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-data-notice">No item data available.</div>
+        {% endif %}
+
+        <div class="section-title">III. Competency Summary</div>
+        {% if summary.competency_summary %}
+        <table class="comp-table avoid-break">
+            <thead>
+                <tr>
+                    <th style="width:30%;">Competency</th>
+                    <th>Item Numbers</th>
+                    <th style="width:14%;">% Correct</th>
+                    <th style="width:18%;">Mastery</th>
+                    <th style="width:30%;">Intervention</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comp in summary.competency_summary %}
+                <tr>
+                    <td>{{ comp.competency }}</td>
+                    <td class="center">{{ comp.items|default:"-" }}</td>
+                    <td class="center" style="font-weight:700;">{{ comp.percent_correct|default:"-" }}%</td>
+                    <td class="center">
+                        {% if comp.mastery == 'Mastered' %}<span class="badge badge-easy">Mastered</span>
+                        {% elif comp.mastery == 'Nearing Mastery' %}<span class="badge badge-avg">Nearing</span>
+                        {% else %}<span class="badge badge-vdiff">Low</span>{% endif %}
+                    </td>
+                    <td style="font-size:9pt;">{{ comp.intervention }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-data-notice">No competency data available.</div>
+        {% endif %}
+
+        <div class="section-title">IV. Difficulty Guide</div>
+        <div class="legend-grid avoid-break">
+            <div class="legend-row"><span class="range">81&ndash;100%</span> <span class="badge badge-easy">Easy</span> &mdash; Item is too easy; consider replacement.</div>
+            <div class="legend-row"><span class="range">61&ndash;80%</span> <span class="badge badge-mod">Moderately Easy</span> &mdash; Item is good; retain.</div>
+            <div class="legend-row"><span class="range">41&ndash;60%</span> <span class="badge badge-avg">Average</span> &mdash; Item is ideal; retain.</div>
+            <div class="legend-row"><span class="range">21&ndash;40%</span> <span class="badge badge-diff">Difficult</span> &mdash; Item is hard; review for clarity.</div>
+            <div class="legend-row"><span class="range">0&ndash;20%</span> <span class="badge badge-vdiff">Very Difficult</span> &mdash; Item is too hard; revise or replace.</div>
+        </div>
+
+        {% if summary.items %}
+        <div class="page-break"></div>
+        <div class="section-title">V. Item Quick Reference</div>
+        <table class="quick-stats-table avoid-break">
+            <thead>
+                <tr><th style="width:6%;">Item</th><th style="width:14%;">Type</th><th style="width:8%;">Correct</th><th style="width:8%;">Wrong</th><th class="pct" style="width:10%;">% Correct</th><th>Difficulty Level</th></tr>
+            </thead>
+            <tbody>
+                {% for item in summary.items %}
+                <tr>
+                    <td class="center" style="font-weight:700;">{{ item.item_no }}</td>
+                    <td>{{ item.question_type }}</td>
+                    <td class="center">{{ item.num_correct }}</td>
+                    <td class="center">{{ item.num_wrong }}</td>
+                    <td class="pct">{% if item.percent_correct >= 75 %}<span style="color:#15803d;">{{ item.percent_correct }}%</span>{% elif item.percent_correct >= 50 %}<span style="color:#b45309;">{{ item.percent_correct }}%</span>{% else %}<span style="color:#b91c1c;">{{ item.percent_correct }}%</span>{% endif %}</td>
+                    <td>
+                        {% if item.difficulty_level == 'Easy' %}<span class="badge badge-easy">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Moderately Easy' %}<span class="badge badge-mod">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Average' %}<span class="badge badge-avg">{{ item.difficulty_level }}</span>
+                        {% elif item.difficulty_level == 'Difficult' %}<span class="badge badge-diff">{{ item.difficulty_level }}</span>
+                        {% else %}<span class="badge badge-vdiff">{{ item.difficulty_level }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if cached_analysis %}
+        <div class="page-break"></div>
+        <div class="section-title">VI. AI Teacher's Analysis</div>
+        <div class="ai-box avoid-break">
+            <div class="ai-header">
+                <span><strong>AI-Generated Insights</strong> &middot; DepEd-aligned</span>
+                <span>{% if cached_generated_at %}{{ cached_generated_at|date:"F j, Y g:i A" }}{% endif %}{% if cached_model_used %} &middot; {{ cached_model_used }}{% endif %}</span>
+            </div>
+
+            {% if cached_analysis.overall_assessment %}
+            <div class="ai-section-title">Overall Assessment</div>
+            <div class="ai-overall">{{ cached_analysis.overall_assessment }}</div>
+            {% endif %}
+
+            <div class="ai-grid">
+                {% if cached_analysis.strengths %}
+                <div class="ai-card green">
+                    <h5>Strengths</h5>
+                    <ul>{% for s in cached_analysis.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+                {% if cached_analysis.areas_for_improvement %}
+                <div class="ai-card orange">
+                    <h5>Areas for Improvement</h5>
+                    <ul>{% for a in cached_analysis.areas_for_improvement %}<li>{{ a }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if cached_analysis.intervention_plan %}
+            <div class="ai-section-title ai-intervention">Intervention Plan</div>
+            <ol>{% for step in cached_analysis.intervention_plan %}<li>{{ step }}</li>{% endfor %}</ol>
+            {% endif %}
+
+            {% if cached_analysis.items_to_revise %}
+            <div class="ai-section-title">Items Recommended for Revision</div>
+            <div class="ai-revise">{% for item in cached_analysis.items_to_revise %}<span class="revise-chip">{{ item }}</span>{% endfor %}</div>
+            {% endif %}
+
+            <div class="ai-footer-note">Note: AI suggestions are guidance only. Always validate against your own classroom context and DepEd curriculum guides before applying.</div>
+        </div>
+        {% endif %}
+
+        <div class="signatures avoid-break">
+            <div class="signature-block">
+                <div class="signature-line">{{ exam.created_by.user.get_full_name|default:exam.created_by.user.username }}</div>
+                <div class="label">Subject Teacher</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line">______________________________</div>
+                <div class="label">School Head / Department Head</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer no-print">
+        Seamless Exam System &middot; Generated {% now "F j, Y g:i A" %} &middot; Page <span class="pagenum"></span>
+    </div>
+
+    <script>
+        (function () {
+            if (window.location.search.indexOf('autoprint=1') !== -1) {
+                setTimeout(function () { window.print(); }, 400);
+            }
+        })();
+    </script>
+</body>
+</html>

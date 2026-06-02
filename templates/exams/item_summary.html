@@ -64,6 +64,12 @@
                     </svg>
                     Export Word
                 </a>
+                <a href="{% url 'item_summary_print' exam.id %}?autoprint=1" target="_blank" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                </a>
                 <a href="{% url 'exam_takers' exam.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center text-sm">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -164,11 +170,21 @@
                 <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Item Difficulty Distribution</h4>
                 <div class="relative" style="height: 260px;">
                     <canvas id="itemDifficultyChart"></canvas>
+                    <div id="itemDifficultyChartEmpty" class="hidden absolute inset-0 flex items-center justify-center text-center text-sm text-gray-500">
+                        <div>
+                            <svg class="mx-auto h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                            No difficulty data available
+                        </div>
+                    </div>
                 </div>
                 <p class="text-xs text-gray-500 mt-2 text-center">Count of items at each difficulty level. A balanced test usually shows a mix.</p>
             </div>
             <div>
                 <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Per-Item % Correct</h4>
+                <div class="flex items-center justify-end gap-3 mb-1 text-[10px] text-gray-500">
+                    <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-0.5" style="background:#f59e0b"></span>50% threshold</span>
+                    <span class="inline-flex items-center gap-1"><span class="inline-block w-3 h-0.5" style="background:#22c55e"></span>75% mastery</span>
+                </div>
                 <div class="relative" style="height: 260px;">
                     <canvas id="itemPercentChart"></canvas>
                 </div>
@@ -1050,10 +1066,10 @@ function renderAnalysis(analysis, meta) {
         <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
             <p class="text-xs text-gray-500">AI suggestions are guidance only. Always validate against your own classroom context.</p>
             <div class="flex items-center gap-2">
-                <button onclick="printAnalysisSection()" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                <a href="{% url 'item_summary_print' exam.id %}?autoprint=1" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                     Print
-                </button>
+                </a>
                 <button onclick="clearAiAnalysis()" class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-rose-700 px-3 py-1.5 rounded-md border border-gray-200 hover:border-rose-200 hover:bg-rose-50 transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
                     Clear
@@ -1065,10 +1081,6 @@ function renderAnalysis(analysis, meta) {
             </div>
         </div>
     </div>`;
-}
-
-function printAnalysisSection() {
-    window.print();
 }
 
 function clearAiAnalysis() {
@@ -1188,10 +1200,57 @@ function toggleGuide() {
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.color = '#374151';
 
+    const valueLabelPlugin = {
+        id: 'valueLabelPlugin',
+        afterDatasetsDraw(chart) {
+            if (chart.config.type !== 'bar' || chart.config.options.indexAxis !== 'y') return;
+            const ds = chart.data.datasets[0];
+            const meta = chart.getDatasetMeta(0);
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.font = '600 11px ' + (Chart.defaults.font.family || 'sans-serif');
+            ctx.textBaseline = 'middle';
+            meta.data.forEach(function (bar, i) {
+                const value = ds.data[i];
+                const label = value + '%';
+                const w = ctx.measureText(label).width;
+                const rightX = bar.x + 6;
+                const leftX = bar.x - w - 6;
+                const insideX = bar.x - w / 2;
+                let x, align, color;
+                if (value === 0) {
+                    x = bar.x + 8;
+                    align = 'left';
+                    color = '#dc2626';
+                } else if (rightX + w <= chart.chartArea.right - 2) {
+                    x = rightX;
+                    align = 'left';
+                    color = bar.options && bar.options.borderColor ? bar.options.borderColor : '#374151';
+                } else if (leftX >= chart.chartArea.left + 2) {
+                    x = leftX;
+                    align = 'left';
+                    color = '#ffffff';
+                } else {
+                    x = bar.x + 6;
+                    align = 'left';
+                    color = '#374151';
+                }
+                ctx.fillStyle = color;
+                ctx.textAlign = align;
+                ctx.fillText(label, x, bar.y);
+            });
+            ctx.restore();
+        }
+    };
+
     const difficultyCanvas = document.getElementById('itemDifficultyChart');
-    if (difficultyCanvas && chartData.difficulty_labels) {
-        const total = chartData.difficulty_values.reduce((a, b) => a + b, 0);
-        if (total > 0) {
+    if (difficultyCanvas) {
+        const total = (chartData.difficulty_values || []).reduce(function (a, b) { return a + b; }, 0);
+        const empty = document.getElementById('itemDifficultyChartEmpty');
+        if (total === 0) {
+            if (empty) empty.classList.remove('hidden');
+            difficultyCanvas.classList.add('hidden');
+        } else {
             new Chart(difficultyCanvas.getContext('2d'), {
                 type: 'doughnut',
                 data: {
@@ -1206,7 +1265,7 @@ function toggleGuide() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '60%',
+                    cutout: '65%',
                     plugins: {
                         legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
                         tooltip: {
@@ -1219,7 +1278,27 @@ function toggleGuide() {
                             }
                         }
                     }
-                }
+                },
+                plugins: [{
+                    id: 'doughnutCenterText',
+                    afterDraw(chart) {
+                        if (chart.config.type !== 'doughnut') return;
+                        const ctx = chart.ctx;
+                        const totalItems = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+                        const cx = (chart.chartArea.left + chart.chartArea.right) / 2;
+                        const cy = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                        ctx.save();
+                        ctx.font = '700 18px ' + (Chart.defaults.font.family || 'sans-serif');
+                        ctx.fillStyle = '#1f2937';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(String(totalItems), cx, cy - 6);
+                        ctx.font = '10px ' + (Chart.defaults.font.family || 'sans-serif');
+                        ctx.fillStyle = '#6b7280';
+                        ctx.fillText(totalItems === 1 ? 'item' : 'items', cx, cy + 10);
+                        ctx.restore();
+                    }
+                }]
             });
         }
     }
@@ -1228,15 +1307,52 @@ function toggleGuide() {
     if (percentCanvas && chartData.item_labels && chartData.item_labels.length) {
         const percents = chartData.item_percents;
         const colors = percents.map(function (p) {
-            if (p >= 75) return 'rgba(34, 197, 94, 0.85)';
-            if (p >= 50) return 'rgba(234, 179, 8, 0.85)';
-            return 'rgba(239, 68, 68, 0.85)';
+            if (p >= 75) return 'rgba(34, 197, 94, 0.9)';
+            if (p >= 50) return 'rgba(234, 179, 8, 0.9)';
+            return 'rgba(239, 68, 68, 0.9)';
         });
         const borders = percents.map(function (p) {
             if (p >= 75) return '#16a34a';
             if (p >= 50) return '#ca8a04';
             return '#dc2626';
         });
+
+        const referenceLinePlugin = {
+            id: 'referenceLinePlugin',
+            afterDraw(chart) {
+                if (chart.config.type !== 'bar' || chart.config.options.indexAxis !== 'y') return;
+                const xScale = chart.scales.x;
+                if (!xScale) return;
+                const yScale = chart.scales.y;
+                const ctx = chart.ctx;
+                const lines = [
+                    { value: 50, color: '#f59e0b', label: '50%' },
+                    { value: 75, color: '#22c55e', label: '75%' }
+                ];
+                lines.forEach(function (line) {
+                    const x = xScale.getPixelForValue(line.value);
+                    if (x < chart.chartArea.left || x > chart.chartArea.right) return;
+                    ctx.save();
+                    ctx.strokeStyle = line.color;
+                    ctx.setLineDash([4, 4]);
+                    ctx.lineWidth = 1.2;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(x, chart.chartArea.top);
+                    ctx.lineTo(x, chart.chartArea.bottom);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+                    ctx.font = '600 9px ' + (Chart.defaults.font.family || 'sans-serif');
+                    ctx.fillStyle = line.color;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(line.label, x, chart.chartArea.top + 2);
+                    ctx.restore();
+                });
+            }
+        };
+
         new Chart(percentCanvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -1248,13 +1364,15 @@ function toggleGuide() {
                     borderColor: borders,
                     borderWidth: 1,
                     borderRadius: 3,
-                    maxBarThickness: 18
+                    maxBarThickness: 18,
+                    minBarLength: 6
                 }]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 36 } },
                 scales: {
                     x: { beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } }, grid: { color: '#f3f4f6' } },
                     y: { grid: { display: false }, ticks: { font: { size: 10 } } }
@@ -1270,7 +1388,8 @@ function toggleGuide() {
                         }
                     }
                 }
-            }
+            },
+            plugins: [valueLabelPlugin, referenceLinePlugin]
         });
     }
 })();

@@ -1414,6 +1414,43 @@ def item_summary_ai_clear_view(request, exam_id):
 
 
 @teacher_required
+def item_summary_print_view(request, exam_id):
+    """
+    Render a clean, DepEd-style printable HTML view of the item summary report.
+    Returns a self-contained document with @page A4 sizing, page numbers, and
+    server-side rendered content (no chart.js dependency) so it prints well on
+    any browser or PDF converter.
+    """
+    from services.item_analysis_service import ItemAnalysisService
+
+    exam = get_object_or_404(Exam, pk=exam_id)
+
+    teacher = auth_service.get_current_teacher(request)
+    if exam.created_by.pk != teacher.pk:
+        messages.error(request, 'You do not have permission to view this exam')
+        return redirect('exam_list')
+
+    service = ItemAnalysisService()
+    summary_data = service.get_item_summary(exam_id)
+
+    if summary_data is None:
+        messages.error(request, 'Exam not found')
+        return redirect('exam_list')
+
+    cached_result = getattr(exam, 'ai_analysis_result', None)
+
+    context = {
+        'exam': exam,
+        'summary': summary_data,
+        'cached_analysis': cached_result.analysis if cached_result else None,
+        'cached_generated_at': cached_result.generated_at if cached_result else None,
+        'cached_model_used': cached_result.model_used if cached_result else '',
+    }
+
+    return render(request, 'exams/item_summary_print.html', context)
+
+
+@teacher_required
 @require_http_methods(["GET"])
 def item_summary_export_excel_view(request, exam_id):
     """
