@@ -2095,11 +2095,13 @@ html {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
+    pointer-events: none;
 }
 
 .sidebar-nav-icon svg {
     width: 20px;
     height: 20px;
+    pointer-events: none;
 }
 
 .sidebar-footer {

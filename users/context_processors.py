@@ -40,12 +40,12 @@ def navbar_context(request):
         context['navbar_nav_links'] = [
             {
                 'label': 'Dashboard',
-                'url': '/attempts/teacher/dashboard/',
+                'url': reverse('teacher_dashboard'),
                 'active': current_path.startswith('/attempts/teacher/dashboard/')
             },
             {
                 'label': 'Exams',
-                'url': '/exams/',
+                'url': reverse('exam_list'),
                 'active': current_path.startswith('/exams/') and not is_mps_path
             },
             {
@@ -55,22 +55,22 @@ def navbar_context(request):
             },
             {
                 'label': 'Classes',
-                'url': '/users/teacher/classes/',
+                'url': reverse('class_list'),
                 'active': current_path.startswith('/users/teacher/classes/')
             },
             {
                 'label': 'Grading',
-                'url': '/attempts/teacher/grading/',
+                'url': reverse('teacher_grading_list'),
                 'active': current_path.startswith('/attempts/teacher/grading/')
             },
             {
                 'label': 'Accounts',
-                'url': '/users/teacher/accounts/',
+                'url': reverse('student_account_management'),
                 'active': current_path.startswith('/users/teacher/accounts/')
             },
             {
                 'label': 'Options',
-                'url': '/users/teacher/options/',
+                'url': reverse('lookup_management'),
                 'active': current_path.startswith('/users/teacher/options/')
             },
         ]
@@ -87,22 +87,22 @@ def navbar_context(request):
             context['navbar_nav_links'] = [
                 {
                     'label': 'Dashboard',
-                    'url': '/users/student/dashboard/',
+                    'url': reverse('student_dashboard'),
                     'active': current_path.startswith('/users/student/dashboard/')
                 },
                 {
                     'label': 'Available Exams',
-                    'url': '/attempts/student/exams/',
+                    'url': reverse('student_exam_list'),
                     'active': current_path.startswith('/attempts/student/exams/')
                 },
                 {
                     'label': 'My History',
-                    'url': '/users/student/history/',
+                    'url': reverse('student_history'),
                     'active': current_path.startswith('/users/student/history/')
                 },
                 {
                     'label': 'Activity Log',
-                    'url': '/users/student/activity-log/',
+                    'url': reverse('student_activity_log'),
                     'active': current_path.startswith('/users/student/activity-log/')
                 },
             ]
