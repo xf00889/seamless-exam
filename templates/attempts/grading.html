@@ -3,6 +3,17 @@
 
 {% block title %}Grade Exam - {{ exam.title }}{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.btn-spinner { animation: btn-spin 1s linear infinite; }
+</style>
+{% endblock %}
+
 {% block content %}
 {% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-7xl mx-auto" role="main" aria-labelledby="grading-heading">

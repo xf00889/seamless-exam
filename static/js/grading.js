@@ -102,7 +102,7 @@ async function handleGradeEssay(event) {
   }
 
   var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-3.5 h-3.5 animate-spin mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
+  button.innerHTML = '<svg class="inline-block w-3.5 h-3.5 btn-spinner mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
   button.disabled = true;
 
   try {
@@ -312,7 +312,7 @@ async function handleAiGradeEssay(event) {
   if (!url) { showError('AI grade URL not configured.'); return; }
 
   var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-4 h-4 animate-spin mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Assessing...';
+  button.innerHTML = '<svg class="inline-block w-4 h-4 btn-spinner mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Assessing...';
   button.disabled = true;
 
   try {
@@ -417,7 +417,7 @@ async function handleBatchAiGrade(event) {
   document.getElementById('batchModalStatus').textContent = 'Preparing...';
 
   var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-4 h-4 animate-spin mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Grading...';
+  button.innerHTML = '<svg class="inline-block w-4 h-4 btn-spinner mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Grading...';
   button.disabled = true;
   button.style.opacity = '0.7';
   button.style.cursor = 'wait';
@@ -469,7 +469,7 @@ async function handleSaveAllGrades(event) {
   document.getElementById('batchModalBar').className = 'h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-300';
 
   var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-4 h-4 animate-spin mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
+  button.innerHTML = '<svg class="inline-block w-4 h-4 btn-spinner mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
   button.disabled = true;
   button.style.opacity = '0.7';
   button.style.cursor = 'wait';

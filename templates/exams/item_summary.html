@@ -17,8 +17,6 @@
     .rounded-lg { border-radius: 0 !important; }
 }
 .print-only { display: none; }
-.progress-bar { height: 8px; border-radius: 4px; background: #e5e7eb; overflow: hidden; }
-.progress-bar-fill { display: block; width: 0; height: 100%; min-width: 0; border-radius: 4px; transition: width 0.3s ease; }
 .item-row { transition: background-color 0.15s; }
 .item-row:hover .question-preview { max-height: 60px; opacity: 1; }
 .question-preview { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.2s ease; }
@@ -125,41 +123,41 @@
     <!-- Overall Statistics Cards -->
     {% if summary.overall_stats %}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Avg Score</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Avg Score</div>
             <div class="text-xl font-bold text-gray-900">{{ summary.overall_stats.avg_percent }}%</div>
-            <div class="text-xs text-gray-500">{{ summary.overall_stats.avg_score }}/{{ summary.overall_stats.total_possible }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">{{ summary.overall_stats.avg_score }}/{{ summary.overall_stats.total_possible }}</div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Passing Rate</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Passing Rate</div>
             <div class="text-xl font-bold {% if summary.overall_stats.passing_rate >= 75 %}text-green-600{% elif summary.overall_stats.passing_rate >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">{{ summary.overall_stats.passing_rate }}%</div>
-            <div class="text-xs text-gray-500">{{ summary.overall_stats.passing_count }} of {{ summary.total_learners }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">{{ summary.overall_stats.passing_count }} of {{ summary.total_learners }}</div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Highest</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Highest</div>
             <div class="text-xl font-bold text-green-600">{{ summary.overall_stats.highest_score }}</div>
-            <div class="text-xs text-gray-500">out of {{ summary.overall_stats.total_possible }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">out of {{ summary.overall_stats.total_possible }}</div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Lowest</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Lowest</div>
             <div class="text-xl font-bold text-red-600">{{ summary.overall_stats.lowest_score }}</div>
-            <div class="text-xs text-gray-500">out of {{ summary.overall_stats.total_possible }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">out of {{ summary.overall_stats.total_possible }}</div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Std Dev</div>
-            <div class="text-xl font-bold text-gray-700">{{ summary.overall_stats.std_dev }}</div>
-            <div class="text-xs text-gray-500">score spread</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Std Dev</div>
+            <div class="text-xl font-bold text-gray-800">{{ summary.overall_stats.std_dev }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">score spread</div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-            <div class="text-xs font-medium text-gray-500 uppercase mb-1">Failed</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Failed</div>
             <div class="text-xl font-bold text-red-600">{{ summary.overall_stats.failing_count }}</div>
-            <div class="text-xs text-gray-500">below 60%</div>
+            <div class="text-xs text-gray-400 mt-0.5">below 60%</div>
         </div>
     </div>
     {% endif %}
 
     <!-- Visual Summary Charts -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 no-print">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900">Visual Summary</h3>
@@ -198,7 +196,7 @@
 
     <!-- MPS Quick Summary with link to full report -->
     {% if summary.mps_data %}
-    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg shadow-md p-5 mb-6 border border-indigo-200">
+    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl shadow-sm p-5 mb-6 border border-indigo-200">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="flex-shrink-0 text-center">
@@ -286,30 +284,37 @@
     </div>
     {% endif %}
 
-    <!-- Difficulty Distribution Chart -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Difficulty Distribution</h3>
-            <p class="text-xs text-gray-500 mt-1 sm:mt-0">Click a bar to filter the table below</p>
+    <!-- Difficulty Distribution -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-base font-semibold text-gray-900">Difficulty Distribution</h3>
+            <span class="text-xs text-gray-400">Click bar to filter table</span>
         </div>
-        <div class="space-y-3" id="difficultyChart">
+        <div class="space-y-2.5" id="difficultyChart">
             {% for level, data in summary.difficulty_distribution.items %}
-            <div class="difficulty-filter flex items-center gap-3" data-level="{{ level }}" onclick="filterByDifficulty('{{ level }}')">
-                <div class="w-28 sm:w-36 text-xs font-medium text-gray-700 flex items-center gap-1">
-                    {% if level == 'Easy' %}<svg class="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    {% elif level == 'Moderately Easy' %}<svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    {% elif level == 'Average' %}<svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                    {% elif level == 'Difficult' %}<svg class="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                    {% else %}<svg class="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-                    {% endif %}
+            <div class="difficulty-filter flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" data-level="{{ level }}" onclick="filterByDifficulty('{{ level }}')">
+                <div class="w-28 text-xs font-medium text-gray-700 truncate flex items-center gap-1.5">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full
+                        {% if level == 'Easy' %}bg-green-500
+                        {% elif level == 'Moderately Easy' %}bg-blue-500
+                        {% elif level == 'Average' %}bg-yellow-500
+                        {% elif level == 'Difficult' %}bg-orange-500
+                        {% else %}bg-red-500{% endif %}"></span>
                     {{ level }}
                 </div>
                 <div class="flex-1">
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill {% if level == 'Easy' %}bg-green-400{% elif level == 'Moderately Easy' %}bg-blue-400{% elif level == 'Average' %}bg-yellow-400{% elif level == 'Difficult' %}bg-orange-400{% else %}bg-red-400{% endif %}" style="width: {{ data.percent }}%;{% if level == 'Easy' %} background-color: #4ade80;{% elif level == 'Moderately Easy' %} background-color: #60a5fa;{% elif level == 'Average' %} background-color: #facc15;{% elif level == 'Difficult' %} background-color: #fb923c;{% else %} background-color: #f87171;{% endif %}" data-progress-percent="{{ data.percent }}"></div>
+                    <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500 ease-out
+                            {% if level == 'Easy' %}bg-green-500
+                            {% elif level == 'Moderately Easy' %}bg-blue-500
+                            {% elif level == 'Average' %}bg-yellow-500
+                            {% elif level == 'Difficult' %}bg-orange-500
+                            {% else %}bg-red-500{% endif %}"
+                            style="width:{{ data.percent }}%"
+                            data-progress-percent="{{ data.percent }}"></div>
                     </div>
                 </div>
-                <div class="w-16 text-right text-xs text-gray-600">{{ data.count }} item{{ data.count|pluralize:"s" }}</div>
+                <div class="w-16 text-right text-sm font-semibold text-gray-800">{{ data.count }} <span class="font-normal text-gray-400 text-xs">item{{ data.count|pluralize:"s" }}</span></div>
             </div>
             {% endfor %}
         </div>
@@ -1284,7 +1289,10 @@ function toggleGuide() {
     if (!chartData) return;
 
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
-    Chart.defaults.color = '#374151';
+    Chart.defaults.color = '#6b7280';
+
+    const difficultyColors = { Easy: '#22c55e', 'Moderately Easy': '#60a5fa', Average: '#eab308', Difficult: '#f97316', 'Very Difficult': '#ef4444' };
+    const difficultyPalette = ['#22c55e', '#60a5fa', '#eab308', '#f97316', '#ef4444'];
 
     const valueLabelPlugin = {
         id: 'valueLabelPlugin',
@@ -1301,25 +1309,13 @@ function toggleGuide() {
                 const label = value + '%';
                 const w = ctx.measureText(label).width;
                 const rightX = bar.x + 6;
-                const leftX = bar.x - w - 6;
-                const insideX = bar.x - w / 2;
                 let x, align, color;
                 if (value === 0) {
-                    x = bar.x + 8;
-                    align = 'left';
-                    color = '#dc2626';
+                    x = bar.x + 8; align = 'left'; color = '#dc2626';
                 } else if (rightX + w <= chart.chartArea.right - 2) {
-                    x = rightX;
-                    align = 'left';
-                    color = bar.options && bar.options.borderColor ? bar.options.borderColor : '#374151';
-                } else if (leftX >= chart.chartArea.left + 2) {
-                    x = leftX;
-                    align = 'left';
-                    color = '#ffffff';
+                    x = rightX; align = 'left'; color = '#374151';
                 } else {
-                    x = bar.x + 6;
-                    align = 'left';
-                    color = '#374151';
+                    x = bar.x - 4; align = 'right'; color = '#ffffff';
                 }
                 ctx.fillStyle = color;
                 ctx.textAlign = align;
@@ -1329,6 +1325,30 @@ function toggleGuide() {
         }
     };
 
+    function makeDoughnutCenterPlugin() {
+        return {
+            id: 'doughnutCenterText',
+            afterDraw(chart) {
+                if (chart.config.type !== 'doughnut') return;
+                const ctx = chart.ctx;
+                const totalItems = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+                const cx = (chart.chartArea.left + chart.chartArea.right) / 2;
+                const cy = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                ctx.save();
+                ctx.font = '700 22px ' + (Chart.defaults.font.family || 'sans-serif');
+                ctx.fillStyle = '#1f2937';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(totalItems), cx, cy - 8);
+                ctx.font = '11px ' + (Chart.defaults.font.family || 'sans-serif');
+                ctx.fillStyle = '#9ca3af';
+                ctx.fillText(totalItems === 1 ? 'Item' : 'Items', cx, cy + 14);
+                ctx.restore();
+            }
+        };
+    }
+
+    /* ── Difficulty Doughnut ── */
     const difficultyCanvas = document.getElementById('itemDifficultyChart');
     if (difficultyCanvas) {
         const total = (chartData.difficulty_values || []).reduce(function (a, b) { return a + b; }, 0);
@@ -1343,64 +1363,62 @@ function toggleGuide() {
                     labels: chartData.difficulty_labels,
                     datasets: [{
                         data: chartData.difficulty_values,
-                        backgroundColor: ['#22c55e', '#3b82f6', '#eab308', '#f97316', '#ef4444'],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
+                        backgroundColor: chartData.difficulty_labels.map(function (l) { return difficultyColors[l] || '#9ca3af'; }),
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%',
+                    cutout: '72%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                padding: 12,
+                                font: { size: 11 },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
                         tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 11 },
+                            padding: 10,
+                            cornerRadius: 8,
                             callbacks: {
                                 label: function (ctx) {
                                     const value = ctx.parsed;
                                     const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return ctx.label + ': ' + value + ' item' + (value === 1 ? '' : 's') + ' (' + pct + '%)';
+                                    return ' ' + value + ' item' + (value === 1 ? '' : 's') + ' (' + pct + '%)';
                                 }
                             }
                         }
-                    }
+                    },
+                    animation: { animateRotate: true, duration: 800 }
                 },
-                plugins: [{
-                    id: 'doughnutCenterText',
-                    afterDraw(chart) {
-                        if (chart.config.type !== 'doughnut') return;
-                        const ctx = chart.ctx;
-                        const totalItems = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
-                        const cx = (chart.chartArea.left + chart.chartArea.right) / 2;
-                        const cy = (chart.chartArea.top + chart.chartArea.bottom) / 2;
-                        ctx.save();
-                        ctx.font = '700 18px ' + (Chart.defaults.font.family || 'sans-serif');
-                        ctx.fillStyle = '#1f2937';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(String(totalItems), cx, cy - 6);
-                        ctx.font = '10px ' + (Chart.defaults.font.family || 'sans-serif');
-                        ctx.fillStyle = '#6b7280';
-                        ctx.fillText(totalItems === 1 ? 'item' : 'items', cx, cy + 10);
-                        ctx.restore();
-                    }
-                }]
+                plugins: [makeDoughnutCenterPlugin()]
             });
         }
     }
 
+    /* ── Per-Item % Correct Bar Chart ── */
     const percentCanvas = document.getElementById('itemPercentChart');
     if (percentCanvas && chartData.item_labels && chartData.item_labels.length) {
         const percents = chartData.item_percents;
         const colors = percents.map(function (p) {
-            if (p >= 75) return 'rgba(34, 197, 94, 0.9)';
-            if (p >= 50) return 'rgba(234, 179, 8, 0.9)';
-            return 'rgba(239, 68, 68, 0.9)';
+            if (p >= 75) return '#22c55e';
+            if (p >= 50) return '#eab308';
+            return '#ef4444';
         });
-        const borders = percents.map(function (p) {
-            if (p >= 75) return '#16a34a';
-            if (p >= 50) return '#ca8a04';
-            return '#dc2626';
+        const bgColors = percents.map(function (p) {
+            if (p >= 75) return 'rgba(34, 197, 94, 0.2)';
+            if (p >= 50) return 'rgba(234, 179, 8, 0.2)';
+            return 'rgba(239, 68, 68, 0.2)';
         });
 
         const referenceLinePlugin = {
@@ -1409,31 +1427,30 @@ function toggleGuide() {
                 if (chart.config.type !== 'bar' || chart.config.options.indexAxis !== 'y') return;
                 const xScale = chart.scales.x;
                 if (!xScale) return;
-                const yScale = chart.scales.y;
                 const ctx = chart.ctx;
                 const lines = [
-                    { value: 50, color: '#f59e0b', label: '50%' },
-                    { value: 75, color: '#22c55e', label: '75%' }
+                    { value: 50, color: '#f59e0b', label: '50% threshold', dash: [4, 4] },
+                    { value: 75, color: '#22c55e', label: '75% mastery', dash: [4, 4] }
                 ];
                 lines.forEach(function (line) {
                     const x = xScale.getPixelForValue(line.value);
                     if (x < chart.chartArea.left || x > chart.chartArea.right) return;
                     ctx.save();
                     ctx.strokeStyle = line.color;
-                    ctx.setLineDash([4, 4]);
-                    ctx.lineWidth = 1.2;
-                    ctx.globalAlpha = 0.6;
+                    ctx.setLineDash(line.dash);
+                    ctx.lineWidth = 1.5;
+                    ctx.globalAlpha = 0.5;
                     ctx.beginPath();
                     ctx.moveTo(x, chart.chartArea.top);
                     ctx.lineTo(x, chart.chartArea.bottom);
                     ctx.stroke();
                     ctx.setLineDash([]);
-                    ctx.globalAlpha = 1;
+                    ctx.globalAlpha = 0.7;
                     ctx.font = '600 9px ' + (Chart.defaults.font.family || 'sans-serif');
                     ctx.fillStyle = line.color;
                     ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.fillText(line.label, x, chart.chartArea.top + 2);
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(line.label, x, chart.chartArea.top - 2);
                     ctx.restore();
                 });
             }
@@ -1446,26 +1463,43 @@ function toggleGuide() {
                 datasets: [{
                     label: '% Correct',
                     data: percents,
-                    backgroundColor: colors,
-                    borderColor: borders,
-                    borderWidth: 1,
-                    borderRadius: 3,
-                    maxBarThickness: 18,
-                    minBarLength: 6
+                    backgroundColor: bgColors,
+                    borderColor: colors,
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    maxBarThickness: 20,
+                    minBarLength: 4
                 }]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { right: 36 } },
+                layout: { padding: { right: 32, top: 18 } },
                 scales: {
-                    x: { beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } }, grid: { color: '#f3f4f6' } },
-                    y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f3f4f6', drawBorder: false },
+                        ticks: {
+                            callback: function (v) { return v + '%'; },
+                            font: { size: 10 }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    }
                 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: '#1f2937',
+                        titleFont: { size: 12 },
+                        bodyFont: { size: 11 },
+                        padding: 10,
+                        cornerRadius: 8,
                         callbacks: {
                             afterLabel: function (ctx) {
                                 const t = chartData.item_types[ctx.dataIndex];
