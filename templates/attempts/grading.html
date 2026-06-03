@@ -270,101 +270,92 @@
             </div>
           </div>
 
-          <!-- RIGHT: Combined Grading Panel (col-span-2, sticky) -->
-          <div class="lg:col-span-2 lg:sticky lg:top-28 self-start">
+          <!-- RIGHT: Combined Grading Panel (col-span-2, sticky, compact) -->
+          <div class="lg:col-span-2 lg:sticky lg:top-28 self-start text-xs">
 
             <!-- 1. Grade Summary Bar -->
-            <div class="flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-100">
-              <div class="flex items-center gap-4 text-xs">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span class="text-gray-400 font-medium">AI</span>
-                  <span class="font-bold text-gray-800 ai-suggested-score">&mdash;</span>
+            <div class="flex items-center justify-between px-3 py-1.5 bg-white border-b border-gray-100">
+              <div class="flex items-center gap-3 text-[11px]">
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                  <span class="text-gray-400">AI</span>
+                  <span class="font-semibold text-gray-800 ai-suggested-score">&mdash;</span>
                 </span>
                 <span class="text-gray-200">|</span>
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span class="text-gray-400 font-medium">Teacher</span>
-                  <span class="font-bold text-gray-800 teacher-score-display">&mdash;</span>
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  <span class="text-gray-400">Tchr</span>
+                  <span class="font-semibold text-gray-800 teacher-score-display">&mdash;</span>
                 </span>
               </div>
-              <div class="text-xs">
-                <span class="text-gray-400 font-medium">Exam</span>
-                <span class="font-semibold text-gray-700 overall-score">{{ grading_status.total_score|floatformat:2 }}</span>
-              </div>
+              <span class="text-[11px] text-gray-400">Exam <span class="font-semibold text-gray-600 overall-score">{{ grading_status.total_score|floatformat:2 }}</span></span>
             </div>
 
             <!-- 2. AI Assessment Section -->
-            <div class="p-4 bg-gray-50/60 space-y-3">
+            <div class="p-3 bg-gray-50/60 space-y-1.5">
 
               <!-- Placeholder -->
               <div class="ai-eval-placeholder">
-                <div class="text-center py-8">
-                  <svg class="w-8 h-8 mx-auto text-purple-300 mb-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <div class="text-center py-5">
+                  <svg class="w-6 h-6 mx-auto text-purple-300 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
                   </svg>
-                  <p class="text-sm text-gray-500 mb-1">No AI assessment yet</p>
-                  <p class="text-xs text-gray-400">Run AI to get a suggested score</p>
-                </div>
-                <!-- Primary "Assess with AI" button (inside placeholder, hidden after first run) -->
-                <button type="button"
-                        class="ai-grade-essay-btn ai-grade-primary w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        data-answer-id="{{ data.answer.id }}"
-                        data-ai-grade-url="{% url 'ai_grade_essay' data.answer.id %}"
-                        title="Get a suggested score from AI">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-                  </svg>
-                  <span class="ai-grade-label">Assess with AI</span>
-                </button>
-              </div>
-
-              <!-- Results -->
-              <div class="ai-eval-results hidden space-y-3">
-
-                <!-- Score Hero -->
-                <div class="bg-white rounded-lg border border-gray-200 p-3 text-center">
-                  <div class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 ai-suggested-score-hero">&mdash;</div>
-                  <div class="text-xs font-medium text-gray-400 mt-0.5">Suggested Score <span class="text-gray-300">/</span> {{ data.question.points }} pts</div>
-                </div>
-
-                <!-- Confidence Badge -->
-                <div class="ai-confidence-badge-wrap hidden">
-                  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-50 border border-gray-200 ai-confidence-badge">
-                    <span class="w-2 h-2 rounded-full ai-confidence-dot bg-gray-400"></span>
-                    <span class="text-gray-600">Confidence</span>
-                    <span class="font-bold text-gray-800 ai-confidence-pct">&mdash;</span>
-                  </div>
-                </div>
-
-                <!-- Reasoning Callout -->
-                <div class="ai-reasoning hidden">
-                  <div class="bg-indigo-50/60 border-l-4 border-indigo-400 rounded-r-lg p-3">
-                    <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">AI Reasoning</p>
-                    <p class="text-sm text-gray-700 leading-relaxed ai-reasoning-text"></p>
-                  </div>
-                </div>
-
-                <!-- Rubric Score Cards -->
-                <div class="ai-rubric hidden">
-                  <div class="grid grid-cols-2 gap-1.5 ai-rubric-cards"></div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-2">
+                  <p class="text-xs text-gray-500 mb-2">No AI assessment yet</p>
                   <button type="button"
-                          class="apply-ai-score-btn flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 hidden">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Apply Score
-                  </button>
-                  <button type="button"
-                          class="ai-grade-essay-btn inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          class="ai-grade-essay-btn ai-grade-primary w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           data-answer-id="{{ data.answer.id }}"
                           data-ai-grade-url="{% url 'ai_grade_essay' data.answer.id %}"
                           title="Get a suggested score from AI">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                    </svg>
+                    <span class="ai-grade-label">Assess</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Results -->
+              <div class="ai-eval-results hidden space-y-1.5">
+
+                <!-- Inline Score + Confidence -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-lg font-bold text-purple-600 ai-suggested-score-hero">&mdash;</span>
+                    <span class="text-[11px] text-gray-400 ml-1">/ {{ data.question.points }} pts</span>
+                  </div>
+                  <div class="ai-confidence-badge-wrap hidden">
+                    <span class="inline-flex items-center gap-1 text-[11px]">
+                      <span class="w-1.5 h-1.5 rounded-full ai-confidence-dot bg-gray-400"></span>
+                      <span class="font-medium text-gray-500 ai-confidence-pct">&mdash;</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Reasoning (single-line truncated) -->
+                <div class="ai-reasoning hidden">
+                  <div class="text-[11px] text-gray-500 truncate leading-relaxed ai-reasoning-text" title=""></div>
+                </div>
+
+                <!-- Rubric inline -->
+                <div class="ai-rubric hidden">
+                  <div class="flex gap-2 text-[11px] text-gray-600 ai-rubric-cards"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-1">
+                  <button type="button"
+                          class="apply-ai-score-btn inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 hidden">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Apply
+                  </button>
+                  <button type="button"
+                          class="ai-grade-essay-btn inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          data-answer-id="{{ data.answer.id }}"
+                          data-ai-grade-url="{% url 'ai_grade_essay' data.answer.id %}"
+                          title="Get a suggested score from AI">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
                     <span class="ai-grade-label">Assess</span>
@@ -373,73 +364,62 @@
               </div>
             </div>
 
-            <!-- 3. Teacher Review Section -->
-            <div class="p-4 bg-white border-t border-gray-100 space-y-3">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                </svg>
-                <h4 class="text-sm font-semibold text-gray-700">Teacher Review</h4>
-                <span class="ml-auto grading-status text-xs" data-answer-id="{{ data.answer.id }}">
+            <!-- 3. Teacher Review Section (compact) -->
+            <div class="p-3 bg-white border-t border-gray-100 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                  <h4 class="text-xs font-semibold text-gray-700">Review</h4>
+                </div>
+                <span class="grading-status text-[11px]" data-answer-id="{{ data.answer.id }}">
                   {% if data.is_graded %}
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-700 border border-green-200">
+                    <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                     Saved
                   </span>
                   {% else %}
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-400 border border-gray-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-400 border border-gray-200">
+                    <span class="w-1 h-1 rounded-full bg-gray-300"></span>
                     Pending
                   </span>
                   {% endif %}
                 </span>
               </div>
 
-              <!-- Score Input -->
-              <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Score (max {{ data.question.points }})</label>
-                <div class="flex items-center gap-2">
-                  <input type="number"
-                         class="essay-points-input w-20 px-2.5 py-1.5 text-base font-bold text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                         min="0"
-                         max="{{ data.question.points }}"
-                         step="0.5"
-                         value="{% if data.is_graded %}{{ data.answer.points_earned }}{% else %}0{% endif %}"
-                         data-answer-id="{{ data.answer.id }}"
-                         data-max-points="{{ data.question.points }}">
-                  <span class="text-xs text-gray-400">/ {{ data.question.points }} pts</span>
+              <div class="flex items-center gap-2">
+                <input type="number"
+                       class="essay-points-input w-14 px-2 py-1 text-sm font-bold text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       min="0"
+                       max="{{ data.question.points }}"
+                       step="0.5"
+                       value="{% if data.is_graded %}{{ data.answer.points_earned }}{% else %}0{% endif %}"
+                       data-answer-id="{{ data.answer.id }}"
+                       data-max-points="{{ data.question.points }}">
+                <span class="text-[11px] text-gray-400">/ {{ data.question.points }} pts</span>
+                <div class="flex flex-wrap gap-0.5 ml-auto">
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Excellent understanding of the topic.">Exc</button>
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Good analysis and reasoning.">Anal</button>
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Needs more supporting evidence.">Evid</button>
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Consider organizing your ideas more clearly.">Org</button>
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Great critical thinking demonstrated.">Crit</button>
+                  <button type="button" class="feedback-chip px-1.5 py-0.5 text-[10px] font-medium rounded border border-gray-200 text-gray-500 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Your argument is clear and well-structured.">Clear</button>
                 </div>
               </div>
 
-              <!-- Quick Feedback Chips -->
-              <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Quick Feedback</label>
-                <div class="flex flex-wrap gap-1">
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Excellent understanding of the topic.">Excellent</button>
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Good analysis and reasoning.">Analysis</button>
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Needs more supporting evidence.">Evidence</button>
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Consider organizing your ideas more clearly.">Organize</button>
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Great critical thinking demonstrated.">Critical</button>
-                  <button type="button" class="feedback-chip px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 bg-white hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-colors" data-text="Your argument is clear and well-structured.">Clarity</button>
-                </div>
-              </div>
-
-              <!-- Written Feedback -->
-              <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Written Feedback</label>
-                <textarea class="essay-feedback-input w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[60px]"
-                          rows="2"
-                          placeholder="Add notes for the student..."
+              <div class="flex items-center gap-1.5">
+                <textarea class="essay-feedback-input flex-1 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[30px]"
+                          rows="1"
+                          placeholder="Feedback..."
                           data-answer-id="{{ data.answer.id }}"
                           data-auto-resize="true">{% if data.is_graded and data.answer.teacher_feedback %}{{ data.answer.teacher_feedback }}{% endif %}</textarea>
+                <button type="button"
+                        class="grade-essay-btn inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        data-answer-id="{{ data.answer.id }}">
+                  {% if data.is_graded %}Update{% else %}Save{% endif %}
+                </button>
               </div>
-
-              <!-- Save / Update Button -->
-              <button type="button"
-                      class="grade-essay-btn w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      data-answer-id="{{ data.answer.id }}">
-                {% if data.is_graded %}Update Grade{% else %}Save Grade{% endif %}
-              </button>
             </div>
 
           </div>
@@ -450,39 +430,6 @@
     {% endfor %}
   </div>
 
-  <!-- Compact Action Footer -->
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-5 px-1">
-    <div>
-      <span class="text-xs text-gray-400 font-medium">Exam Score</span>
-      <div class="text-xl font-bold text-gray-900" id="final-score">{{ grading_status.total_score|floatformat:2 }} <span class="text-sm font-normal text-gray-400">pts</span></div>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      {% if grading_status.ungraded_essays > 0 %}
-      <a href="{% url 'teacher_pending_grading' %}"
-         class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        Pending
-      </a>
-      {% else %}
-      <a href="{% url 'teacher_student_detail' student.id %}"
-         class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        Student
-      </a>
-      {% endif %}
-      <a href="{% url 'teacher_dashboard' %}"
-         class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-        Dashboard
-      </a>
-    </div>
-  </div>
 </div>
 {% endblock %}
 

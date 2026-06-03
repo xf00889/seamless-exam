@@ -34,7 +34,7 @@ function initializeGrading() {
 
 function autoResizeTextarea(el) {
   el.style.height = 'auto';
-  el.style.height = Math.max(el.scrollHeight, 72) + 'px';
+  el.style.height = Math.max(el.scrollHeight, 30) + 'px';
 }
 
 function validatePoints(e) {
@@ -182,11 +182,8 @@ function updateGradingUI(answerId, data) {
 }
 
 function updateFinalScore(score) {
-  var footerEl = document.getElementById('final-score');
-  if (footerEl) footerEl.innerHTML = score.toFixed(2) + ' <span class="text-sm font-normal text-gray-400">pts</span>';
-  var formatted = score.toFixed(2) + ' pts';
   document.querySelectorAll('.overall-score').forEach(function(el) {
-    el.textContent = formatted;
+    el.textContent = score.toFixed(2) + ' pts';
   });
 }
 
@@ -266,10 +263,10 @@ function populateAiGradeResult(answerId, data) {
     }
   }
 
-  /* Rubric Score Cards */
+  /* Rubric inline */
   var bd = data.breakdown || {};
   var rubricKeys = ['relevance', 'correctness', 'depth', 'critical_thinking', 'writing_quality'];
-  var rubricLabels = { relevance: 'Relevance', correctness: 'Correctness', depth: 'Depth', critical_thinking: 'Critical Thinking', writing_quality: 'Writing Quality' };
+  var rubricLabels = { relevance: 'Rel', correctness: 'Cor', depth: 'Dep', critical_thinking: 'CT', writing_quality: 'WQ' };
   var hasRubric = rubricKeys.some(function(k) { return bd[k] != null; });
 
   var rubricWrap = section.querySelector('.ai-rubric');
@@ -281,13 +278,10 @@ function populateAiGradeResult(answerId, data) {
       rubricKeys.forEach(function(key) {
         var val = bd[key];
         if (val == null) return;
-        var label = rubricLabels[key] || key;
-        var card = document.createElement('div');
-        card.className = 'bg-white rounded-lg border border-gray-100 p-2.5 text-center';
-        card.innerHTML =
-          '<div class="text-xs text-gray-500 mb-0.5">' + label + '</div>' +
-          '<div class="text-base font-bold text-gray-800">' + val.toFixed(1) + '<span class="text-xs font-normal text-gray-400">/10</span></div>';
-        cardsEl.appendChild(card);
+        var span = document.createElement('span');
+        span.className = 'text-[11px] text-gray-600';
+        span.textContent = rubricLabels[key] + ' ' + val.toFixed(1);
+        cardsEl.appendChild(span);
       });
     } else {
       rubricWrap.classList.add('hidden');
