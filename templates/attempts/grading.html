@@ -536,17 +536,12 @@
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-2 pt-2">
                   <button type="button"
-                          class="apply-ai-score-btn flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all shadow-sm hover:shadow-md hidden">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Accept Score
-                  </button>
-                  <button type="button"
-                          class="ai-grade-essay-btn inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg transition-all"
+                          class="ai-grade-essay-btn flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all shadow-sm hover:shadow-md"
                           data-answer-id="{{ data.answer.id }}"
                           data-ai-grade-url="{% url 'ai_grade_essay' data.answer.id %}"
                           title="Re-assess with AI">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    <span class="ai-grade-label">Re-assess</span>
+                    <span class="ai-grade-label">Re-assess with AI</span>
                   </button>
                 </div>
               </div>

@@ -29,9 +29,6 @@ function initializeGrading() {
   document.querySelectorAll('.feedback-chip').forEach(function(chip) {
     chip.addEventListener('click', handleFeedbackChip);
   });
-  document.querySelectorAll('.apply-ai-score-btn').forEach(function(b) {
-    b.addEventListener('click', handleApplyAiScore);
-  });
 }
 
 function autoResizeTextarea(el) {
@@ -78,31 +75,6 @@ function handleFeedbackChip(e) {
   ta.dispatchEvent(new Event('input', { bubbles: true }));
   chip.classList.add('bg-purple-100', 'border-purple-300', 'text-purple-700');
   chip.classList.remove('bg-white', 'border-gray-200', 'text-gray-600');
-}
-
-/* ── Apply AI Score ────────────────────────────────────────── */
-
-function handleApplyAiScore(e) {
-  var btn = e.currentTarget;
-  var section = btn.closest('.grading-section');
-  if (!section) return;
-  var answerId = section.getAttribute('data-answer-id');
-  var aiScoreEl = section.querySelector('.ai-suggested-score');
-  if (!aiScoreEl) return;
-  var score = parseFloat(aiScoreEl.textContent);
-  if (isNaN(score)) return;
-  var input = document.querySelector('.essay-points-input[data-answer-id="' + answerId + '"]');
-  if (!input) return;
-  var max = parseFloat(input.getAttribute('data-max-points'));
-  var applied = Math.min(score, max);
-  input.value = applied;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
-  var teacherDisplay = section.querySelector('.teacher-score-display');
-  if (teacherDisplay) {
-    teacherDisplay.textContent = applied.toFixed(1);
-    teacherDisplay.classList.remove('hidden');
-  }
 }
 
 /* ── Save grade ────────────────────────────────────────────── */
@@ -335,10 +307,6 @@ function populateAiGradeResult(answerId, data) {
     if (reasoningText) reasoningText.textContent = data.reasoning;
   }
 
-  /* Show Apply button */
-  var applyBtn = section.querySelector('.apply-ai-score-btn');
-  if (applyBtn) applyBtn.classList.remove('hidden');
-
   /* Update results assess button label to "Re-assess" */
   var resultsAssessBtn = section.querySelector('.ai-eval-results .ai-grade-essay-btn');
   if (resultsAssessBtn) {
@@ -347,18 +315,76 @@ function populateAiGradeResult(answerId, data) {
   }
 }
 
+function showAiGradeOverlay() {
+  var overlay = document.getElementById('aiGradeOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'aiGradeOverlay';
+    overlay.innerHTML =
+      '<div style="position:fixed;inset:0;background:rgba(255,255,255,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;">' +
+        '<div style="background:#ffffff;border-radius:16px;padding:2.5rem;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);border:1px solid #e2e8f0;">' +
+          '<div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#8b5cf6;border-radius:50%;animation:aiGradeSpin 0.8s linear infinite;margin:0 auto 1.25rem;"></div>' +
+          '<h3 style="color:#1e293b;font-size:1.125rem;font-weight:600;margin-bottom:0.5rem;">Assessing Essay with AI...</h3>' +
+          '<p style="color:#64748b;font-size:0.8125rem;margin:0 0 1rem;">Analyzing content against rubric criteria. This may take up to 30 seconds.</p>' +
+          '<div style="width:100%;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">' +
+            '<div id="aiGradeProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);border-radius:3px;transition:width 0.5s ease;"></div>' +
+          '</div>' +
+          '<p id="aiGradeProgressText" style="color:#94a3b8;font-size:0.75rem;margin-top:0.5rem;">Starting...</p>' +
+        '</div>' +
+      '</div>' +
+      '<style>@keyframes aiGradeSpin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = '';
+  var bar = document.getElementById('aiGradeProgressBar');
+  var text = document.getElementById('aiGradeProgressText');
+  if (bar) bar.style.width = '0%';
+  if (text) text.textContent = 'Starting...';
+}
+
+function hideAiGradeOverlay() {
+  var overlay = document.getElementById('aiGradeOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+var aiGradeProgressInterval = null;
+
+function startAiGradeProgress() {
+  var progress = 0;
+  var messages = ['Connecting to AI...', 'Reading essay content...', 'Evaluating rubric criteria...', 'Calculating scores...', 'Generating feedback...', 'Finalizing assessment...'];
+  aiGradeProgressInterval = setInterval(function() {
+    progress = Math.min(progress + Math.random() * 8 + 2, 90);
+    var bar = document.getElementById('aiGradeProgressBar');
+    var text = document.getElementById('aiGradeProgressText');
+    if (bar) bar.style.width = progress + '%';
+    if (text) text.textContent = messages[Math.min(Math.floor(progress / 16), messages.length - 1)];
+  }, 1500);
+}
+
+function stopAiGradeProgress(done) {
+  if (aiGradeProgressInterval) {
+    clearInterval(aiGradeProgressInterval);
+    aiGradeProgressInterval = null;
+  }
+  var bar = document.getElementById('aiGradeProgressBar');
+  var text = document.getElementById('aiGradeProgressText');
+  if (bar) bar.style.width = done ? '100%' : '0%';
+  if (text) text.textContent = done ? 'Done!' : 'Failed';
+}
+
 async function handleAiGradeEssay(event) {
   var button = event.currentTarget;
   var answerId = button.getAttribute('data-answer-id');
   var url = button.getAttribute('data-ai-grade-url');
   if (!url) { showError('AI grade URL not configured.'); return; }
 
-  var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-4 h-4 btn-spinner mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Assessing...';
-  button.disabled = true;
+  showAiGradeOverlay();
+  startAiGradeProgress();
 
   try {
     var data = await fetchAiGrade(answerId, url);
+    stopAiGradeProgress(true);
+    setTimeout(function() { hideAiGradeOverlay(); }, 600);
     populateAiGradeResult(answerId, data);
     var pts = Number(data.points_earned || 0).toFixed(2);
     var max = Number(data.max_points || 0).toFixed(2);
@@ -367,12 +393,9 @@ async function handleAiGradeEssay(event) {
     }
   } catch (err) {
     console.error('AI grade error:', err);
+    stopAiGradeProgress(false);
+    hideAiGradeOverlay();
     showError(err.message || 'Network error. Could not reach AI service.');
-  } finally {
-    button.disabled = false;
-    button.innerHTML = origHTML;
-    var label = button.querySelector('.ai-grade-label');
-    if (label) label.textContent = 'Re-assess';
   }
 }
 
@@ -448,6 +471,32 @@ function showBatchModalResult(successCount, failCount) {
 
 /* ── Grade all ─────────────────────────────────────────────── */
 
+function showBatchGradeOverlay(total) {
+  var overlay = document.getElementById('aiGradeOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'aiGradeOverlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML =
+    '<div style="position:fixed;inset:0;background:rgba(255,255,255,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;">' +
+      '<div style="background:#ffffff;border-radius:16px;padding:2.5rem;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);border:1px solid #e2e8f0;">' +
+        '<div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#8b5cf6;border-radius:50%;animation:aiGradeSpin 0.8s linear infinite;margin:0 auto 1.25rem;"></div>' +
+        '<h3 style="color:#1e293b;font-size:1.125rem;font-weight:600;margin-bottom:0.5rem;">Batch Grading ' + total + ' Essays</h3>' +
+        '<p style="color:#64748b;font-size:0.8125rem;margin:0 0 1rem;">Grading all ungraded essays with AI. This may take a moment.</p>' +
+        '<div style="width:100%;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">' +
+          '<div id="aiGradeProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);border-radius:3px;transition:width 0.5s ease;"></div>' +
+        '</div>' +
+        '<p id="aiGradeProgressText" style="color:#94a3b8;font-size:0.75rem;margin-top:0.5rem;">Starting...</p>' +
+      '</div>' +
+    '</div>';
+  overlay.style.display = '';
+  var bar = document.getElementById('aiGradeProgressBar');
+  var text = document.getElementById('aiGradeProgressText');
+  if (bar) bar.style.width = '0%';
+  if (text) text.textContent = 'Starting...';
+}
+
 async function handleBatchAiGrade(event) {
   var button = event.target.closest('#batch-ai-grade-btn');
   if (!button) return;
@@ -455,18 +504,11 @@ async function handleBatchAiGrade(event) {
   var ungraded = Array.from(sections).filter(function(s) { return s.getAttribute('data-is-graded') === 'false'; });
   if (ungraded.length === 0) { showError('No ungraded essays to grade.'); return; }
 
-  showBatchModal('Grading Essays');
-  document.getElementById('batchModalStatus').textContent = 'Preparing...';
+  var total = ungraded.length;
+  showBatchGradeOverlay(total);
+  startAiGradeProgress();
 
-  var origHTML = button.innerHTML;
-  button.innerHTML = '<svg class="inline-block w-4 h-4 btn-spinner mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Grading...';
-  button.disabled = true;
-  button.style.opacity = '0.7';
-  button.style.cursor = 'wait';
-
-  await new Promise(function(r) { setTimeout(r, 100); });
-
-  var completed = 0, failed = [], total = ungraded.length;
+  var completed = 0, failed = [];
 
   for (var idx = 0; idx < ungraded.length; idx++) {
     var section = ungraded[idx];
@@ -474,7 +516,11 @@ async function handleBatchAiGrade(event) {
     var aiBtn = section.querySelector('.ai-grade-essay-btn');
     var url = aiBtn ? aiBtn.getAttribute('data-ai-grade-url') : null;
 
-    updateBatchModal(completed, total, 'Grading essay ' + (completed + 1) + ' of ' + total);
+    var pct = Math.round((completed / total) * 100);
+    var bar = document.getElementById('aiGradeProgressBar');
+    var text = document.getElementById('aiGradeProgressText');
+    if (bar) bar.style.width = pct + '%';
+    if (text) text.textContent = 'Grading ' + (completed + 1) + ' of ' + total + '...';
 
     if (!url) { failed.push({ id: answerId, error: 'No AI grade URL' }); completed++; continue; }
 
@@ -488,10 +534,18 @@ async function handleBatchAiGrade(event) {
     completed++;
   }
 
-  updateBatchModal(completed, total, 'Finalising...');
-  await new Promise(function(r) { setTimeout(r, 300); });
-  button.innerHTML = origHTML;
-  showBatchModalResult(completed - failed.length, failed.length);
+  stopAiGradeProgress(true);
+  var bar2 = document.getElementById('aiGradeProgressBar');
+  var text2 = document.getElementById('aiGradeProgressText');
+  if (bar2) bar2.style.width = '100%';
+  if (text2) text2.textContent = failed.length === 0 ? 'All ' + total + ' complete!' : (completed - failed.length) + ' of ' + total + ' complete';
+  setTimeout(function() { hideAiGradeOverlay(); }, 1500);
+  if (failed.length === 0) {
+    NotificationManager.success('All ' + total + ' essays graded.', 3000);
+  } else {
+    NotificationManager.error(failed.length + ' of ' + total + ' failed.', 4000);
+  }
+  refreshGradingStats();
 }
 
 /* ── Save all ──────────────────────────────────────────────── */
