@@ -3,21 +3,10 @@
     box-sizing: border-box;
 }
 
-body:has(.login-page) > footer,
-body:has(.login-page) > nav {
-    display: none !important;
-}
-
-body:has(.login-page) {
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-}
-
-body:has(.login-page) main {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: none !important;
+body {
+    padding: 0;
+    margin: 0;
+    background: #020617;
 }
 
 .login-page {
