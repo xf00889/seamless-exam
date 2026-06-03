@@ -52,8 +52,8 @@
         </div>
     </div>
 
-<!-- Grading Summary -->
-<div class="bg-white shadow rounded-lg p-6 mb-6">
+<!-- Grading Summary (sticky while scrolling) -->
+<div class="bg-white shadow rounded-lg p-6 mb-6 sticky top-16 z-30">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
             <div class="text-sm text-gray-500">Total Questions</div>
@@ -256,7 +256,8 @@ document.addEventListener('click', function batchCheck(e) {
                     <textarea class="essay-feedback-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               rows="3"
                               placeholder="Write your feedback to the student..."
-                              data-answer-id="{{ data.answer.id }}">{% if data.is_graded and data.answer.teacher_feedback %}{{ data.answer.teacher_feedback }}{% endif %}</textarea>
+                              data-answer-id="{{ data.answer.id }}"
+                              data-auto-resize="true">{% if data.is_graded and data.answer.teacher_feedback %}{{ data.answer.teacher_feedback }}{% endif %}</textarea>
                 </div>
             </div>
 
@@ -299,10 +300,11 @@ document.addEventListener('click', function batchCheck(e) {
                             data-answer-id="{{ data.answer.id }}">
                         {% if data.is_graded %}Update{% else %}Save{% endif %}
                     </button>
+                    <span class="hidden sm:inline text-xs text-gray-400 italic">Ctrl+Enter to save</span>
                 </div>
             </div>
 
-            <div class="ai-grade-feedback hidden mt-3 rounded-lg border border-purple-200 bg-purple-50 p-3.5" data-answer-id="{{ data.answer.id }}">
+            <div class="ai-grade-feedback hidden mt-3 min-h-[72px] rounded-lg border border-purple-200 bg-purple-50 p-3.5" data-answer-id="{{ data.answer.id }}">
                 <div class="flex items-start gap-2.5">
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-semibold text-purple-900 mb-0.5 ai-grade-reasoning"></div>

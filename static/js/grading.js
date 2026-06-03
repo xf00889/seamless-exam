@@ -35,6 +35,28 @@ function initializeGrading() {
         button.addEventListener('click', handleAiGradeDismiss);
     });
 
+    // Auto-resize feedback textareas
+    const autoResizeTextareas = document.querySelectorAll('[data-auto-resize="true"]');
+    autoResizeTextareas.forEach(ta => {
+        autoResizeTextarea(ta);
+        ta.addEventListener('input', function () { autoResizeTextarea(ta); });
+    });
+
+    // Ctrl+Enter to save on feedback textareas
+    document.querySelectorAll('.essay-feedback-input').forEach(function (ta) {
+        ta.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                var btn = document.querySelector('.grade-essay-btn[data-answer-id="' + ta.getAttribute('data-answer-id') + '"]');
+                if (btn) btn.click();
+            }
+        });
+    });
+
+}
+
+function autoResizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.max(el.scrollHeight, 72) + 'px';
 }
 
 /**
@@ -80,12 +102,12 @@ async function handleGradeEssay(event) {
     }
     
     // Disable button during submission
+    var origBtnHTML = button.innerHTML;
+    button.innerHTML = '<svg class="inline-block w-3.5 h-3.5 animate-spin mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
     button.disabled = true;
-    button.textContent = 'Saving...';
     
     try {
-        // Determine if this is a new grade or update
-        const isUpdate = button.textContent.includes('Update') || statusDiv.textContent.includes('Graded');
+        const isUpdate = statusDiv && statusDiv.textContent.includes('Graded');
         const url = isUpdate 
             ? `/attempts/teacher/grading/essay/${answerId}/update/`
             : `/attempts/teacher/grading/essay/${answerId}/grade/`;
@@ -105,15 +127,22 @@ async function handleGradeEssay(event) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            // Update UI
             updateGradingUI(answerId, data);
             showSuccess(data.message);
-            
-            // Update final score
             updateFinalScore(data.total_score);
-            
-            // Update button text
-            button.textContent = 'Update Grade';
+            button.innerHTML = 'Update Grade';
+
+            // Auto-scroll to next ungraded essay
+            var allSections = Array.from(document.querySelectorAll('.grading-section'));
+            var currentIdx = allSections.findIndex(function (s) { return s.getAttribute('data-answer-id') === answerId; });
+            for (var i = currentIdx + 1; i < allSections.length; i++) {
+                if (allSections[i].getAttribute('data-is-graded') === 'false') {
+                    allSections[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    var nextInput = allSections[i].querySelector('.essay-points-input');
+                    if (nextInput) setTimeout(function (el) { el.focus(); }, 600, nextInput);
+                    break;
+                }
+            }
         } else {
             showError(data.error || 'Failed to save grade');
         }
@@ -122,8 +151,8 @@ async function handleGradeEssay(event) {
         showError('An error occurred while saving the grade');
     } finally {
         button.disabled = false;
-        if (button.textContent === 'Saving...') {
-            button.textContent = 'Save Grade';
+        if (button.innerHTML === 'Saving...' || button.innerHTML.indexOf('Saving') !== -1) {
+            button.innerHTML = origBtnHTML;
         }
     }
 }
@@ -301,9 +330,10 @@ async function handleAiGradeEssay(event) {
 
     const labelEl = button.querySelector('.ai-grade-label');
     const originalLabel = labelEl ? labelEl.textContent : 'AI Grade';
+    var origBtnHTML = button.innerHTML;
 
     button.disabled = true;
-    if (labelEl) labelEl.textContent = 'Grading...';
+    button.innerHTML = '<svg class="inline-block w-3.5 h-3.5 animate-spin mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Grading...';
     button.style.opacity = '0.7';
     button.style.cursor = 'wait';
 
@@ -321,6 +351,7 @@ async function handleAiGradeEssay(event) {
         showError(error.message || 'Network error. Could not reach AI service.');
     } finally {
         button.disabled = false;
+        button.innerHTML = origBtnHTML;
         if (labelEl) labelEl.textContent = originalLabel;
         button.style.opacity = '';
         button.style.cursor = '';
@@ -393,6 +424,11 @@ function showBatchModalResult(successCount, failCount) {
     closeBtn.classList.remove('hidden');
     closeBtn.onclick = function () {
         document.getElementById('batchActionModal').classList.add('hidden');
+        // Scroll to first graded essay
+        var firstGraded = document.querySelector('.grading-section[data-is-graded="true"]');
+        if (firstGraded) {
+            firstGraded.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
     if (total > 0) {
@@ -418,9 +454,13 @@ async function handleBatchAiGrade(event) {
     showBatchModal('Grading Essays');
     document.getElementById('batchModalStatus').textContent = 'Preparing...';
 
+    var origHTML = button.innerHTML;
+    button.innerHTML = '<svg class="inline-block w-4 h-4 animate-spin mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Grading...';
     button.disabled = true;
     button.style.opacity = '0.7';
     button.style.cursor = 'wait';
+
+    await new Promise(function (r) { setTimeout(r, 100); });
 
     let completed = 0;
     let failed = [];
@@ -451,6 +491,7 @@ async function handleBatchAiGrade(event) {
 
     updateBatchModal(completed, total, 'Finalising...');
     await new Promise(function (r) { setTimeout(r, 300); });
+    button.innerHTML = origHTML;
     showBatchModalResult(completed - failed.length, failed.length);
 }
 
@@ -468,14 +509,22 @@ async function handleSaveAllGrades(event) {
         return;
     }
 
+    if (ungradedSections.length > 5 && !confirm('Save grades for ' + ungradedSections.length + ' ungraded essays? Make sure you have reviewed each one.')) {
+        return;
+    }
+
     showBatchModal('Saving Grades');
     document.getElementById('batchModalStatus').textContent = 'Preparing...';
     document.getElementById('batchModalHeader').className = 'px-6 py-5 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center gap-3';
     document.getElementById('batchModalBar').className = 'h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-300';
 
+    var origHTML = button.innerHTML;
+    button.innerHTML = '<svg class="inline-block w-4 h-4 animate-spin mr-1.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving...';
     button.disabled = true;
     button.style.opacity = '0.7';
     button.style.cursor = 'wait';
+
+    await new Promise(function (r) { setTimeout(r, 100); });
 
     let completed = 0;
     let failed = [];
@@ -534,6 +583,7 @@ async function handleSaveAllGrades(event) {
 
     updateBatchModal(completed, total, 'Finalising...');
     await new Promise(function (r) { setTimeout(r, 300); });
+    button.innerHTML = origHTML;
     showBatchModalResult(completed - failed.length, failed.length);
 }
 
