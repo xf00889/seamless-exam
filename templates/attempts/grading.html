@@ -84,7 +84,6 @@
         <span><span id="batch-count">{{ grading_status.ungraded_essays }}</span> essay(s) need grading</span>
     </div>
     <button type="button" id="batch-ai-grade-btn"
-            onclick="handleBatchAiGrade(event)"
             class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed"
             style="background:linear-gradient(to right,#7c3aed,#4f46e5);transition:filter 0.15s ease;"
             onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='brightness(1)'">
@@ -102,6 +101,15 @@
     <span id="batch-ai-done" class="hidden text-sm font-medium"></span>
 </div>
 {% endif %}
+<script>
+document.addEventListener('click', function batchCheck(e) {
+    var btn = e.target.closest('#batch-ai-grade-btn');
+    if (btn && typeof handleBatchAiGrade === 'function') {
+        e.preventDefault();
+        handleBatchAiGrade(e);
+    }
+});
+</script>
 
 <!-- Questions and Answers -->
 <div class="space-y-6">
@@ -334,5 +342,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/grading.js' %}"></script>
+<script src="{% static 'js/grading.js' %}?v=2"></script>
 {% endblock %}
