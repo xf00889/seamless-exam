@@ -4,12 +4,13 @@
 {% block title %}Request Access - ValuateAI{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/login.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/login.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
 <div class="login-page">
-    <div class="login-container">
+    <div class="login-vectors" id="loginVectors"></div>
+    <div class="login-wrapper">
         <a href="{% url 'home' %}" class="brand-link">
             <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
         </a>
@@ -103,4 +104,39 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var vecContainer = document.getElementById('loginVectors');
+    if (vecContainer) {
+        var types = ['vec-dot', 'vec-dot', 'vec-ring', 'vec-cross'];
+        var colors = ['#e0e7ff', '#ddd6fe', '#c7d2fe', '#bfdbfe', '#e0e7ff'];
+        var sizes = [8, 12, 16, 24, 32];
+        for (var i = 0; i < 12; i++) {
+            var el = document.createElement('div');
+            var type = types[Math.floor(Math.random() * types.length)];
+            var size = sizes[Math.floor(Math.random() * sizes.length)];
+            el.className = type;
+            el.style.cssText = [
+                'left:' + (3 + Math.random() * 90) + '%',
+                'top:' + (3 + Math.random() * 90) + '%',
+                'width:' + size + 'px',
+                'height:' + size + 'px',
+                'opacity:' + (0.4 + Math.random() * 0.4).toFixed(2)
+            ].join(';');
+            var color = colors[Math.floor(Math.random() * colors.length)];
+            if (type === 'vec-dot') {
+                el.style.background = color;
+            } else if (type === 'vec-ring') {
+                el.style.borderColor = color;
+            } else {
+                el.style.color = color;
+            }
+            vecContainer.appendChild(el);
+        }
+    }
+})();
+</script>
 {% endblock %}

@@ -4,15 +4,12 @@
 {% block title %}Teacher Login - ValuateAI{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/login.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/login.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
 <div class="login-page">
-    <div class="login-stars" id="loginStars"></div>
     <div class="login-vectors" id="loginVectors"></div>
-    <div class="login-glow login-glow--purple"></div>
-    <div class="login-glow login-glow--blue"></div>
     <div class="login-wrapper">
         <div class="login-brand">
             <a href="{% url 'home' %}" class="brand-link">
@@ -126,32 +123,11 @@
 {% block extra_js %}
 <script>
 (function() {
-    // Stars
-    var container = document.getElementById('loginStars');
-    if (container) {
-        for (var i = 0; i < 100; i++) {
-            var star = document.createElement('span');
-            var size = Math.random() * 2 + 1;
-            star.style.cssText = [
-                'left:' + (Math.random() * 100) + '%',
-                'top:' + (Math.random() * 100) + '%',
-                'width:' + size + 'px',
-                'height:' + size + 'px',
-                '--duration:' + (3 + Math.random() * 4) + 's',
-                '--min-opacity:' + (0.05 + Math.random() * 0.2).toFixed(2),
-                '--max-opacity:' + (0.3 + Math.random() * 0.5).toFixed(2),
-                'animation-delay:' + (Math.random() * 5) + 's'
-            ].join(';');
-            container.appendChild(star);
-        }
-    }
-
-    // Vector shapes
     var vecContainer = document.getElementById('loginVectors');
     if (vecContainer) {
-        var types = ['vec-dot', 'vec-dot', 'vec-ring'];
-        var colors = ['rgba(167, 139, 250, 0.2)', 'rgba(99, 102, 241, 0.18)', 'rgba(124, 58, 237, 0.15)', 'rgba(96, 165, 250, 0.15)'];
-        var sizes = [8, 12, 16, 24, 32, 48];
+        var types = ['vec-dot', 'vec-dot', 'vec-ring', 'vec-cross'];
+        var colors = ['#e0e7ff', '#ddd6fe', '#c7d2fe', '#bfdbfe', '#e0e7ff'];
+        var sizes = [8, 12, 16, 24, 32];
         for (var i = 0; i < 12; i++) {
             var el = document.createElement('div');
             var type = types[Math.floor(Math.random() * types.length)];
@@ -162,19 +138,20 @@
                 'top:' + (3 + Math.random() * 90) + '%',
                 'width:' + size + 'px',
                 'height:' + size + 'px',
-                'opacity:' + (0.3 + Math.random() * 0.5).toFixed(2)
+                'opacity:' + (0.4 + Math.random() * 0.4).toFixed(2)
             ].join(';');
+            var color = colors[Math.floor(Math.random() * colors.length)];
             if (type === 'vec-dot') {
-                el.style.background = colors[Math.floor(Math.random() * colors.length)];
-            }
-            if (type === 'vec-ring') {
-                el.style.borderColor = colors[Math.floor(Math.random() * colors.length)];
+                el.style.background = color;
+            } else if (type === 'vec-ring') {
+                el.style.borderColor = color;
+            } else {
+                el.style.color = color;
             }
             vecContainer.appendChild(el);
         }
     }
 
-    // Password toggle
     document.querySelectorAll('.password-toggle').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var wrapper = this.closest('.input-wrapper');
@@ -186,7 +163,6 @@
         });
     });
 
-    // Form loading state
     document.querySelectorAll('.login-form').forEach(function(form) {
         form.addEventListener('submit', function() {
             var btn = this.querySelector('.btn-submit');
