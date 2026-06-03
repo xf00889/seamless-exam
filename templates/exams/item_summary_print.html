@@ -526,7 +526,7 @@
         <div class="ai-box avoid-break">
             <div class="ai-header">
                 <span><strong>AI-Generated Insights</strong> &middot; DepEd-aligned</span>
-                <span>{% if cached_generated_at %}{{ cached_generated_at|date:"F j, Y g:i A" }}{% endif %}{% if cached_model_used %} &middot; {{ cached_model_used }}{% endif %}</span>
+                <span>{% if cached_generated_at %}{{ cached_generated_at|date:"F j, Y g:i A" }}{% endif %}</span>
             </div>
 
             {% if cached_analysis.overall_assessment %}

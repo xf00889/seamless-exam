@@ -654,9 +654,9 @@
     <div id="aiAnalysisResult" class="hidden mb-6"></div>
     {% if cached_analysis %}
     {{ cached_analysis|json_script:"aiCachedAnalysis" }}
-    <script type="application/json" id="aiCachedMeta">{"generated_at": "{{ cached_generated_at|default_if_none:''|escapejs }}", "model_used": "{{ cached_model_used|escapejs }}"}</script>
+    <script type="application/json" id="aiCachedMeta">{"generated_at": "{{ cached_generated_at|default_if_none:''|escapejs }}"}</script>
     {% else %}
-    <script type="application/json" id="aiCachedMeta">{"generated_at": "", "model_used": ""}</script>
+    <script type="application/json" id="aiCachedMeta">{"generated_at": ""}</script>
     {% endif %}
     {{ ai_stats|json_script:"aiStatsData" }}
     {{ item_no_to_question_id_json|json_script:"aiItemQuestionMap" }}
@@ -837,7 +837,7 @@ function generateAiAnalysis() {
         }
 
         if (data && data.success && data.analysis) {
-            const meta = { generated_at: new Date().toISOString(), model_used: data.model_used || '' };
+            const meta = { generated_at: new Date().toISOString() };
             renderAnalysis(data.analysis, meta);
             resultContainer.classList.remove('hidden');
         } else {
@@ -939,7 +939,6 @@ function renderAnalysis(analysis, meta) {
     const stats = getStats();
     const qMap = getItemQuestionMap();
     const generatedAtIso = (meta && meta.generated_at) || '';
-    const modelUsed = (meta && meta.model_used) || '';
     const relativeTime = formatRelativeTime(generatedAtIso);
     const absoluteTime = generatedAtIso ? new Date(generatedAtIso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
@@ -1035,7 +1034,6 @@ function renderAnalysis(analysis, meta) {
                             ${relativeTime ? '<span>Generated ' + escapeHtml(relativeTime) + '</span>' : '<span>Recently generated</span>'}
                             ${absoluteTime ? '<span class="text-purple-200/80" style="color:rgba(245,243,255,0.8);">&middot;</span><span class="text-purple-200/80" style="color:rgba(245,243,255,0.8);" title="' + escapeHtml(absoluteTime) + '">' + escapeHtml(absoluteTime) + '</span>' : ''}
                         </span>
-                        ${modelUsed ? '<span style="display:inline-flex;align-items:center;gap:0.25rem;"><svg width="14" height="14" style="width:14px;height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span>Model: ' + escapeHtml(modelUsed) + '</span></span>' : ''}
                     </div>
                 </div>
             </div>
@@ -1046,7 +1044,7 @@ function renderAnalysis(analysis, meta) {
                 ${statsTile('MPS', mps.toFixed(1) + '%', masteryBadge(stats.mastery_level || 'Low Mastery'), mpsAccent)}
                 ${statsTile('Items', stats.total_items || 0, 'across the test')}
                 ${statsTile('Learners', stats.total_learners || 0, (stats.passing_rate ? stats.passing_rate + '% passing' : 'attempts recorded'))}
-                ${statsTile('Generated', relativeTime || 'today', modelUsed ? 'via ' + escapeHtml(modelUsed) : 'cached')}
+                ${statsTile('Generated', relativeTime || 'today', 'by AI')}
             </div>
 
             ${overall ? `<div class="relative bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200/60" style="position:relative;background:linear-gradient(to bottom right,#faf5ff,#eef2ff);border-radius:0.75rem;padding:1.25rem;border:1px solid rgba(216,180,254,0.4);">
