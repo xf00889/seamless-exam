@@ -35,11 +35,15 @@ function initializeGrading() {
         button.addEventListener('click', handleAiGradeDismiss);
     });
 
-    // Batch AI Grade All button
-    const batchButton = document.getElementById('batch-ai-grade-btn');
-    if (batchButton) {
-        batchButton.addEventListener('click', handleBatchAiGrade);
-    }
+    // Batch AI Grade All (event delegation — catches the button even if
+    // DOM timing differs, and works after Turbolinks/hotwire-style navigations)
+    document.addEventListener('click', function batchClick(e) {
+        const btn = e.target.closest('#batch-ai-grade-btn');
+        if (btn) {
+            e.preventDefault();
+            handleBatchAiGrade(e);
+        }
+    });
 }
 
 /**
@@ -345,7 +349,8 @@ function handleAiGradeDismiss(event) {
  * calls the AI grade endpoint, and populates the form.
  */
 async function handleBatchAiGrade(event) {
-    const button = event.currentTarget;
+    const button = event.target.closest('#batch-ai-grade-btn');
+    if (!button) return;
     const sections = document.querySelectorAll('.grading-section');
     const ungradedSections = Array.from(sections).filter(
         section => section.getAttribute('data-is-graded') === 'false'
