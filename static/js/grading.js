@@ -77,8 +77,11 @@ function handleApplyAiScore(e) {
   var input = document.querySelector('.essay-points-input[data-answer-id="' + answerId + '"]');
   if (!input) return;
   var max = parseFloat(input.getAttribute('data-max-points'));
-  input.value = Math.min(score, max);
+  var applied = Math.min(score, max);
+  input.value = applied;
   input.dispatchEvent(new Event('input', { bubbles: true }));
+  var teacherDisplay = section.querySelector('.teacher-score-display');
+  if (teacherDisplay) teacherDisplay.textContent = applied.toFixed(1);
 }
 
 /* ── Save grade ────────────────────────────────────────────── */
@@ -122,6 +125,11 @@ async function handleGradeEssay(event) {
       updateGradingUI(answerId, data);
       showSuccess(data.message);
       updateFinalScore(data.total_score);
+      var section = document.querySelector('.grading-section[data-answer-id="' + answerId + '"]');
+      if (section) {
+        var td = section.querySelector('.teacher-score-display');
+        if (td) td.textContent = Number(data.points_earned || 0).toFixed(1);
+      }
       button.innerHTML = 'Update Grade';
 
       var allSections = Array.from(document.querySelectorAll('.grading-section'));
@@ -174,8 +182,12 @@ function updateGradingUI(answerId, data) {
 }
 
 function updateFinalScore(score) {
-  var el = document.getElementById('final-score');
-  if (el) el.innerHTML = score.toFixed(2) + ' <span class="text-lg font-normal text-gray-400">pts</span>';
+  var footerEl = document.getElementById('final-score');
+  if (footerEl) footerEl.innerHTML = score.toFixed(2) + ' <span class="text-sm font-normal text-gray-400">pts</span>';
+  var formatted = score.toFixed(2) + ' pts';
+  document.querySelectorAll('.overall-score').forEach(function(el) {
+    el.textContent = formatted;
+  });
 }
 
 /* ── CSRF, notifications ───────────────────────────────────── */
@@ -217,75 +229,72 @@ function populateAiGradeResult(answerId, data) {
     feedbackInput.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  /* Show results panel, hide placeholder */
+  /* Hide placeholder (and primary assess btn), show results */
   var placeholder = section.querySelector('.ai-eval-placeholder');
   var results = section.querySelector('.ai-eval-results');
   if (placeholder) placeholder.classList.add('hidden');
   if (results) results.classList.remove('hidden');
 
-  /* Score */
-  var scoreEl = section.querySelector('.ai-suggested-score');
-  if (scoreEl) {
-    var pts = Number(data.points_earned || 0).toFixed(1);
-    scoreEl.textContent = pts;
+  /* Grade Summary bar score */
+  var aiScoreEl = section.querySelector('.ai-suggested-score');
+  if (aiScoreEl) {
+    aiScoreEl.textContent = Number(data.points_earned || 0).toFixed(1);
   }
 
-  /* Timestamp */
-  var tsEl = section.querySelector('.ai-eval-timestamp');
-  if (tsEl) {
-    var now = new Date();
-    tsEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  /* Score Hero */
+  var heroEl = section.querySelector('.ai-suggested-score-hero');
+  if (heroEl) {
+    heroEl.textContent = Number(data.points_earned || 0).toFixed(1);
   }
 
-  /* Confidence */
+  /* Confidence Badge */
   var confidence = data.confidence || data.confidence_score;
-  if (confidence != null) {
-    var confWrap = section.querySelector('.ai-confidence-wrap');
-    var confBar = section.querySelector('.ai-confidence-bar');
-    var confLabel = section.querySelector('.ai-confidence-label');
-    if (confWrap) confWrap.classList.remove('hidden');
-    var pct = Math.round(confidence * 100);
-    if (confBar) {
-      confBar.style.width = pct + '%';
-      confBar.className = 'ai-confidence-bar h-full rounded-full transition-all duration-700 ease-out ' +
-        (pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-orange-500');
+  var confWrap = section.querySelector('.ai-confidence-badge-wrap');
+  if (confWrap) {
+    if (confidence != null) {
+      confWrap.classList.remove('hidden');
+      var pct = Math.round(confidence * 100);
+      var dot = confWrap.querySelector('.ai-confidence-dot');
+      var pctEl = confWrap.querySelector('.ai-confidence-pct');
+      if (dot) {
+        dot.className = 'w-2 h-2 rounded-full ai-confidence-dot ' +
+          (pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500');
+      }
+      if (pctEl) pctEl.textContent = pct + '%';
+    } else {
+      confWrap.classList.add('hidden');
     }
-    if (confLabel) confLabel.textContent = pct + '%';
   }
 
-  /* Rubric */
+  /* Rubric Score Cards */
   var bd = data.breakdown || {};
   var rubricKeys = ['relevance', 'correctness', 'depth', 'critical_thinking', 'writing_quality'];
   var rubricLabels = { relevance: 'Relevance', correctness: 'Correctness', depth: 'Depth', critical_thinking: 'Critical Thinking', writing_quality: 'Writing Quality' };
   var hasRubric = rubricKeys.some(function(k) { return bd[k] != null; });
 
-  if (hasRubric) {
-    var rubricEl = section.querySelector('.ai-rubric');
-    var barsEl = section.querySelector('.ai-rubric-bars');
-    if (rubricEl) rubricEl.classList.remove('hidden');
-    if (barsEl) {
-      barsEl.innerHTML = '';
+  var rubricWrap = section.querySelector('.ai-rubric');
+  var cardsEl = section.querySelector('.ai-rubric-cards');
+  if (rubricWrap && cardsEl) {
+    if (hasRubric) {
+      rubricWrap.classList.remove('hidden');
+      cardsEl.innerHTML = '';
       rubricKeys.forEach(function(key) {
         var val = bd[key];
         if (val == null) return;
-        var pct = (val / 10) * 100;
         var label = rubricLabels[key] || key;
-        var div = document.createElement('div');
-        div.className = 'space-y-0.5';
-        div.innerHTML =
-          '<div class="flex justify-between text-xs">' +
-          '  <span class="text-gray-600">' + label + '</span>' +
-          '  <span class="font-medium text-gray-800">' + val.toFixed(1) + '/10</span>' +
-          '</div>' +
-          '<div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">' +
-          '  <div class="h-full rounded-full transition-all duration-500 bg-purple-500" style="width:' + pct + '%"></div>' +
-          '</div>';
-        barsEl.appendChild(div);
+        var card = document.createElement('div');
+        card.className = 'bg-white rounded-lg border border-gray-100 p-2.5 text-center';
+        card.innerHTML =
+          '<div class="text-xs text-gray-500 mb-0.5">' + label + '</div>' +
+          '<div class="text-base font-bold text-gray-800">' + val.toFixed(1) + '<span class="text-xs font-normal text-gray-400">/10</span></div>';
+        cardsEl.appendChild(card);
       });
+    } else {
+      rubricWrap.classList.add('hidden');
     }
   }
 
-  /* Reasoning */
+  /* Reasoning Callout */
   if (data.reasoning) {
     var reasoningEl = section.querySelector('.ai-reasoning');
     var reasoningText = section.querySelector('.ai-reasoning-text');
@@ -297,10 +306,10 @@ function populateAiGradeResult(answerId, data) {
   var applyBtn = section.querySelector('.apply-ai-score-btn');
   if (applyBtn) applyBtn.classList.remove('hidden');
 
-  /* Change assess button to "Reassess" */
-  var assessBtn = section.querySelector('.ai-grade-essay-btn');
-  if (assessBtn) {
-    var label = assessBtn.querySelector('.ai-grade-label');
+  /* Update results assess button label to "Re-assess" */
+  var resultsAssessBtn = section.querySelector('.ai-eval-results .ai-grade-essay-btn');
+  if (resultsAssessBtn) {
+    var label = resultsAssessBtn.querySelector('.ai-grade-label');
     if (label) label.textContent = 'Re-assess';
   }
 }
@@ -506,6 +515,11 @@ async function handleSaveAllGrades(event) {
       if (resp.ok && data.success) {
         updateGradingUI(answerId, data);
         updateFinalScore(data.total_score);
+        var sec = document.querySelector('.grading-section[data-answer-id="' + answerId + '"]');
+        if (sec) {
+          var td = sec.querySelector('.teacher-score-display');
+          if (td) td.textContent = Number(data.points_earned || 0).toFixed(1);
+        }
       } else {
         failed.push({ id: answerId, error: data.error || 'Save failed' });
       }
