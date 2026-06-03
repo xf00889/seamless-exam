@@ -4,7 +4,6 @@
 {% block title %}My Profile - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-3xl mx-auto px-4" role="main" aria-labelledby="profile-heading">
 
     <!-- Profile Header Card -->
@@ -38,6 +37,7 @@
             </div>
         </div>
     </section>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Basic Information -->
     <section class="bg-white shadow-sm rounded-lg overflow-hidden mb-6 border border-gray-200" aria-labelledby="basic-info-heading">

@@ -4,7 +4,6 @@
 {% block title %}Remove Student from Class - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-3xl mx-auto" role="main" aria-labelledby="remove-heading">
     <!-- Header -->
     <div class="mb-6 sm:mb-8">
@@ -20,6 +19,7 @@
             </a>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Confirmation Card -->
     <section class="bg-white shadow-md rounded-lg overflow-hidden" aria-labelledby="confirm-heading">

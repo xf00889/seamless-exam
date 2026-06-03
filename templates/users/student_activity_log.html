@@ -4,7 +4,6 @@
 {% block title %}Activity Log - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-5xl mx-auto" role="main" aria-labelledby="activity-heading">
     <!-- Page Header -->
     <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-indigo-500 border-t border-r border-b border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
@@ -29,6 +28,7 @@
             </a>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     {% if activity_log %}
     <div class="space-y-3 sm:space-y-4">

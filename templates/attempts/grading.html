@@ -192,7 +192,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-7xl mx-auto" role="main" aria-labelledby="grading-heading">
 
   <!-- Top Header -->
@@ -241,6 +240,7 @@
       </div>
     </div>
   </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
   <!-- Grading Summary (sticky) -->
   <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-5 mb-6 sticky top-16 z-30">

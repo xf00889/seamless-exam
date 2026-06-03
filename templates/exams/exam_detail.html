@@ -8,7 +8,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="mx-auto px-4 py-0" role="main" aria-labelledby="exam-detail-heading">
     <div class="hidden">{% csrf_token %}</div>
 
@@ -92,6 +91,7 @@
             </div>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Summary -->
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">

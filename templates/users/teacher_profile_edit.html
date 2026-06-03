@@ -4,7 +4,6 @@
 {% block title %}Edit Profile - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="mx-auto px-4 py-0" role="main" aria-labelledby="edit-profile-heading">
     <!-- Page Header -->
     <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
@@ -30,6 +29,7 @@
             </a>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Edit Form -->
     <section class="bg-white shadow-md rounded-lg overflow-hidden">

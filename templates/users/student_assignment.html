@@ -3,7 +3,6 @@
 {% block title %}{{ page_title }} - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">{{ page_title }}</h2>
     <p class="mt-1 text-sm text-gray-600">
@@ -14,6 +13,7 @@
         {% endif %}
     </p>
 </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
 <!-- Assignment Form -->
 <div class="bg-white shadow rounded-lg p-6 mb-6">

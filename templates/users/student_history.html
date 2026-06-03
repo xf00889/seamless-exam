@@ -4,7 +4,6 @@
 {% block title %}Exam History - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="mx-auto px-4 py-0" role="main" aria-labelledby="history-heading">
     <!-- Page Header -->
     <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
@@ -42,6 +41,7 @@
             </div>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Filters Section -->
     <section class="bg-white shadow-md rounded-lg overflow-hidden mb-6" aria-labelledby="filters-heading">

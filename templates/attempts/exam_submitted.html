@@ -4,7 +4,6 @@
 {% block title %}Exam Submitted - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="min-h-screen flex items-center justify-center px-4">
     <div class="max-w-md w-full">
         <!-- Success Card -->
@@ -16,6 +15,7 @@
                 </svg>
                 <h2 class="mt-4 text-2xl font-bold text-white">Exam Submitted Successfully!</h2>
             </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
             
             <!-- Confirmation Details -->
             <div class="p-6">

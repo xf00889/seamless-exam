@@ -8,7 +8,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <!-- Page Header -->
 <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -31,6 +30,7 @@
         </a>
     </div>
 </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
 {% if exams %}
 <div class="bg-white shadow overflow-hidden rounded-lg">

@@ -4,7 +4,6 @@
 {% block title %}Exam Results - {{ exam.title }}{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="max-w-7xl mx-auto" role="main" aria-labelledby="results-heading">
     <!-- Page Header with Navigation -->
     <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-green-500 border-t border-r border-b border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
@@ -40,6 +39,7 @@
             </div>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
 <!-- Score Summary Card -->
 <section class="bg-white shadow-lg rounded-lg overflow-hidden mb-4 sm:mb-8" aria-label="Score summary">

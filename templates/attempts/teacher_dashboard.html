@@ -9,7 +9,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="container mx-auto px-4 py-0">
     <!-- Page Header -->
     <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-purple-500 border-t border-r border-b border-gray-200 p-6 mb-6">
@@ -23,6 +22,7 @@
         </div>
         <p class="text-gray-600 ml-13">View and analyze all student exam attempts</p>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     <!-- Quick Links Section -->
     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 mb-8">

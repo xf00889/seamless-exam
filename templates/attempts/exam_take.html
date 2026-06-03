@@ -4,8 +4,8 @@
 {% block title %}{{ exam.title }} - ValuateAI{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="flex flex-col lg:flex-row gap-4 px-2 sm:px-4 max-w-7xl mx-auto">
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
     <!-- Left Sidebar - Question Navigation -->
     <aside class="w-full lg:w-64 flex-shrink-0 order-2 lg:order-1">
         <div class="bg-white shadow rounded-lg p-4 sticky top-4">

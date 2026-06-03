@@ -8,7 +8,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <!-- CSRF token for AJAX requests -->
 {% csrf_token %}
 
@@ -38,6 +37,7 @@
             </a>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
 {% if has_exams %}
 <main class="space-y-4 sm:space-y-6">

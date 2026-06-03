@@ -4,10 +4,10 @@
 {% block title %}Review Questions - {{ document.file_path }}{% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="container mx-auto px-4 py-8">
     <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Review Extracted Questions</h1>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
         <p class="text-gray-600">Document: {{ document.file_path }}</p>
         <p class="text-sm text-gray-500">
             Total Questions: {{ summary.total_questions }} | 

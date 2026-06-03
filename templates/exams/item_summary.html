@@ -33,7 +33,6 @@
 
 {% block content %}
 {% csrf_token %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 <div class="container mx-auto px-4 py-0">
 
     <!-- Page Header -->
@@ -78,6 +77,7 @@
             </div>
         </div>
     </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
     {% if not summary.has_data %}
     <!-- No Data State -->

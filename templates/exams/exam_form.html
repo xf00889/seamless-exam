@@ -8,8 +8,6 @@
 {% endblock %}
 
 {% block content %}
-{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
-
 <!-- Page Header -->
 <div class="bg-white rounded-lg shadow-sm border-l-4 border-l-blue-500 border-t border-r border-b border-gray-200 p-6 mb-6">
     <div class="flex items-center">
@@ -24,6 +22,7 @@
         </div>
     </div>
 </div>
+{% include 'components/breadcrumb.html' with breadcrumbs=page_breadcrumbs %}
 
 <!-- Progress Steps -->
 <div class="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
