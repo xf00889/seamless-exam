@@ -1,4 +1,4 @@
-{% load static tailwind_tags pwa %}
+{% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ValuateAI{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'img/brand.png' %}">
-    {% progressive_web_app_meta %}
 
     <!-- Tailwind CSS - Generated locally with django-tailwind for offline operation (Requirement 17.1, 18.4) -->
     <!-- No CDN dependencies - all assets served from local server -->
@@ -20,7 +19,6 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <link rel="stylesheet" href="{% static 'css/pwa-install.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -58,8 +56,5 @@
     <script src="{% static 'js/components/message-handler.js' %}"></script>
     
     {% block extra_js %}{% endblock %}
-
-    <!-- PWA Install Banner -->
-    <script src="{% static 'js/pwa-install.js' %}"></script>
 </body>
 </html>

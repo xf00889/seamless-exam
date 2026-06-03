@@ -55,7 +55,6 @@ urlpatterns = [
     path('setup/', FirstTimeSetupView.as_view(), name='setup'),
     path('health/', health_check, name='health_check'),
     path('cron/backup/', cron_backup, name='cron_backup'),
-    path('', include('pwa.urls')),
     path('users/', include('users.urls')),
     path('superadmin/', include('users.urls_superadmin')),
     path('exams/', include('exams.urls')),
