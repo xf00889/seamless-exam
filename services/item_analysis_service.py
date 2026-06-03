@@ -849,8 +849,8 @@ RULES:
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://seamless-exam.com',
-            'X-Title': 'Seamless Exam System',
+            'HTTP-Referer': 'https://valuateai.onrender.com',
+            'X-Title': 'ValuateAI Exam System',
         }
 
         payload = {

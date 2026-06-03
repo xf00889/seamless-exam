@@ -1,4 +1,4 @@
-var CACHE_NAME = 'seamless-pwa-v1';
+var CACHE_NAME = 'valuateai-pwa-v1';
 var urlsToCache = [
   '/',
   '/static/css/main.css',

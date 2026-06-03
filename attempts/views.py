@@ -2059,7 +2059,7 @@ def export_scores_excel_view(request):
             ws.add_image(img, 'A1')
             row = 5
 
-        ws.cell(row=row, column=1, value='Seamless Exam System - Score Report')
+        ws.cell(row=row, column=1, value='ValuateAI Exam System - Score Report')
         ws.cell(row=row, column=1).font = title_font
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         row += 1
@@ -2203,7 +2203,7 @@ def export_accounts_excel_view(request):
             ws.add_image(img, 'A1')
             row = 5
 
-        ws.cell(row=row, column=1, value='Seamless Exam System - Student Accounts')
+        ws.cell(row=row, column=1, value='ValuateAI Exam System - Student Accounts')
         ws.cell(row=row, column=1).font = title_font
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
         row += 1

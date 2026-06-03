@@ -169,8 +169,8 @@ def grade_essay_with_ai(*, question_text, answer_text, max_points, exam_title=''
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://seamless-exam.com',
-        'X-Title': 'Seamless Exam System',
+        'HTTP-Referer': 'https://valuateai.onrender.com',
+        'X-Title': 'ValuateAI Exam System',
     }
 
     payload = {

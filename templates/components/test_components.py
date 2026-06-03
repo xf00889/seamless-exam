@@ -36,7 +36,7 @@ class ComponentRenderTest(TestCase):
         self.assertNotIn('onclick=', rendered)
         self.assertNotIn('onchange=', rendered)
         # Verify component renders
-        self.assertIn('Seamless', rendered)
+        self.assertIn('ValuateAI', rendered)
         self.assertIn('Test User', rendered)
     
     def test_footer_component_renders(self):
@@ -48,7 +48,7 @@ class ComponentRenderTest(TestCase):
         # Verify no inline styles
         self.assertNotIn('style=', rendered)
         # Verify component renders
-        self.assertIn('Seamless', rendered)
+        self.assertIn('ValuateAI', rendered)
         self.assertIn('All rights reserved', rendered)
     
     def test_alert_component_renders_success(self):

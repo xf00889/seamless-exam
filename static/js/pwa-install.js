@@ -23,7 +23,7 @@
       <div class="pwa-banner-content">
         <img src="/static/img/icons/icon-72x72.png" alt="" class="pwa-banner-icon">
         <div class="pwa-banner-text">
-          <strong>Install Seamless</strong>
+          <strong>Install ValuateAI</strong>
           <span>Add to your home screen for quick access</span>
         </div>
         <div class="pwa-banner-actions">
@@ -76,7 +76,7 @@
     modal.innerHTML = `
       <div class="pwa-ios-overlay" id="pwa-ios-overlay"></div>
       <div class="pwa-ios-content">
-        <h3>Install Seamless</h3>
+        <h3>Install ValuateAI</h3>
         <p>To install this app on your device:</p>
         <ol>
           <li>Tap the <strong>Share</strong> button <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></li>

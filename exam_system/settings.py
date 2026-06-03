@@ -220,9 +220,9 @@ CSRF_COOKIE_NAME = 'exam_csrftoken'  # Custom name to avoid fingerprinting
 CSRF_USE_SESSIONS = False  # Store CSRF token in cookie (not session)
 CSRF_COOKIE_AGE = 7200  # Match session age
 CSRF_TRUSTED_ORIGINS = [
-    'https://seamless.dpdns.org',
-    'https://www.seamless.dpdns.org',
-    'https://localexammaker.onrender.com',
+    'https://valuateai.onrender.com',
+    'https://www.valuateai.onrender.com',
+    'https://valuateai.onrender.com',
 ]
 
 # XSS Prevention (Requirement 1.4)
@@ -410,8 +410,8 @@ LOGGING = {
 # PWA CONFIGURATION
 # ============================================
 
-PWA_APP_NAME = 'Seamless'
-PWA_APP_DESCRIPTION = 'Online examination system for students and teachers'
+PWA_APP_NAME = 'ValuateAI'
+PWA_APP_DESCRIPTION = 'AI-powered exam system for students and teachers'
 PWA_APP_THEME_COLOR = '#2563eb'
 PWA_APP_BACKGROUND_COLOR = '#f9fafb'
 PWA_APP_DISPLAY = 'standalone'
