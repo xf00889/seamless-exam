@@ -23,19 +23,27 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
-    <!-- Navigation -->
+    {% if navbar_teacher %}
+    {% include 'components/sidebar.html' %}
+    <div class="teacher-main-wrapper">
+    {% else %}
     {% include 'components/navbar.html' %}
-    
+    {% endif %}
+
     <!-- Messages -->
     {% include 'components/messages.html' %}
-    
+
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {% block content %}{% endblock %}
     </main>
-    
+
     <!-- Footer -->
     {% include 'components/footer.html' %}
+
+    {% if navbar_teacher %}
+    </div>
+    {% endif %}
     
     <!-- SweetAlert2 JavaScript - Must load before custom scripts (Requirement 1.2, 1.4) -->
     <script src="{% static 'js/sweetalert2.min.js' %}?v=4"></script>

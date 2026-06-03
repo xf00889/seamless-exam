@@ -9,86 +9,190 @@
 
 {% block content %}
 <div class="login-page">
-    <div class="login-container">
-        <a href="{% url 'home' %}" class="brand-link">
-            <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
-        </a>
+    <div class="login-stars" id="loginStars"></div>
+    <div class="login-vectors" id="loginVectors"></div>
+    <div class="login-glow login-glow--purple"></div>
+    <div class="login-glow login-glow--blue"></div>
+    <div class="login-wrapper">
+        <div class="login-brand">
+            <a href="{% url 'home' %}" class="brand-link">
+                <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
+            </a>
+        </div>
 
-        <div class="login-content">
-            <div class="login-header">
-                <h1 class="login-title">Teacher Portal</h1>
-                <p class="login-subtitle">Sign in to manage your classes</p>
+        <div class="login-header">
+            <h1 class="login-title">Teacher Portal</h1>
+            <p class="login-subtitle">Sign in to manage your classes</p>
+        </div>
+
+        <form class="login-form" method="POST" action="{% url 'teacher_login' %}">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div class="alert alert-error">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>Login failed. Please check your username and password.</span>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="Enter your username"
+                        value="{{ form.username.value|default:'' }}"
+                        required
+                        autocomplete="username"
+                        maxlength="150"
+                    >
+                </div>
             </div>
 
-            <form class="login-form" method="POST" action="{% url 'teacher_login' %}">
-                {% csrf_token %}
-                {% if form.errors %}
-                    <div class="alert alert-error">
-                        Login failed. Please check your username and password and try again.
-                    </div>
-                {% endif %}
-                <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
-                    <div class="input-wrapper">
-                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                    <button type="button" class="password-toggle" aria-label="Toggle password visibility" tabindex="-1">
+                        <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
                         </svg>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            class="form-input"
-                            placeholder="Enter your username"
-                            value="{{ form.username.value|default:'' }}"
-                            required
-                            autocomplete="username"
-                            maxlength="150"
-                        >
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <div class="input-wrapper">
-                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
                         </svg>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            class="form-input"
-                            placeholder="Enter your password"
-                            required
-                            autocomplete="current-password"
-                        >
-                    </div>
+                    </button>
                 </div>
-
-                <div class="form-options">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="remember" class="checkbox-input">
-                        <span class="checkbox-text">Remember me for 30 days</span>
-                    </label>
-                </div>
-
-                <button type="submit" class="btn-submit">Sign In</button>
-            </form>
-
-            <div class="login-footer">
-                <p class="footer-text">
-                    Student account?
-                    <a href="{% url 'student_login' %}" class="footer-link">Login here</a>
-                </p>
-                <p class="footer-text">
-                    No account yet?
-                    <a href="{% url 'request_access' %}" class="footer-link">Request access</a>
-                </p>
-                <a href="{% url 'home' %}" class="back-link">Back to home</a>
             </div>
+
+            <div class="form-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="remember" class="checkbox-input">
+                    <span class="checkbox-text">Remember me for 30 days</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <span class="btn-text">Sign In</span>
+                <div class="btn-loader">
+                    <div class="spinner"></div>
+                    <span>Signing in...</span>
+                </div>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p class="footer-text">
+                Student account?
+                <a href="{% url 'student_login' %}" class="footer-link">Login here</a>
+            </p>
+            <p class="footer-text">
+                No account yet?
+                <a href="{% url 'request_access' %}" class="footer-link">Request access</a>
+            </p>
+            <a href="{% url 'home' %}" class="back-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to home
+            </a>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Stars
+    var container = document.getElementById('loginStars');
+    if (container) {
+        for (var i = 0; i < 100; i++) {
+            var star = document.createElement('span');
+            var size = Math.random() * 2 + 1;
+            star.style.cssText = [
+                'left:' + (Math.random() * 100) + '%',
+                'top:' + (Math.random() * 100) + '%',
+                'width:' + size + 'px',
+                'height:' + size + 'px',
+                '--duration:' + (3 + Math.random() * 4) + 's',
+                '--min-opacity:' + (0.05 + Math.random() * 0.2).toFixed(2),
+                '--max-opacity:' + (0.3 + Math.random() * 0.5).toFixed(2),
+                'animation-delay:' + (Math.random() * 5) + 's'
+            ].join(';');
+            container.appendChild(star);
+        }
+    }
+
+    // Vector shapes
+    var vecContainer = document.getElementById('loginVectors');
+    if (vecContainer) {
+        var types = ['vec-dot', 'vec-dot', 'vec-ring'];
+        var colors = ['rgba(167, 139, 250, 0.2)', 'rgba(99, 102, 241, 0.18)', 'rgba(124, 58, 237, 0.15)', 'rgba(96, 165, 250, 0.15)'];
+        var sizes = [8, 12, 16, 24, 32, 48];
+        for (var i = 0; i < 12; i++) {
+            var el = document.createElement('div');
+            var type = types[Math.floor(Math.random() * types.length)];
+            var size = sizes[Math.floor(Math.random() * sizes.length)];
+            el.className = type;
+            el.style.cssText = [
+                'left:' + (3 + Math.random() * 90) + '%',
+                'top:' + (3 + Math.random() * 90) + '%',
+                'width:' + size + 'px',
+                'height:' + size + 'px',
+                'opacity:' + (0.3 + Math.random() * 0.5).toFixed(2)
+            ].join(';');
+            if (type === 'vec-dot') {
+                el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            }
+            if (type === 'vec-ring') {
+                el.style.borderColor = colors[Math.floor(Math.random() * colors.length)];
+            }
+            vecContainer.appendChild(el);
+        }
+    }
+
+    // Password toggle
+    document.querySelectorAll('.password-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var wrapper = this.closest('.input-wrapper');
+            var input = wrapper.querySelector('.form-input');
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            wrapper.querySelector('.eye-open').style.display = isPassword ? 'none' : '';
+            wrapper.querySelector('.eye-closed').style.display = isPassword ? '' : 'none';
+        });
+    });
+
+    // Form loading state
+    document.querySelectorAll('.login-form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            var btn = this.querySelector('.btn-submit');
+            if (btn) btn.classList.add('loading');
+        });
+    });
+})();
+</script>
 {% endblock %}

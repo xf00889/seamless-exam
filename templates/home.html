@@ -26,17 +26,30 @@
             {% if dashboard_url %}
             <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
             {% else %}
-            <a href="#tutorial" class="nav-link">Tutorial</a>
             <a href="#features" class="nav-link">Features</a>
             <a href="#how-it-works" class="nav-link">How It Works</a>
+            <a href="#tutorial" class="nav-link">Tutorial</a>
             <a href="{% url 'teacher_login' %}" class="btn-nav">Login</a>
             {% endif %}
         </div>
     </nav>
 
     <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">A Smarter Way to Manage School Exams</h1>
+        <div class="hero-stars"></div>
+        <div class="hero-glow hero-glow--purple"></div>
+        <div class="hero-glow hero-glow--blue"></div>
+        <div class="hero-glow hero-glow--accent"></div>
+        <div class="hero-shooting-star"></div>
+        <div class="hero-content" data-animate>
+            <div class="hero-badge">
+                <span class="badge-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                </span>
+                AI-Powered Exam System
+            </div>
+            <h1 class="hero-title">A <span class="gradient-text">Smarter Way</span> to Manage School Exams</h1>
             <p class="hero-subtitle">Create, administer, and grade exams with ease. Built for teachers who want to spend less time on paperwork and more time teaching.</p>
             <div class="hero-buttons">
                 {% if dashboard_url %}
@@ -78,7 +91,7 @@
     </section>
 
     <section class="features" id="features">
-        <div class="container">
+        <div class="container" data-animate>
             <div class="section-header">
                 <span class="section-label">Features</span>
                 <h2 class="section-title">Everything You Need to Run Exams</h2>
@@ -153,7 +166,7 @@
     </section>
 
     <section class="how-it-works" id="how-it-works">
-        <div class="container">
+        <div class="container" data-animate>
             <div class="section-header">
                 <span class="section-label">How It Works</span>
                 <h2 class="section-title">From Setup to Results in 4 Steps</h2>
@@ -172,11 +185,11 @@
                     <p class="step-card-desc">Build exams with the form builder or generate questions with AI. Set time limits and point values.</p>
                 </div>
                 <div class="step-connector">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </div>
-                <div class="step-card">
+                <div class="step-card" style="animation-delay:0.1s">
                     <div class="step-number-badge">2</div>
                     <div class="step-icon-wrap icon-assign">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,11 +203,11 @@
                     <p class="step-card-desc">Publish the exam to specific classes. Students see it on their dashboard when it's available.</p>
                 </div>
                 <div class="step-connector">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </div>
-                <div class="step-card">
+                <div class="step-card" style="animation-delay:0.2s">
                     <div class="step-number-badge">3</div>
                     <div class="step-icon-wrap icon-take">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -207,11 +220,11 @@
                     <p class="step-card-desc">Students log in, answer questions at their own pace, and submit when ready. A timer keeps them on track.</p>
                 </div>
                 <div class="step-connector">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </div>
-                <div class="step-card">
+                <div class="step-card" style="animation-delay:0.3s">
                     <div class="step-number-badge">4</div>
                     <div class="step-icon-wrap icon-results">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -228,7 +241,7 @@
     </section>
 
     <section class="video-tutorial" id="tutorial">
-        <div class="container">
+        <div class="container" data-animate>
             <div class="section-header">
                 <span class="section-label">Watch It In Action</span>
                 <h2 class="section-title">See How Simple It Is</h2>
@@ -290,7 +303,7 @@
     </section>
 
     <section class="cta">
-        <div class="container">
+        <div class="container" data-animate>
             <div class="cta-content">
                 <h2 class="cta-title">Ready to Simplify Your Exams?</h2>
                 <p class="cta-subtitle">Start creating and managing exams today. Built for educators who value their time.</p>
@@ -343,6 +356,90 @@
 </div>
 
 <script>
+// Generate star field
+(function() {
+    const container = document.querySelector('.hero-stars');
+    if (!container) return;
+    for (let i = 0; i < 120; i++) {
+        const star = document.createElement('span');
+        const size = 1 + Math.random() * 2.5;
+        star.style.cssText = [
+            'left:' + (Math.random() * 100) + '%',
+            'top:' + (Math.random() * 100) + '%',
+            'width:' + size + 'px',
+            'height:' + size + 'px',
+            '--duration:' + (2 + Math.random() * 4) + 's',
+            '--min-opacity:' + (0.1 + Math.random() * 0.3),
+            '--max-opacity:' + (0.5 + Math.random() * 0.5),
+            'animation-delay:' + (Math.random() * 6) + 's'
+        ].join(';');
+        container.appendChild(star);
+    }
+})();
+
+// Generate minimal vector shapes on white sections
+(function() {
+    var shapes = ['vec-shape--dot', 'vec-shape--dot', 'vec-shape--ring', 'vec-shape--cross'];
+    var sizes = [6, 8, 10, 14, 20, 28];
+    var colors = ['#6366f1', '#7c3aed', '#60a5fa', '#a78bfa', '#8b5cf6'];
+    var sections = document.querySelectorAll('.features, .how-it-works, .video-tutorial');
+    var countPerSection = { features: 8, 'how-it-works': 6, 'video-tutorial': 5 };
+
+    sections.forEach(function(section) {
+        var count = countPerSection[section.id || section.className.split(' ')[0]] || 5;
+
+        for (var i = 0; i < count; i++) {
+            var el = document.createElement('div');
+            var type = shapes[Math.floor(Math.random() * shapes.length)];
+            var size = sizes[Math.floor(Math.random() * sizes.length)];
+
+            el.className = 'vec-shape ' + type;
+
+            if (type === 'vec-shape--cross') {
+                el.style.width = size * 1.2 + 'px';
+                el.style.height = size * 1.2 + 'px';
+            } else {
+                el.style.width = size + 'px';
+                el.style.height = size + 'px';
+            }
+
+            if (type === 'vec-shape--dot') {
+                el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            }
+            if (type === 'vec-shape--ring') {
+                el.style.borderColor = colors[Math.floor(Math.random() * colors.length)];
+            }
+            if (type === 'vec-shape--cross') {
+                el.style.setProperty('--color', colors[Math.floor(Math.random() * colors.length)]);
+            }
+
+            el.style.left = (3 + Math.random() * 90) + '%';
+            el.style.top = (3 + Math.random() * 85) + '%';
+            el.style.opacity = (0.08 + Math.random() * 0.12);
+
+            section.appendChild(el);
+        }
+    });
+})();
+
+// Scroll animations with Intersection Observer
+(function() {
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+        document.querySelectorAll('.feature-card, .step-card').forEach(el => observer.observe(el));
+    } else {
+        document.querySelectorAll('[data-animate], .feature-card, .step-card').forEach(el => el.classList.add('visible'));
+    }
+})();
+
 // Mobile nav toggle
 (function() {
     const toggle = document.querySelector('.nav-toggle');
