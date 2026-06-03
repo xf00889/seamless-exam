@@ -6,7 +6,7 @@ databases:
 
 services:
   - type: web
-    name: localexammaker
+    name: ValuateAI
     runtime: python
     plan: free
     buildCommand: "bash build.sh"
