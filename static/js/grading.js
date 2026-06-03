@@ -8,6 +8,8 @@ function initializeGrading() {
   });
   document.querySelectorAll('.essay-points-input').forEach(function(i) {
     i.addEventListener('input', validatePoints);
+    i.addEventListener('change', function() { updateScoreProgress(i); });
+    updateScoreProgress(i);
   });
   document.querySelectorAll('.ai-grade-essay-btn').forEach(function(b) {
     b.addEventListener('click', handleAiGradeEssay);
@@ -43,6 +45,21 @@ function validatePoints(e) {
   var val = parseFloat(input.value);
   if (val < 0) input.value = 0;
   else if (val > max) input.value = max;
+  updateScoreProgress(input);
+}
+
+function updateScoreProgress(input) {
+  var max = parseFloat(input.getAttribute('data-max-points'));
+  var val = parseFloat(input.value);
+  if (isNaN(val)) val = 0;
+  if (isNaN(max)) max = 1;
+  var pct = max > 0 ? Math.min((val / max) * 100, 100) : 0;
+  var section = input.closest('.grading-section');
+  if (!section) return;
+  var bar = section.querySelector('.score-visual-bar');
+  if (bar) bar.style.width = pct + '%';
+  var label = section.querySelector('.score-pct-label');
+  if (label) label.textContent = Math.round(pct) + '%';
 }
 
 /* ── Feedback chips ────────────────────────────────────────── */
@@ -70,9 +87,9 @@ function handleApplyAiScore(e) {
   var section = btn.closest('.grading-section');
   if (!section) return;
   var answerId = section.getAttribute('data-answer-id');
-  var aiScore = section.querySelector('.ai-suggested-score');
-  if (!aiScore) return;
-  var score = parseFloat(aiScore.textContent);
+  var aiScoreEl = section.querySelector('.ai-suggested-score');
+  if (!aiScoreEl) return;
+  var score = parseFloat(aiScoreEl.textContent);
   if (isNaN(score)) return;
   var input = document.querySelector('.essay-points-input[data-answer-id="' + answerId + '"]');
   if (!input) return;
@@ -80,8 +97,12 @@ function handleApplyAiScore(e) {
   var applied = Math.min(score, max);
   input.value = applied;
   input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
   var teacherDisplay = section.querySelector('.teacher-score-display');
-  if (teacherDisplay) teacherDisplay.textContent = applied.toFixed(1);
+  if (teacherDisplay) {
+    teacherDisplay.textContent = applied.toFixed(1);
+    teacherDisplay.classList.remove('hidden');
+  }
 }
 
 /* ── Save grade ────────────────────────────────────────────── */
@@ -220,6 +241,8 @@ function populateAiGradeResult(answerId, data) {
   if (pointsInput) {
     pointsInput.value = data.points_earned;
     pointsInput.dispatchEvent(new Event('input', { bubbles: true }));
+    pointsInput.dispatchEvent(new Event('change', { bubbles: true }));
+    updateScoreProgress(pointsInput);
   }
   if (feedbackInput && data.feedback) {
     feedbackInput.value = data.feedback;
@@ -244,6 +267,16 @@ function populateAiGradeResult(answerId, data) {
     heroEl.textContent = Number(data.points_earned || 0).toFixed(1);
   }
 
+  /* SVG Ring: animate stroke-dashoffset to show score proportion */
+  var ringFg = section.querySelector('.ai-score-ring .ring-fg');
+  var maxPts = pointsInput ? parseFloat(pointsInput.getAttribute('data-max-points')) : 1;
+  var pct = maxPts > 0 ? Math.min(Number(data.points_earned || 0) / maxPts, 1) : 0;
+  var circumference = 188.5;
+  if (ringFg) {
+    var offset = circumference - (circumference * pct);
+    ringFg.setAttribute('stroke-dashoffset', offset);
+  }
+
   /* Confidence Badge */
   var confidence = data.confidence || data.confidence_score;
   var confWrap = section.querySelector('.ai-confidence-badge-wrap');
@@ -263,10 +296,11 @@ function populateAiGradeResult(answerId, data) {
     }
   }
 
-  /* Rubric inline */
+  /* Rubric bars with visual chart */
   var bd = data.breakdown || {};
   var rubricKeys = ['relevance', 'correctness', 'depth', 'critical_thinking', 'writing_quality'];
   var rubricLabels = { relevance: 'Rel', correctness: 'Cor', depth: 'Dep', critical_thinking: 'CT', writing_quality: 'WQ' };
+  var rubricColors = { relevance: 'bg-violet-400', correctness: 'bg-blue-400', depth: 'bg-emerald-400', critical_thinking: 'bg-amber-400', writing_quality: 'bg-rose-400' };
   var hasRubric = rubricKeys.some(function(k) { return bd[k] != null; });
 
   var rubricWrap = section.querySelector('.ai-rubric');
@@ -278,10 +312,15 @@ function populateAiGradeResult(answerId, data) {
       rubricKeys.forEach(function(key) {
         var val = bd[key];
         if (val == null) return;
-        var span = document.createElement('span');
-        span.className = 'text-[11px] text-gray-600';
-        span.textContent = rubricLabels[key] + ' ' + val.toFixed(1);
-        cardsEl.appendChild(span);
+        var maxRubric = 10;
+        var barPct = Math.min(val / maxRubric * 100, 100);
+        var row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = '<span class="text-[11px] font-medium text-gray-600 w-6 shrink-0">' + rubricLabels[key] + '</span>' +
+          '<div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">' +
+          '<div class="h-full rounded-full ' + (rubricColors[key] || 'bg-purple-400') + ' transition-all duration-500" style="width:' + barPct + '%"></div></div>' +
+          '<span class="text-[11px] font-bold text-gray-700 w-8 text-right shrink-0">' + val.toFixed(1) + '</span>';
+        cardsEl.appendChild(row);
       });
     } else {
       rubricWrap.classList.add('hidden');

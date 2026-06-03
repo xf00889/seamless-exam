@@ -17,10 +17,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slideDown {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 1000px; }
-}
 
 /* Score ring for AI hero */
 .ai-score-ring { 
@@ -84,13 +80,7 @@
 
 /* Reasoning expand */
 .reasoning-body { 
-  max-height: 0; 
-  overflow: hidden; 
-  transition: max-height 0.3s ease; 
-}
-.reasoning-body.open { 
-  max-height: 600px; 
-  animation: slideDown 0.3s ease;
+  max-height: none; 
 }
 
 /* Feedback chip active */
@@ -537,15 +527,10 @@
                   <div class="ai-rubric-cards"></div>
                 </div>
 
-                <!-- Reasoning (collapsible) -->
+                <!-- Reasoning (always visible) -->
                 <div class="ai-reasoning hidden">
-                  <button type="button" class="reasoning-toggle w-full flex items-center justify-between text-[11px] font-bold text-gray-700 uppercase tracking-widest py-2 px-2 hover:bg-gray-50 rounded-md transition-colors">
-                    <span>AI Reasoning</span>
-                    <svg class="w-4 h-4 reasoning-chevron transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                  </button>
-                  <div class="reasoning-body">
-                    <p class="text-xs text-gray-700 leading-relaxed pt-2 px-2 ai-reasoning-text bg-gray-50 rounded-md p-2"></p>
-                  </div>
+                  <div class="text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">AI Reasoning</div>
+                  <div class="text-xs text-gray-700 leading-relaxed ai-reasoning-text bg-gray-50 rounded-md p-3 border border-gray-100"></div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -613,10 +598,10 @@
                       </div>
                     </div>
                     <div class="flex-1 hidden sm:block">
-                      <div class="h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
-                        <div class="score-visual-bar h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                      <div class="h-2.5 bg-gray-200 rounded-full overflow-hidden mb-1">
+                        <div class="score-visual-bar h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
                       </div>
-                      <span class="text-[10px] text-gray-500 font-medium">Progress</span>
+                      <span class="text-[10px] text-gray-500 font-medium">Score progress</span>
                     </div>
                   </div>
                 </div>
