@@ -38,7 +38,7 @@ class InputSanitizer:
     def sanitize_html(text: Optional[str]) -> str:
         """
         Sanitize HTML content to prevent XSS attacks.
-        
+         
         Escapes HTML special characters and removes dangerous tags/attributes.
         Use this for user-generated content that will be displayed in HTML.
         
