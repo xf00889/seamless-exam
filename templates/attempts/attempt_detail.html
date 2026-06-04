@@ -100,10 +100,7 @@
 
     <!-- Questions and Answers -->
     <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Question Navigation -->
-        {% include 'components/question_navigation.html' with nav_questions=nav_questions nav_mode='attempt' %}
-
-        <div class="flex-1 min-w-0 bg-white rounded-lg shadow-md overflow-hidden order-first lg:order-none">
+        <div class="flex-1 min-w-0 bg-white rounded-lg shadow-md overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-800">Questions and Answers</h2>
             </div>
@@ -198,6 +195,9 @@
             {% endfor %}
         </div>
         </div>
+
+        <!-- Question Navigation (sticky right) -->
+        {% include 'components/question_navigation.html' with nav_questions=nav_questions nav_mode='attempt' %}
     </div>
 
     <!-- Action Buttons -->
