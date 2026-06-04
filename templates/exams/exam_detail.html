@@ -219,6 +219,8 @@
 
         <!-- Summary sidebar -->
         <div class="lg:w-80 flex-shrink-0 space-y-6">
+            {% include 'components/question_navigation.html' with nav_questions=questions nav_mode='exam' %}
+
             <div class="bg-white shadow rounded-lg p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Class Summary</h2>
                 <div class="mb-4 rounded-lg bg-gray-50 p-4">
@@ -324,9 +326,6 @@
                  {% endif %}
              </div>
          </div>
-
-         <!-- Question Navigation (sticky right) -->
-         {% include 'components/question_navigation.html' with nav_questions=questions nav_mode='exam' %}
      </div>
 
 <script src="{% static 'js/question-navigation.js' %}"></script>
