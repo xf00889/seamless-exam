@@ -84,4 +84,21 @@
     } else {
         init();
     }
+
+    // Force layout recalculation after load to ensure position:sticky
+    // latches onto its scroll container on first paint. Without this, some
+    // browsers (especially on cold cache) compute the flex column height
+    // asynchronously and the sticky element has no scroll range until the
+    // next reflow (e.g. after a hard refresh).
+    function forceStickyReflow() {
+        // Reading offsetHeight forces a synchronous layout.
+        void document.body.offsetHeight;
+        // Nudge the browser with a resize event so sticky bindings re-evaluate.
+        window.dispatchEvent(new Event('resize'));
+    }
+    if (document.readyState === 'complete') {
+        forceStickyReflow();
+    } else {
+        window.addEventListener('load', forceStickyReflow);
+    }
 })();
