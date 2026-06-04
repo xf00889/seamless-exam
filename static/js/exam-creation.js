@@ -109,7 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateSummary() {
         var title = document.getElementById('title').value || 'Not specified';
-        var subject = document.getElementById('subject').value || 'Not specified';
+        var subjectEl = document.getElementById('id_subject');
+        var subject = subjectEl ? subjectEl.value : 'Not specified';
         var duration = document.getElementById('duration_minutes').value;
         var method = document.querySelector('input[name="generation_method"]:checked');
         var classes = document.querySelectorAll('input[name="assigned_classes"]:checked');

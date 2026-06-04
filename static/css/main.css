@@ -1973,8 +1973,8 @@ html {
     left: 0;
     width: 260px;
     height: 100vh;
-    background: #0f172a;
-    border-right: 1px solid #1e293b;
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -1983,7 +1983,7 @@ html {
 
 .sidebar-header {
     padding: 1.25rem 1.25rem 1rem;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2000,7 +2000,7 @@ html {
     height: 36px;
     width: auto;
     border-radius: 8px;
-    mix-blend-mode: screen;
+    mix-blend-mode: multiply;
 }
 
 .sidebar-brand-text {
@@ -2012,14 +2012,14 @@ html {
 .sidebar-title {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: #0f172a;
     letter-spacing: -0.02em;
 }
 
 .sidebar-role {
     font-size: 0.625rem;
     font-weight: 600;
-    color: #64748b;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -2028,7 +2028,7 @@ html {
     display: none;
     background: none;
     border: none;
-    color: #64748b;
+    color: #6b7280;
     cursor: pointer;
     padding: 0.25rem;
     border-radius: 4px;
@@ -2036,7 +2036,7 @@ html {
 }
 
 .sidebar-close:hover {
-    color: #f1f5f9;
+    color: #0f172a;
 }
 
 .sidebar-nav {
@@ -2054,7 +2054,7 @@ html {
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #cbd5e1;
     border-radius: 2px;
 }
 
@@ -2063,7 +2063,7 @@ html {
     align-items: center;
     gap: 0.75rem;
     padding: 0.6875rem 1.25rem;
-    color: #94a3b8;
+    color: #4b5563;
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;
@@ -2073,19 +2073,19 @@ html {
 }
 
 .sidebar-nav-item:hover {
-    color: #f1f5f9;
-    background: rgba(255, 255, 255, 0.04);
+    color: #0f172a;
+    background: #f3f4f6;
 }
 
 .sidebar-nav-item--active {
-    color: #a78bfa;
-    background: rgba(167, 139, 250, 0.08);
+    color: #7c3aed;
+    background: rgba(167, 139, 250, 0.12);
     border-left-color: #a78bfa;
 }
 
 .sidebar-nav-item--active:hover {
-    color: #a78bfa;
-    background: rgba(167, 139, 250, 0.12);
+    color: #7c3aed;
+    background: rgba(167, 139, 250, 0.18);
 }
 
 .sidebar-nav-icon {
@@ -2105,7 +2105,7 @@ html {
 }
 
 .sidebar-footer {
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid #e5e7eb;
     padding: 0.875rem 1rem;
 }
 
@@ -2139,7 +2139,7 @@ html {
 .sidebar-profile-name {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #f1f5f9;
+    color: #0f172a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2147,7 +2147,7 @@ html {
 
 .sidebar-profile-email {
     font-size: 0.6875rem;
-    color: #64748b;
+    color: #6b7280;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2159,7 +2159,7 @@ html {
     gap: 0.25rem;
     margin-top: 0.625rem;
     padding-top: 0.625rem;
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid #e5e7eb;
 }
 
 .sidebar-profile-link,
@@ -2169,14 +2169,14 @@ html {
     justify-content: center;
     padding: 0.375rem;
     border-radius: 6px;
-    color: #64748b;
+    color: #6b7280;
     text-decoration: none;
     transition: all 0.2s;
 }
 
 .sidebar-profile-link:hover {
-    color: #f1f5f9;
-    background: rgba(255, 255, 255, 0.06);
+    color: #0f172a;
+    background: #f3f4f6;
 }
 
 .sidebar-logout-btn {
@@ -2184,8 +2184,8 @@ html {
 }
 
 .sidebar-logout-btn:hover {
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.08);
 }
 
 .sidebar-mobile-toggle {
@@ -2195,17 +2195,17 @@ html {
     left: 0.75rem;
     z-index: 99;
     padding: 0.5rem;
-    background: #0f172a;
-    border: 1px solid #1e293b;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
-    color: #94a3b8;
+    color: #4b5563;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .sidebar-mobile-toggle:hover {
-    color: #f1f5f9;
-    background: #1e293b;
+    color: #0f172a;
+    background: #f3f4f6;
 }
 
 .sidebar-backdrop {
