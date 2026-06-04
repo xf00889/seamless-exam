@@ -179,17 +179,25 @@
 <div id="tab-warning-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4 flex items-center justify-center">
     <div class="p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white">
         <div class="mt-2 sm:mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-3">
-                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span data-modal-badge class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 mb-3">
+                ⚠ Warning 1 of 3
+            </span>
+            <div data-modal-icon-wrap class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-3">
+                <svg data-modal-icon class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                 </svg>
             </div>
-            <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mb-2">Potential Cheating Detected</h3>
+            <h3 data-modal-title class="text-base sm:text-lg leading-6 font-medium text-gray-900 mb-2">Potential Cheating Detected</h3>
             <div class="mt-2 px-4 sm:px-7 py-2 sm:py-3">
-                <p id="warning-text" class="text-xs sm:text-sm text-gray-600 mb-3">
+                <p data-modal-text class="text-xs sm:text-sm text-gray-600 mb-3 whitespace-pre-line">
                     A tab switch, split screen, or window change was detected. Keep the exam in full screen and do not open other applications.
                 </p>
-                <div id="warning-count" class="text-sm sm:text-base font-semibold text-yellow-600">
+                <div data-modal-dots class="flex justify-center gap-2 mb-3">
+                    <span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span>
+                    <span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span>
+                    <span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span>
+                </div>
+                <div data-modal-count class="text-sm sm:text-base font-semibold text-yellow-600">
                     Warning 1 of 3
                 </div>
                 <p class="text-xs text-gray-500 mt-2">
@@ -197,7 +205,7 @@
                 </p>
             </div>
             <div class="items-center px-3 sm:px-4 py-2 sm:py-3">
-                <button onclick="document.getElementById('tab-warning-modal').classList.add('hidden')"
+                <button data-modal-btn onclick="CheatDetectionModal.hideWarning()"
                         class="px-4 py-2 bg-yellow-600 text-white text-sm sm:text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors">
                     OK, I Understand
                 </button>
@@ -223,6 +231,31 @@
                 <div class="flex justify-center mt-4">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submission Error Modal -->
+<div id="submission-error-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4 flex items-center justify-center">
+    <div class="p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-2 sm:mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-3">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 data-modal-title class="text-base sm:text-lg leading-6 font-medium text-gray-900 mb-2">Submission Error</h3>
+            <div class="mt-2 px-4 sm:px-7 py-2 sm:py-3">
+                <p data-modal-text class="text-xs sm:text-sm text-gray-600 mb-3">
+                    Failed to submit your exam automatically. Please submit manually or contact your teacher.
+                </p>
+            </div>
+            <div class="items-center px-3 sm:px-4 py-2 sm:py-3">
+                <button onclick="CheatDetectionModal.hideError()"
+                        class="px-4 py-2 bg-red-600 text-white text-sm sm:text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                    OK
+                </button>
             </div>
         </div>
     </div>

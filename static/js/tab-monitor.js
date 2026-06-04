@@ -1,11 +1,120 @@
 
 
-function getResponsiveSwalWidth() {
-    const vw = window.innerWidth || document.documentElement.clientWidth;
-    if (vw <= 374) return 'calc(100vw - 1rem)';
-    if (vw <= 640) return 'calc(100vw - 1.5rem)';
-    return '460px';
+
+class CheatDetectionModal {
+    static showWarning(warningNumber, totalWarnings) {
+        const modal = document.getElementById('tab-warning-modal');
+        if (!modal) return;
+
+        const isCritical = warningNumber >= 3;
+
+        let title, text;
+        if (warningNumber === 1) {
+            title = 'Potential Cheating Detected';
+            text = `A tab switch, split screen, or window change was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nKeep the exam in full screen and do not open other apps or tabs. After ${totalWarnings} warnings, your exam will be automatically submitted and flagged.`;
+        } else if (warningNumber === 2) {
+            title = 'Potential Cheating Detected';
+            text = `Another violation was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
+        } else if (warningNumber === 3) {
+            title = 'Final Warning — Auto-Submit Imminent';
+            text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further violation will result in automatic submission and your exam will be flagged for review.`;
+        } else {
+            title = 'Potential Cheating Detected';
+            text = `A violation was detected.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
+        }
+
+        setText(modal, '[data-modal-title]', title);
+        setText(modal, '[data-modal-text]', text);
+        setText(modal, '[data-modal-count]', `Warning ${warningNumber} of ${totalWarnings}`);
+
+        const badge = modal.querySelector('[data-modal-badge]');
+        if (badge) {
+            badge.textContent = isCritical
+                ? `🚨 Final warning · ${warningNumber} of ${totalWarnings}`
+                : `⚠ Warning ${warningNumber} of ${totalWarnings}`;
+            badge.classList.toggle('bg-yellow-100', !isCritical);
+            badge.classList.toggle('text-yellow-800', !isCritical);
+            badge.classList.toggle('bg-red-100', isCritical);
+            badge.classList.toggle('text-red-800', isCritical);
+        }
+
+        const dots = modal.querySelector('[data-modal-dots]');
+        if (dots) {
+            let html = '';
+            for (let i = 1; i <= totalWarnings; i++) {
+                let cls = 'h-2.5 w-2.5 rounded-full';
+                if (i < warningNumber) {
+                    cls += isCritical ? ' bg-red-500' : ' bg-yellow-500';
+                } else if (i === warningNumber && isCritical) {
+                    cls += ' bg-red-500';
+                } else {
+                    cls += ' bg-gray-300';
+                }
+                html += `<span class="${cls}"></span>`;
+            }
+            dots.innerHTML = html;
+        }
+
+        const iconWrap = modal.querySelector('[data-modal-icon-wrap]');
+        if (iconWrap) {
+            iconWrap.classList.toggle('bg-yellow-100', !isCritical);
+            iconWrap.classList.toggle('bg-red-100', isCritical);
+        }
+        const icon = modal.querySelector('[data-modal-icon]');
+        if (icon) {
+            icon.classList.toggle('text-yellow-600', !isCritical);
+            icon.classList.toggle('text-red-600', isCritical);
+        }
+
+        const count = modal.querySelector('[data-modal-count]');
+        if (count) {
+            count.classList.toggle('text-yellow-600', !isCritical);
+            count.classList.toggle('text-red-600', isCritical);
+        }
+
+        const btn = modal.querySelector('[data-modal-btn]');
+        if (btn) {
+            btn.classList.toggle('bg-yellow-600', !isCritical);
+            btn.classList.toggle('hover:bg-yellow-700', !isCritical);
+            btn.classList.toggle('focus:ring-yellow-500', !isCritical);
+            btn.classList.toggle('bg-red-600', isCritical);
+            btn.classList.toggle('hover:bg-red-700', isCritical);
+            btn.classList.toggle('focus:ring-red-500', isCritical);
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    static showAutoSubmit() {
+        const modal = document.getElementById('auto-submit-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    static showError(title, message) {
+        const modal = document.getElementById('submission-error-modal');
+        if (!modal) return;
+        setText(modal, '[data-modal-title]', title);
+        setText(modal, '[data-modal-text]', message);
+        modal.classList.remove('hidden');
+    }
+
+    static hideWarning() {
+        const modal = document.getElementById('tab-warning-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    static hideError() {
+        const modal = document.getElementById('submission-error-modal');
+        if (modal) modal.classList.add('hidden');
+    }
 }
+
+function setText(root, selector, value) {
+    const el = root.querySelector(selector);
+    if (el) el.textContent = value;
+}
+
+window.CheatDetectionModal = CheatDetectionModal;
 
 class TabMonitor {
     constructor(attemptId, options = {}) {
@@ -367,73 +476,11 @@ class TabMonitor {
      * Requirements: 1.1, 1.2, 1.3, 1.5, 7.1, 7.2, 7.3, 7.4
      */
     showWarning(warningNumber, totalWarnings) {
-        if (typeof Swal === 'undefined') {
+        if (!document.getElementById('tab-warning-modal')) {
             return;
         }
 
-        let title, text, icon, isCritical;
-
-        if (warningNumber === 1) {
-            title = 'Potential Cheating Detected';
-            text = `A tab switch, split screen, or window change was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nKeep the exam in full screen and do not open other apps or tabs. After ${totalWarnings} warnings, your exam will be automatically submitted and flagged.`;
-            icon = 'warning';
-            isCritical = false;
-        } else if (warningNumber === 2) {
-            title = 'Potential Cheating Detected';
-            text = `Another violation was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
-            icon = 'warning';
-            isCritical = false;
-        } else if (warningNumber === 3) {
-            title = 'Final Warning — Auto-Submit Imminent';
-            text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further violation will result in automatic submission and your exam will be flagged for review.`;
-            icon = 'error';
-            isCritical = true;
-        } else {
-            title = 'Potential Cheating Detected';
-            text = `A violation was detected.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
-            icon = 'warning';
-            isCritical = warningNumber >= 3;
-        }
-
-        let progressHtml = '<div class="swal-exam-progress">';
-        for (let i = 1; i <= totalWarnings; i++) {
-            const cls = i < warningNumber
-                ? 'swal-exam-progress-dot--active'
-                : (i === warningNumber && isCritical ? 'swal-exam-progress-dot--critical' : '');
-            progressHtml += `<span class="swal-exam-progress-dot ${cls}"></span>`;
-        }
-        progressHtml += '</div>';
-
-        const badgeLabel = isCritical
-            ? `🚨 Final warning · ${warningNumber} of ${totalWarnings}`
-            : `⚠ Warning ${warningNumber} of ${totalWarnings}`;
-
-        Swal.fire({
-            html: `<div class="swal-exam-badge">${badgeLabel}</div>`,
-            title: title,
-            text: text,
-            icon: icon,
-            confirmButtonText: 'OK, I Understand',
-            width: getResponsiveSwalWidth(),
-            customClass: {
-                popup: isCritical ? 'swal-exam-critical' : 'swal-exam-warning',
-                htmlContainer: 'swal-exam-html',
-            },
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            backdrop: 'rgba(15, 23, 42, 0.55)',
-            didOpen: () => {
-                const popup = Swal.getPopup();
-                if (popup && !popup.querySelector('.swal-exam-progress')) {
-                    const actions = popup.querySelector('.swal2-actions');
-                    if (actions) {
-                        const wrapper = document.createElement('div');
-                        wrapper.innerHTML = progressHtml;
-                        actions.parentNode.insertBefore(wrapper.firstElementChild, actions);
-                    }
-                }
-            }
-        });
+        CheatDetectionModal.showWarning(warningNumber, totalWarnings);
     }
 
     /**
@@ -445,26 +492,7 @@ class TabMonitor {
         // Stop monitoring to prevent additional violations
         this.stopMonitoring();
 
-        // Show auto-submission modal
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                html: '<div class="swal-exam-badge">🚨 Auto-submitted</div>',
-                title: 'Exam Auto-Submitted',
-                text: 'You have switched tabs too many times. Your exam has been automatically submitted and flagged for review by your teacher.',
-                icon: 'error',
-                showConfirmButton: false,
-                width: getResponsiveSwalWidth(),
-                customClass: {
-                    popup: 'swal-exam-autosubmit',
-                },
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                backdrop: 'rgba(15, 23, 42, 0.55)',
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-        }
+        CheatDetectionModal.showAutoSubmit();
 
         try {
             // Submit exam with auto_submit flag
@@ -522,23 +550,7 @@ class TabMonitor {
                 errorMessage = 'Request timed out. Please check your internet connection and try submitting manually.';
             }
 
-            // Show error message
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    html: '<div class="swal-exam-badge">⚠ Submission failed</div>',
-                    title: 'Submission Error',
-                    text: errorMessage,
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    width: getResponsiveSwalWidth(),
-                    customClass: {
-                        popup: 'swal-exam-error',
-                    },
-                    allowOutsideClick: true,
-                    allowEscapeKey: true,
-                    backdrop: 'rgba(15, 23, 42, 0.55)',
-                });
-            }
+            CheatDetectionModal.showError('Submission Error', errorMessage);
         }
     }
     
