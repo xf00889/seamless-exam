@@ -23,11 +23,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
-    {% if force_public_layout %}
-    <main class="flex-grow w-full">
-        {% block content %}{% endblock %}
-    </main>
-    {% else %}
+    {% if not force_public_layout %}
         {% if navbar_teacher %}
         {% include 'components/sidebar.html' %}
         <div class="teacher-main-wrapper">
@@ -37,12 +33,13 @@
 
         <!-- Messages -->
         {% include 'components/messages.html' %}
+    {% endif %}
 
-        <!-- Main Content -->
-        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-            {% block content %}{% endblock %}
-        </main>
+    <main class="flex-grow w-full{% if not force_public_layout %} max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
 
+    {% if not force_public_layout %}
         <!-- Footer -->
         {% include 'components/footer.html' %}
 

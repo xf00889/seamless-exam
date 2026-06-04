@@ -11,9 +11,11 @@
 <div class="login-page">
     <div class="login-vectors" id="loginVectors"></div>
     <div class="login-wrapper">
-        <a href="{% url 'home' %}" class="brand-link">
-            <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
-        </a>
+        <div class="login-brand">
+            <a href="{% url 'home' %}" class="brand-link">
+                <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
+            </a>
+        </div>
 
         <div class="login-content">
             <div class="login-header">

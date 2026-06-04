@@ -364,81 +364,117 @@ class TabMonitor {
             return;
         }
 
-        let title, text, icon;
+        let title, text, icon, isCritical;
 
         if (warningNumber === 1) {
-            title = '⚠️ Potential Cheating Detected';
+            title = 'Potential Cheating Detected';
             text = `A tab switch, split screen, or window change was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nKeep the exam in full screen and do not open other apps or tabs. After ${totalWarnings} warnings, your exam will be automatically submitted and flagged.`;
             icon = 'warning';
+            isCritical = false;
         } else if (warningNumber === 2) {
-            title = '⚠️ Potential Cheating Detected';
+            title = 'Potential Cheating Detected';
             text = `Another violation was detected.\n\nThis is warning ${warningNumber} of ${totalWarnings}.\n\nOne more violation and your exam will be automatically submitted!`;
             icon = 'warning';
+            isCritical = false;
         } else if (warningNumber === 3) {
-            title = '🚨 Potential Cheating Detected';
+            title = 'Final Warning — Auto-Submit Imminent';
             text = `This is your FINAL warning (${warningNumber}/${totalWarnings}).\n\nAny further violation will result in automatic submission and your exam will be flagged for review.`;
             icon = 'error';
+            isCritical = true;
         } else {
-            title = '⚠️ Potential Cheating Detected';
+            title = 'Potential Cheating Detected';
             text = `A violation was detected.\n\nWarning ${warningNumber} of ${totalWarnings}.`;
             icon = 'warning';
+            isCritical = warningNumber >= 3;
         }
-        
+
+        let progressHtml = '<div class="swal-exam-progress">';
+        for (let i = 1; i <= totalWarnings; i++) {
+            const cls = i < warningNumber
+                ? 'swal-exam-progress-dot--active'
+                : (i === warningNumber && isCritical ? 'swal-exam-progress-dot--critical' : '');
+            progressHtml += `<span class="swal-exam-progress-dot ${cls}"></span>`;
+        }
+        progressHtml += '</div>';
+
+        const badgeLabel = isCritical
+            ? `🚨 Final warning · ${warningNumber} of ${totalWarnings}`
+            : `⚠ Warning ${warningNumber} of ${totalWarnings}`;
+
         Swal.fire({
+            html: `<div class="swal-exam-badge">${badgeLabel}</div>`,
             title: title,
             text: text,
             icon: icon,
             confirmButtonText: 'OK, I Understand',
-            confirmButtonColor: warningNumber === 3 ? '#dc2626' : '#f59e0b',
+            customClass: {
+                popup: isCritical ? 'swal-exam-critical' : 'swal-exam-warning',
+                htmlContainer: 'swal-exam-html',
+            },
             allowOutsideClick: false,
             allowEscapeKey: false,
-            backdrop: true
+            backdrop: 'rgba(15, 23, 42, 0.55)',
+            didOpen: () => {
+                const popup = Swal.getPopup();
+                if (popup && !popup.querySelector('.swal-exam-progress')) {
+                    const actions = popup.querySelector('.swal2-actions');
+                    if (actions) {
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = progressHtml;
+                        actions.parentNode.insertBefore(wrapper.firstElementChild, actions);
+                    }
+                }
+            }
         });
     }
-    
+
     /**
      * Auto-submit exam after 4th violation
      * Requirements: 1.4, 2.5, 8.1, 8.2, 8.5
      */
     async autoSubmitExam() {
-        
+
         // Stop monitoring to prevent additional violations
         this.stopMonitoring();
-        
+
         // Show auto-submission modal
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                title: '🚨 Exam Auto-Submitted',
+                html: '<div class="swal-exam-badge">🚨 Auto-submitted</div>',
+                title: 'Exam Auto-Submitted',
                 text: 'You have switched tabs too many times. Your exam has been automatically submitted and flagged for review by your teacher.',
                 icon: 'error',
                 showConfirmButton: false,
+                customClass: {
+                    popup: 'swal-exam-autosubmit',
+                },
                 allowOutsideClick: false,
                 allowEscapeKey: false,
-                backdrop: true,
+                backdrop: 'rgba(15, 23, 42, 0.55)',
                 didOpen: () => {
                     Swal.showLoading();
                 }
             });
         }
-        
+
         try {
             // Submit exam with auto_submit flag
             const url = `/attempts/student/attempts/${this.attemptId}/submit/`;
             const response = await this.ajaxClient.post(url, {
                 auto_submit: true
             });
-            
+
             const data = await response.json();
-            
+
             // Validate response
             if (!data || typeof data !== 'object') {
                 throw new Error('Invalid response format from server');
             }
-            
+
             if (data.success) {
                 // Clear saved state
                 this.clearViolationState();
-                
+
                 // Redirect to submission confirmation page
                 const redirectUrl = data.redirect_url || `/attempts/student/attempts/${this.attemptId}/submitted/`;
                 window.location.href = redirectUrl;
@@ -447,7 +483,7 @@ class TabMonitor {
             }
         } catch (error) {
             console.error('Error auto-submitting exam:', error);
-            
+
             // Log detailed error information
             console.error('Auto-submit error details:', {
                 attemptId: this.attemptId,
@@ -455,10 +491,10 @@ class TabMonitor {
                 status: error.status,
                 type: error.name
             });
-            
+
             // Handle specific error types
             let errorMessage = 'Failed to submit your exam automatically. Please submit manually or contact your teacher.';
-            
+
             if (error instanceof HttpError) {
                 if (error.status === 401) {
                     errorMessage = 'Your session has expired. Please log in again.';
@@ -476,15 +512,21 @@ class TabMonitor {
             } else if (error.name === 'AbortError') {
                 errorMessage = 'Request timed out. Please check your internet connection and try submitting manually.';
             }
-            
+
             // Show error message
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
+                    html: '<div class="swal-exam-badge">⚠ Submission failed</div>',
                     title: 'Submission Error',
                     text: errorMessage,
                     icon: 'error',
                     confirmButtonText: 'OK',
-                    confirmButtonColor: '#dc2626'
+                    customClass: {
+                        popup: 'swal-exam-error',
+                    },
+                    allowOutsideClick: true,
+                    allowEscapeKey: true,
+                    backdrop: 'rgba(15, 23, 42, 0.55)',
                 });
             }
         }

@@ -26,6 +26,7 @@
             {% if dashboard_url %}
             <a href="{{ dashboard_url }}" class="btn-nav">{{ dashboard_label }}</a>
             {% else %}
+            <a href="#home" class="nav-link">Home</a>
             <a href="#features" class="nav-link">Features</a>
             <a href="#how-it-works" class="nav-link">How It Works</a>
             <a href="#tutorial" class="nav-link">Tutorial</a>
@@ -34,7 +35,7 @@
         </div>
     </nav>
 
-    <section class="hero">
+    <section class="hero" id="home">
         <div class="hero-stars"></div>
         <div class="hero-glow hero-glow--purple"></div>
         <div class="hero-glow hero-glow--blue"></div>
@@ -360,7 +361,10 @@
 (function() {
     const container = document.querySelector('.hero-stars');
     if (!container) return;
-    for (let i = 0; i < 120; i++) {
+    const isNarrow = window.matchMedia('(max-width: 768px)').matches;
+    const isVeryNarrow = window.matchMedia('(max-width: 480px)').matches;
+    const count = isVeryNarrow ? 30 : (isNarrow ? 55 : 120);
+    for (let i = 0; i < count; i++) {
         const star = document.createElement('span');
         const size = 1 + Math.random() * 2.5;
         star.style.cssText = [
@@ -471,5 +475,58 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// Scroll-spy: highlight nav link for the section currently in view
+(function() {
+    var navLinks = document.querySelectorAll('.landing-nav .nav-link');
+    if (!navLinks.length) return;
+
+    var linkByHash = {};
+    navLinks.forEach(function(link) {
+        var hash = link.getAttribute('href');
+        if (hash && hash.startsWith('#')) {
+            linkByHash[hash] = link;
+        }
+    });
+
+    function setActive(hash) {
+        navLinks.forEach(function(link) { link.classList.remove('nav-link--active'); });
+        var active = linkByHash[hash];
+        if (active) active.classList.add('nav-link--active');
+    }
+
+    var sections = [];
+    Object.keys(linkByHash).forEach(function(hash) {
+        var section = document.querySelector(hash);
+        if (section) sections.push({ hash: hash, el: section });
+    });
+    if (!sections.length) return;
+
+    var stickyOffset = 80;
+    var currentHash = null;
+
+    function onScroll() {
+        var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        var activeHash = sections[0].hash;
+        for (var i = 0; i < sections.length; i++) {
+            var rect = sections[i].el.getBoundingClientRect();
+            if (rect.top - stickyOffset <= 0) {
+                activeHash = sections[i].hash;
+            } else {
+                break;
+            }
+        }
+        if (scrollTop + window.innerHeight >= document.documentElement.scrollHeight - 4) {
+            activeHash = sections[sections.length - 1].hash;
+        }
+        if (activeHash !== currentHash) {
+            currentHash = activeHash;
+            setActive(activeHash);
+        }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
 </script>
 {% endblock %}

@@ -2486,3 +2486,208 @@ body.teacher-sidebar-collapsed .teacher-main-wrapper {
 .app-footer-link:hover {
     color: #7c3aed;
 }
+
+/* ── Exam integrity SweetAlert modals ─────────────────────── */
+
+.swal2-popup.swal-exam-warning,
+.swal2-popup.swal-exam-critical,
+.swal2-popup.swal-exam-autosubmit,
+.swal2-popup.swal-exam-error {
+    border-radius: 18px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    font-family: var(--font-sans);
+    max-width: 460px;
+}
+
+.swal2-popup.swal-exam-warning .swal2-header,
+.swal2-popup.swal-exam-critical .swal2-header,
+.swal2-popup.swal-exam-autosubmit .swal2-header,
+.swal2-popup.swal-exam-error .swal2-header {
+    padding: 2rem 2rem 0.5rem;
+    margin: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.swal2-popup.swal-exam-warning .swal2-icon,
+.swal2-popup.swal-exam-critical .swal2-icon,
+.swal2-popup.swal-exam-autosubmit .swal2-icon,
+.swal2-popup.swal-exam-error .swal2-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0;
+    border: none;
+    position: relative;
+}
+
+.swal2-popup.swal-exam-warning .swal2-icon.swal2-warning {
+    color: #f59e0b;
+    background: #fef3c7;
+    border-radius: 50%;
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.12);
+}
+
+.swal2-popup.swal-exam-warning .swal2-icon.swal2-warning .swal2-icon-content {
+    font-size: 2.75rem;
+    line-height: 72px;
+    color: #b45309;
+}
+
+.swal2-popup.swal-exam-critical .swal2-icon.swal2-error,
+.swal2-popup.swal-exam-autosubmit .swal2-icon.swal2-error,
+.swal2-popup.swal-exam-error .swal2-icon.swal2-error {
+    color: #dc2626;
+    background: #fee2e2;
+    border-radius: 50%;
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0.12);
+}
+
+.swal2-popup.swal-exam-critical .swal2-icon.swal2-error .swal2-icon-content,
+.swal2-popup.swal-exam-autosubmit .swal2-icon.swal2-error .swal2-icon-content,
+.swal2-popup.swal-exam-error .swal2-icon.swal2-error .swal2-icon-content {
+    font-size: 2.75rem;
+    line-height: 72px;
+    color: #b91c1c;
+}
+
+.swal-exam-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.swal-exam-warning .swal-exam-badge {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.swal-exam-critical .swal-exam-badge,
+.swal-exam-autosubmit .swal-exam-badge,
+.swal-exam-error .swal-exam-badge {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.swal2-popup.swal-exam-warning .swal2-title,
+.swal2-popup.swal-exam-critical .swal2-title,
+.swal2-popup.swal-exam-autosubmit .swal2-title,
+.swal2-popup.swal-exam-error .swal2-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.swal2-popup.swal-exam-warning .swal2-html-container,
+.swal2-popup.swal-exam-critical .swal2-html-container,
+.swal2-popup.swal-exam-autosubmit .swal2-html-container,
+.swal2-popup.swal-exam-error .swal2-html-container {
+    margin: 0.5rem 2rem 1.25rem;
+    padding: 0;
+    color: #475569;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.swal-exam-progress {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0 2rem 1.5rem;
+}
+
+.swal-exam-progress-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.swal-exam-progress-dot--active {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+}
+
+.swal-exam-progress-dot--critical {
+    background: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.15);
+}
+
+.swal2-popup.swal-exam-warning .swal2-actions,
+.swal2-popup.swal-exam-critical .swal2-actions,
+.swal2-popup.swal-exam-autosubmit .swal2-actions,
+.swal2-popup.swal-exam-error .swal2-actions {
+    margin: 0 2rem 2rem;
+    padding: 0;
+    width: calc(100% - 4rem);
+}
+
+.swal2-popup.swal-exam-warning .swal2-confirm,
+.swal2-popup.swal-exam-critical .swal2-confirm,
+.swal2-popup.swal-exam-autosubmit .swal2-confirm,
+.swal2-popup.swal-exam-error .swal2-confirm {
+    width: 100%;
+    margin: 0;
+    padding: 0.875rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    font-family: var(--font-sans);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.swal2-popup.swal-exam-warning .swal2-confirm {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.swal2-popup.swal-exam-warning .swal2-confirm:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+    filter: brightness(1.05);
+}
+
+.swal2-popup.swal-exam-critical .swal2-confirm,
+.swal2-popup.swal-exam-autosubmit .swal2-confirm,
+.swal2-popup.swal-exam-error .swal2-confirm {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+}
+
+.swal2-popup.swal-exam-critical .swal2-confirm:hover,
+.swal2-popup.swal-exam-autosubmit .swal2-confirm:hover,
+.swal2-popup.swal-exam-error .swal2-confirm:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+    filter: brightness(1.05);
+}
+
+.swal2-popup.swal-exam-warning .swal2-loader,
+.swal2-popup.swal-exam-critical .swal2-loader,
+.swal2-popup.swal-exam-autosubmit .swal2-loader,
+.swal2-popup.swal-exam-error .swal2-loader {
+    border-color: #cbd5e1 transparent #cbd5e1 transparent;
+}
+
+body.swal2-shown > [aria-hidden="true"] {
+    transition: filter 0.2s ease;
+    filter: blur(2px);
+}
