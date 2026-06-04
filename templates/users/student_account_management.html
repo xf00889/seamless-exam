@@ -220,7 +220,7 @@
 <script src="{% static 'js/components/base.js' %}"></script>
 <script src="{% static 'js/utils/csrf-helper.js' %}"></script>
 <script src="{% static 'js/components/form-validator.js' %}"></script>
-<script src="{% static 'js/pages/student-account-management.js' %}?v=2"></script>
+<script src="{% static 'js/pages/student-account-management.js' %}?v={{ static_version }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-student-btn').forEach(function(btn) {

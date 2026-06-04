@@ -620,7 +620,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/exam-creation.js' %}?v=20260524b"></script>
+<script src="{% static 'js/exam-creation.js' %}?v={{ static_version }}"></script>
 <script>
 function quickAddSubject() {
     const name = prompt('Enter new Subject:');

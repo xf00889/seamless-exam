@@ -307,7 +307,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/pages/exam-list.js' %}?v=20260529"></script>
+<script src="{% static 'js/pages/exam-list.js' %}?v={{ static_version }}"></script>
 
 <!-- Modal Configuration Data -->
 {{ modal_config|json_script:"modal-config-data" }}

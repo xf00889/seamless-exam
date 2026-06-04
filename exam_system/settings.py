@@ -107,6 +107,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'users.context_processors.navbar_context',  # Navbar context (Requirements 1.3, 1.4)
+                'exam_system.context_processors.static_version',  # Cache-busting version for static assets
             ],
         },
     },
