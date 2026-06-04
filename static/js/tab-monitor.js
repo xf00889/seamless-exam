@@ -1,5 +1,12 @@
 
 
+function getResponsiveSwalWidth() {
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    if (vw <= 374) return 'calc(100vw - 1rem)';
+    if (vw <= 640) return 'calc(100vw - 1.5rem)';
+    return '460px';
+}
+
 class TabMonitor {
     constructor(attemptId, options = {}) {
         this.attemptId = attemptId;
@@ -407,6 +414,7 @@ class TabMonitor {
             text: text,
             icon: icon,
             confirmButtonText: 'OK, I Understand',
+            width: getResponsiveSwalWidth(),
             customClass: {
                 popup: isCritical ? 'swal-exam-critical' : 'swal-exam-warning',
                 htmlContainer: 'swal-exam-html',
@@ -445,6 +453,7 @@ class TabMonitor {
                 text: 'You have switched tabs too many times. Your exam has been automatically submitted and flagged for review by your teacher.',
                 icon: 'error',
                 showConfirmButton: false,
+                width: getResponsiveSwalWidth(),
                 customClass: {
                     popup: 'swal-exam-autosubmit',
                 },
@@ -521,6 +530,7 @@ class TabMonitor {
                     text: errorMessage,
                     icon: 'error',
                     confirmButtonText: 'OK',
+                    width: getResponsiveSwalWidth(),
                     customClass: {
                         popup: 'swal-exam-error',
                     },
