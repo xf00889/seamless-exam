@@ -1717,9 +1717,19 @@ html {
 
 /* Responsive Design for Exam Taking */
 @media (max-width: 1024px) {
-    .flex.lg\\:flex-row {
+    .flex.lg\:flex-row {
         flex-direction: column;
     }
+
+    aside.w-full.lg\:w-64:has(#question-sidebar) {
+        width: 100%;
+        order: 1;
+    }
+
+    #question-sidebar {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
     
     aside.w-full.lg\\:w-64 {
         width: 100%;

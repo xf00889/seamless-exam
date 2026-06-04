@@ -124,9 +124,6 @@
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Question Navigation -->
-        {% include 'components/question_navigation.html' with nav_questions=questions nav_mode='exam' %}
-
         <!-- Questions -->
         <div class="flex-1 min-w-0 space-y-6 order-first lg:order-none">
             <div class="bg-white shadow rounded-lg p-6">
@@ -320,15 +317,17 @@
                             {{ data.percentage }}%
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-sm text-gray-500">No submissions yet.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+                     {% endfor %}
+                 </div>
+                 {% else %}
+                 <p class="text-sm text-gray-500">No submissions yet.</p>
+                 {% endif %}
+             </div>
+         </div>
+
+         <!-- Question Navigation (sticky right) -->
+         {% include 'components/question_navigation.html' with nav_questions=questions nav_mode='exam' %}
+     </div>
 
 <script src="{% static 'js/question-navigation.js' %}"></script>
 

@@ -1712,17 +1712,31 @@ def teacher_attempt_detail_view(request, attempt_id):
         }
         questions_data.append(question_info)
     
+    nav_questions = []
+    for qd in questions_data:
+        if qd.get('is_correct') is True:
+            state = 'correct'
+        elif qd.get('is_correct') is False:
+            state = 'incorrect'
+        else:
+            state = 'unanswered'
+        nav_questions.append({
+            'id': qd['question'].id,
+            'state': state,
+        })
+
     context = {
         'attempt': attempt,
         'student': student,
         'exam': exam,
         'questions_data': questions_data,
+        'nav_questions': nav_questions,
         'total_score': float(attempt.total_score),
         'total_possible_points': total_possible_points,
         'percentage_score': round(percentage_score, 2),
         'submitted_at': attempt.submitted_at
     }
-    
+
     return render(request, 'attempts/attempt_detail.html', context)
 
 
