@@ -42,4 +42,7 @@ def static_version(_request):
             continue
     if not stamp:
         stamp = int(os.environ.get('STATIC_VERSION', '0')) or 0
-    return {'static_version': str(stamp)}
+    return {
+        'static_version': str(stamp),
+        'app_version': getattr(settings, 'APP_VERSION', ''),
+    }

@@ -408,3 +408,10 @@ LOGGING = {
     },
 }
 
+
+# ============================================
+# APPLICATION VERSION
+# ============================================
+# Displayed in the footer and exposed to templates as {{ app_version }}.
+APP_VERSION = '1.0.0'
+
