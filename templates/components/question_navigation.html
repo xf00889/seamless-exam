@@ -1,0 +1,54 @@
+{% comment %}
+Reusable Question Navigation panel.
+Expected context:
+- nav_questions: list of objects. Each object must have `.id`. May optionally have `.state` ('correct' | 'incorrect' | 'unanswered' | None).
+- nav_mode: 'exam' (no answers; show "Question N" only) or 'attempt' (show correct/incorrect/unanswered).
+  Defaults to 'exam' when nav_questions all have no .state; otherwise 'attempt'.
+{% endcomment %}
+{% if nav_questions %}
+<aside class="w-full lg:w-64 flex-shrink-0">
+    <div class="bg-white shadow rounded-lg p-4 lg:sticky lg:top-4">
+        <h3 class="text-sm font-semibold text-gray-900 mb-3">Question Navigation</h3>
+        <div id="question-nav-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-2">
+            {% for q in nav_questions %}
+            <button type="button"
+                    class="question-nav-btn w-10 h-10 rounded-md border-2 text-sm font-medium transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        {% if q.state == 'correct' %}bg-green-100 border-green-500 text-green-700
+                        {% elif q.state == 'incorrect' %}bg-red-100 border-red-500 text-red-700
+                        {% elif q.state == 'unanswered' %}bg-gray-100 border-gray-300 text-gray-600
+                        {% else %}bg-gray-100 border-gray-300 text-gray-600{% endif %}"
+                    data-question-id="{{ q.id }}"
+                    data-question-number="{{ forloop.counter }}"
+                    aria-label="Jump to Question {{ forloop.counter }}">
+                {{ forloop.counter }}
+            </button>
+            {% endfor %}
+        </div>
+        <div class="mt-4 pt-4 border-t space-y-1.5">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded border-2 bg-blue-100 border-blue-500 flex-shrink-0"></div>
+                <span class="text-xs text-gray-600">Current</span>
+            </div>
+            {% if nav_mode == 'attempt' %}
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded border-2 bg-green-100 border-green-500 flex-shrink-0"></div>
+                <span class="text-xs text-gray-600">Correct</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded border-2 bg-red-100 border-red-500 flex-shrink-0"></div>
+                <span class="text-xs text-gray-600">Incorrect</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded border-2 bg-gray-100 border-gray-300 flex-shrink-0"></div>
+                <span class="text-xs text-gray-600">Unanswered</span>
+            </div>
+            {% else %}
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded border-2 bg-gray-100 border-gray-300 flex-shrink-0"></div>
+                <span class="text-xs text-gray-600">Question</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</aside>
+{% endif %}

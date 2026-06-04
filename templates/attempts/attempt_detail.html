@@ -99,14 +99,18 @@
     </div>
 
     <!-- Questions and Answers -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Questions and Answers</h2>
-        </div>
-        
-        <div class="divide-y divide-gray-200">
-            {% for data in questions_data %}
-            <div class="p-6">
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Question Navigation -->
+        {% include 'components/question_navigation.html' with nav_questions=nav_questions nav_mode='attempt' %}
+
+        <div class="flex-1 min-w-0 bg-white rounded-lg shadow-md overflow-hidden order-first lg:order-none">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Questions and Answers</h2>
+            </div>
+
+            <div class="divide-y divide-gray-200">
+                {% for data in questions_data %}
+                <div id="question-{{ data.question.id }}" data-question-id="{{ data.question.id }}" class="question-card p-6 scroll-mt-20">
                 <!-- Question Header -->
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
@@ -193,6 +197,7 @@
             </div>
             {% endfor %}
         </div>
+        </div>
     </div>
 
     <!-- Action Buttons -->
@@ -232,5 +237,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/question-navigation.js' %}"></script>
 {% endblock %}
 

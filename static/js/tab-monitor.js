@@ -43,10 +43,8 @@ class CheatDetectionModal {
             let html = '';
             for (let i = 1; i <= totalWarnings; i++) {
                 let cls = 'h-2.5 w-2.5 rounded-full';
-                if (i < warningNumber) {
+                if (i <= warningNumber) {
                     cls += isCritical ? ' bg-red-500' : ' bg-yellow-500';
-                } else if (i === warningNumber && isCritical) {
-                    cls += ' bg-red-500';
                 } else {
                     cls += ' bg-gray-300';
                 }

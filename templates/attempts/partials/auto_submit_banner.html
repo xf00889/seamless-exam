@@ -22,10 +22,13 @@
                 This exam was automatically submitted by the system after repeated tab-switching or other integrity violations.
             {% endif %}
         </p>
+        {% if show_activity_log_link %}
         <p class="text-xs text-red-700 mt-1.5">
             Please review the activity log for a full timeline of events before grading.
         </p>
+        {% endif %}
     </div>
+    {% if show_activity_log_link %}
     <div class="flex-shrink-0">
         <a href="{% url 'view_activity_log' attempt.id %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
             <svg class="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,6 +37,7 @@
             View Activity Log
         </a>
     </div>
+    {% endif %}
 </div>
 {% elif attempt.is_flagged %}
 <div class="bg-yellow-50 border-l-4 border-yellow-400 border border-yellow-200 rounded-lg p-4 mb-6 flex items-start gap-3 shadow-sm" role="alert" aria-label="Flagged attempt notice">

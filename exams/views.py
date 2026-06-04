@@ -2742,26 +2742,23 @@ def mps_quarter_detail_view(request, quarter_id):
     }
     if quarter_summary and quarter_summary.get('exams'):
         for ex in quarter_summary['exams']:
+            if not ex.get('has_data'):
+                continue
             label = ex.get('title') or 'Untitled'
             if ex.get('subject'):
                 label = label + ' (' + ex['subject'] + ')'
             mps_chart_data['labels'].append(label)
-            if ex.get('has_data'):
-                mps = int(ex.get('overall_mps') or 0)
-                mps_chart_data['values'].append(mps)
-                if mps >= 75:
-                    mps_chart_data['colors'].append('rgba(34, 197, 94, 0.85)')
-                    mps_chart_data['borders'].append('#16a34a')
-                elif mps >= 50:
-                    mps_chart_data['colors'].append('rgba(234, 179, 8, 0.85)')
-                    mps_chart_data['borders'].append('#ca8a04')
-                else:
-                    mps_chart_data['colors'].append('rgba(239, 68, 68, 0.85)')
-                    mps_chart_data['borders'].append('#dc2626')
+            mps = int(ex.get('overall_mps') or 0)
+            mps_chart_data['values'].append(mps)
+            if mps >= 75:
+                mps_chart_data['colors'].append('rgba(34, 197, 94, 0.85)')
+                mps_chart_data['borders'].append('#16a34a')
+            elif mps >= 50:
+                mps_chart_data['colors'].append('rgba(234, 179, 8, 0.85)')
+                mps_chart_data['borders'].append('#ca8a04')
             else:
-                mps_chart_data['values'].append(0)
-                mps_chart_data['colors'].append('rgba(209, 213, 219, 0.6)')
-                mps_chart_data['borders'].append('#9ca3af')
+                mps_chart_data['colors'].append('rgba(239, 68, 68, 0.85)')
+                mps_chart_data['borders'].append('#dc2626')
         mps_chart_data['overall_mps'] = int(quarter_summary.get('overall_mps') or 0)
 
     context = {
