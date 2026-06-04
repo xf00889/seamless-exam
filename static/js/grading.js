@@ -118,6 +118,9 @@ async function handleGradeEssay(event) {
       updateGradingUI(answerId, data);
       showSuccess(data.message);
       updateFinalScore(data.total_score);
+      if (typeof data.total_questions === 'number') {
+        updateGradingStatusBadge(data.graded_questions || 0, data.total_questions || 0);
+      }
       var section = document.querySelector('.grading-section[data-answer-id="' + answerId + '"]');
       if (section) {
         var td = section.querySelector('.teacher-score-display');
@@ -642,4 +645,50 @@ function refreshGradingStats() {
     ung.textContent = ungraded;
     if (ungraded === 0 && batchBar) batchBar.remove();
   }
+
+  updateGradingStatusBadge(graded, total);
+}
+
+/* ── Update header status badge ─────────────────────────────── */
+
+var STATUS_BADGE_CLASSES = {
+  graded:   { wrap: 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300', dot: 'bg-emerald-500',   label: 'Graded' },
+  partial:  { wrap: 'bg-blue-100 text-blue-700 border-2 border-blue-300',           dot: 'bg-blue-500',      label: 'Partial' },
+  awaiting: { wrap: 'bg-amber-100 text-amber-700 border-2 border-amber-300',        dot: 'bg-amber-500',     label: 'Awaiting Review' },
+};
+
+function updateGradingStatusBadge(graded, total) {
+  var badge = document.getElementById('grading-status-badge');
+  if (!badge) return;
+
+  var state;
+  if (total <= 0) {
+    state = 'awaiting';
+  } else if (graded >= total) {
+    state = 'graded';
+  } else if (graded <= 0) {
+    state = 'awaiting';
+  } else {
+    state = 'partial';
+  }
+
+  var classes = STATUS_BADGE_CLASSES[state];
+  var wrap = badge.className.split(' ').filter(function(c) {
+    return !/^bg-(emerald|blue|amber)-100$/.test(c)
+      && !/^text-(emerald|blue|amber)-700$/.test(c)
+      && !/^border-2$/.test(c)
+      && !/^border-(emerald|blue|amber)-300$/.test(c);
+  }).concat(classes.wrap.split(' ')).join(' ');
+  badge.className = wrap;
+
+  var dot = badge.querySelector('.grading-status-dot');
+  if (dot) {
+    dot.className = 'grading-status-dot w-2 h-2 rounded-full animate-pulse ' + classes.dot;
+  }
+
+  var label = badge.querySelector('.grading-status-label');
+  if (label) label.textContent = classes.label;
+
+  badge.setAttribute('data-graded', graded);
+  badge.setAttribute('data-total', total);
 }

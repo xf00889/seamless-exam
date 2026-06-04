@@ -27,6 +27,28 @@ from users.forms import (
 )
 
 
+def _clear_stale_messages(request):
+    """
+    Drain any pre-existing messages so they don't bleed into the next request.
+
+    Without this, a flash message added on one response (for example, the
+    "You have been logged out successfully" message set during logout) can
+    survive in the session/cookie storage when the user immediately logs back
+    in, causing the post-login page to display the stale message alongside
+    the new "Welcome" toast.
+
+    Iterating the storage sets ``used = True`` on the backend, which causes
+    ``MessageMiddleware`` to drop the previously stored messages on response
+    and only persist messages added during this view.
+    """
+    storage = getattr(request, '_messages', None)
+    if storage is None:
+        return
+    for _ in storage:
+        pass
+    storage.used = True
+
+
 class TeacherLoginView(View):
     """
     View for teacher authentication.
@@ -50,6 +72,11 @@ class TeacherLoginView(View):
     
     def post(self, request):
         """Process teacher login with form validation."""
+        # Drop any stale messages from previous requests (e.g., a "logged out"
+        # or "invalid credentials" toast left over from a prior submit) so they
+        # never bleed into this response or the next one.
+        _clear_stale_messages(request)
+
         form = TeacherLoginForm(request.POST)
         
         if not form.is_valid():
@@ -67,6 +94,7 @@ class TeacherLoginView(View):
         result = self.auth_service.authenticate_teacher(request, username, password)
         
         if result.success:
+            _clear_stale_messages(request)
             messages.success(request, f'Welcome, {result.user.user.get_full_name() or username}!')
             # Redirect to teacher dashboard
             next_url = request.GET.get('next', 'teacher_dashboard')
@@ -100,6 +128,11 @@ class StudentLoginView(View):
     
     def post(self, request):
         """Process student login with form validation."""
+        # Drop any stale messages from previous requests (e.g., a "logged out"
+        # or "invalid credentials" toast left over from a prior submit) so they
+        # never bleed into this response or the next one.
+        _clear_stale_messages(request)
+
         form = StudentLoginForm(request.POST)
         
         if not form.is_valid():
@@ -117,6 +150,7 @@ class StudentLoginView(View):
         result = self.auth_service.authenticate_student(request, school_id, password)
         
         if result.success:
+            _clear_stale_messages(request)
             messages.success(request, f'Welcome, {result.user.get_full_name()}!')
             # Redirect to student exam list
             next_url = request.GET.get('next', 'student_exam_list')
