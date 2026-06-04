@@ -1,0 +1,13 @@
+{% load static %}
+<span id="grading-status-badge" data-graded="{{ grading_status.graded_questions|default:0 }}" data-total="{{ grading_status.total_questions|default:0 }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold
+  {% if grading_status.ungraded_essays == 0 %}bg-emerald-100 text-emerald-700 border-2 border-emerald-300
+  {% elif grading_status.ungraded_essays == grading_status.total_questions %}bg-amber-100 text-amber-700 border-2 border-amber-300
+  {% else %}bg-blue-100 text-blue-700 border-2 border-blue-300{% endif %}">
+  <span class="grading-status-dot w-2 h-2 rounded-full
+    {% if grading_status.ungraded_essays == 0 %}bg-emerald-500
+    {% elif grading_status.ungraded_essays == grading_status.total_questions %}bg-amber-500
+    {% else %}bg-blue-500{% endif %} animate-pulse"></span>
+  <span class="grading-status-label">{% if grading_status.ungraded_essays == 0 %}Graded
+    {% elif grading_status.ungraded_essays == grading_status.total_questions %}Awaiting Review
+    {% else %}Partial{% endif %}</span>
+</span>

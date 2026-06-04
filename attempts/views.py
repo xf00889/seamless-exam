@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
@@ -1057,36 +1058,55 @@ def grade_essay_view(request, answer_id):
     # Check if user is authenticated as teacher
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
-    
+
     # Import grading service
     from services.grading_service import GradingService
-    
+
     grading_service_instance = GradingService()
-    
+
     # Parse request data
     try:
         data = json.loads(request.body)
         points_earned = float(data.get('points_earned', 0))
         teacher_feedback = data.get('teacher_feedback', '')
-        
+
         # Grade the essay
         result = grading_service_instance.grade_essay(
             answer_id=answer_id,
             points_earned=points_earned,
             teacher_feedback=teacher_feedback if teacher_feedback else None
         )
-        
+
         if result:
             # Invalidate dashboard cache for this student (Requirements 11.1, 11.5)
             from services.dashboard_service import DashboardService
             DashboardService.invalidate_student_cache(result['attempt'].student_id)
-            
+
+            status = grading_service_instance.get_grading_status(result['attempt'].id)
+            ungraded = status.get('ungraded_essays', 0) if status.get('found') else 0
+            graded = status.get('graded_questions', 0) if status.get('found') else 0
+            total = status.get('total_questions', 0) if status.get('found') else 0
+            total_score = status.get('total_score', 0) if status.get('found') else 0
+
             return JsonResponse({
                 'success': True,
                 'message': 'Essay graded successfully',
                 'points_earned': float(result['answer'].points_earned),
                 'total_score': float(result['attempt'].total_score),
-                'attempt_status': result['attempt'].status
+                'attempt_status': result['attempt'].status,
+                'ungraded_essays': ungraded,
+                'graded_questions': graded,
+                'total_questions': total,
+                'status_badge_html': render_to_string(
+                    'attempts/partials/grading_status_badge.html',
+                    {'grading_status': status},
+                    request=request,
+                ),
+                'summary_html': render_to_string(
+                    'attempts/partials/grading_summary.html',
+                    {'grading_status': status},
+                    request=request,
+                ),
             })
         else:
             return JsonResponse({'error': 'Failed to grade essay'}, status=500)
@@ -1129,12 +1149,31 @@ def update_essay_score_view(request, answer_id):
         )
         
         if result:
+            status = grading_service_instance.get_grading_status(result['attempt'].id)
+            ungraded = status.get('ungraded_essays', 0) if status.get('found') else 0
+            graded = status.get('graded_questions', 0) if status.get('found') else 0
+            total = status.get('total_questions', 0) if status.get('found') else 0
+            total_score = status.get('total_score', 0) if status.get('found') else 0
+
             return JsonResponse({
                 'success': True,
                 'message': 'Essay score updated successfully',
                 'points_earned': float(result['answer'].points_earned),
                 'total_score': float(result['attempt'].total_score),
-                'attempt_status': result['attempt'].status
+                'attempt_status': result['attempt'].status,
+                'ungraded_essays': ungraded,
+                'graded_questions': graded,
+                'total_questions': total,
+                'status_badge_html': render_to_string(
+                    'attempts/partials/grading_status_badge.html',
+                    {'grading_status': status},
+                    request=request,
+                ),
+                'summary_html': render_to_string(
+                    'attempts/partials/grading_summary.html',
+                    {'grading_status': status},
+                    request=request,
+                ),
             })
         else:
             return JsonResponse({'error': 'Failed to update essay score'}, status=500)

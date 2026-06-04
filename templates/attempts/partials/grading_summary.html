@@ -1,0 +1,31 @@
+{% load static %}
+<div id="grading-summary" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-5 mb-6">
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+      <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Questions</div>
+      <div class="text-2xl font-bold text-gray-900 mt-1">{{ grading_status.total_questions }}</div>
+    </div>
+    <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+      <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Graded</div>
+      <div class="text-2xl font-bold text-emerald-600 mt-1" id="summary-graded">{{ grading_status.graded_questions }}</div>
+    </div>
+    <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+      <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pending</div>
+      <div class="text-2xl font-bold text-amber-600 mt-1" id="summary-ungraded">{{ grading_status.ungraded_essays }}</div>
+    </div>
+    <div class="text-center p-2 bg-white rounded-lg border border-gray-100">
+      <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Score</div>
+      <div class="text-2xl font-bold text-blue-600 mt-1" id="summary-score">{{ grading_status.total_score|floatformat:1 }}<span class="text-xs font-medium text-gray-500 ml-1">pts</span></div>
+    </div>
+  </div>
+  {% widthratio grading_status.graded_questions grading_status.total_questions 100 as graded_pct %}
+  <div class="mt-4 pt-4 border-t border-blue-100">
+    <div class="flex justify-between items-center mb-2">
+      <span class="text-xs font-bold text-gray-700">Overall Progress</span>
+      <span class="text-xs font-bold text-blue-600" id="summary-progress-pct">{{ graded_pct }}%</span>
+    </div>
+    <div class="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+      <div id="summary-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full transition-all duration-500" style="width: {{ graded_pct }}%"></div>
+    </div>
+  </div>
+</div>

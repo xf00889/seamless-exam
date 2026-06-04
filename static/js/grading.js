@@ -115,29 +115,11 @@ async function handleGradeEssay(event) {
     var data = await resp.json();
 
     if (resp.ok && data.success) {
-      updateGradingUI(answerId, data);
       showSuccess(data.message);
+      updateGradingUI(answerId, data);
       updateFinalScore(data.total_score);
-      if (typeof data.total_questions === 'number') {
-        updateGradingStatusBadge(data.graded_questions || 0, data.total_questions || 0);
-      }
-      var section = document.querySelector('.grading-section[data-answer-id="' + answerId + '"]');
-      if (section) {
-        var td = section.querySelector('.teacher-score-display');
-        if (td) td.textContent = Number(data.points_earned || 0).toFixed(1);
-      }
-      button.innerHTML = 'Update Grade';
-
-      var allSections = Array.from(document.querySelectorAll('.grading-section'));
-      var curIdx = allSections.findIndex(function(s) { return s.getAttribute('data-answer-id') === answerId; });
-      for (var i = curIdx + 1; i < allSections.length; i++) {
-        if (allSections[i].getAttribute('data-is-graded') === 'false') {
-          allSections[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-          var ni = allSections[i].querySelector('.essay-points-input');
-          if (ni) setTimeout(function(el) { el.focus(); }, 600, ni);
-          break;
-        }
-      }
+      applyGradingPartialSwap(data);
+      return;
     } else {
       showError(data.error || 'Failed to save grade');
     }
@@ -181,6 +163,40 @@ function updateFinalScore(score) {
   document.querySelectorAll('.overall-score').forEach(function(el) {
     el.textContent = score.toFixed(2) + ' pts';
   });
+}
+
+/* ── Server-rendered partial swap ──────────────────────────── */
+
+function applyGradingPartialSwap(data) {
+  if (data && typeof data.status_badge_html === 'string') {
+    var badge = document.getElementById('grading-status-badge');
+    if (badge) {
+      var tmp = document.createElement('div');
+      tmp.innerHTML = data.status_badge_html;
+      var fresh = tmp.firstElementChild;
+      if (fresh) badge.outerHTML = fresh.outerHTML;
+    }
+  }
+  if (data && typeof data.summary_html === 'string') {
+    var summary = document.getElementById('grading-summary');
+    if (summary) {
+      var tmp = document.createElement('div');
+      tmp.innerHTML = data.summary_html;
+      var fresh = tmp.firstElementChild;
+      if (fresh) summary.outerHTML = fresh.outerHTML;
+    }
+  }
+  if (data && typeof data.ungraded_essays === 'number') {
+    var batchBar = document.getElementById('batch-ai-bar');
+    var batchCount = document.getElementById('batch-count');
+    if (batchBar) {
+      if (data.ungraded_essays === 0) {
+        batchBar.remove();
+      } else if (batchCount) {
+        batchCount.textContent = data.ungraded_essays;
+      }
+    }
+  }
 }
 
 /* ── CSRF, notifications ───────────────────────────────────── */
@@ -575,7 +591,7 @@ async function handleSaveAllGrades(event) {
 
   await new Promise(function(r) { setTimeout(r, 100); });
 
-  var completed = 0, failed = [], total = ungraded.length;
+  var completed = 0, failed = [], total = ungraded.length, lastData = null;
 
   for (var idx = 0; idx < ungraded.length; idx++) {
     var section = ungraded[idx];
@@ -610,6 +626,7 @@ async function handleSaveAllGrades(event) {
           var td = sec.querySelector('.teacher-score-display');
           if (td) td.textContent = Number(data.points_earned || 0).toFixed(1);
         }
+        lastData = data;
       } else {
         failed.push({ id: answerId, error: data.error || 'Save failed' });
       }
@@ -624,6 +641,10 @@ async function handleSaveAllGrades(event) {
   await new Promise(function(r) { setTimeout(r, 300); });
   button.innerHTML = origHTML;
   showBatchModalResult(completed - failed.length, failed.length);
+
+  if ((completed - failed.length) > 0 && lastData) {
+    applyGradingPartialSwap(lastData);
+  }
 }
 
 /* ── Refresh summary ───────────────────────────────────────── */
