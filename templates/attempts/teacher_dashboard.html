@@ -388,9 +388,26 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for data in attempts_data %}
-                        <tr>
+                        <tr class="{% if data.attempt.auto_submitted %}bg-red-50/40 hover:bg-red-50/60{% elif data.attempt.is_flagged %}bg-yellow-50/40 hover:bg-yellow-50/60{% endif %} transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ data.student.get_full_name }}</div>
+                                <div class="flex items-center gap-2">
+                                    <div class="text-sm font-medium text-gray-900">{{ data.student.get_full_name }}</div>
+                                    {% if data.attempt.auto_submitted %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800" title="Auto-submitted due to violations">
+                                        <svg class="h-3 w-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        Auto
+                                    </span>
+                                    {% elif data.attempt.is_flagged %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800" title="Flagged: {{ data.attempt.flag_reason }}">
+                                        <svg class="h-3 w-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8 17 11.4A1 1 0 0116 13H6a1 1 0 00-1 1v3H3V6z" clip-rule="evenodd" />
+                                        </svg>
+                                        Flagged
+                                    </span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-500">{{ data.student.school_id }}</div>
@@ -413,6 +430,11 @@
                                     {% if data.attempt.status == 'graded' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
                                     {{ data.attempt.get_status_display }}
                                 </span>
+                                {% if data.attempt.auto_submitted and data.attempt.flag_reason %}
+                                <div class="text-xs text-red-700 mt-1 italic" title="{{ data.attempt.flag_reason }}">
+                                    {{ data.attempt.flag_reason|truncatechars:30 }}
+                                </div>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-500">
