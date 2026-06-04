@@ -31,7 +31,7 @@ def health_check(request):
 
 
 def home_view(request):
-    context = {}
+    context = {'force_public_layout': True}
     if request.user.is_authenticated:
         if request.user.is_superuser and not Teacher.objects.filter(user=request.user).exists():
             context['dashboard_url'] = '/superadmin/dashboard/'
