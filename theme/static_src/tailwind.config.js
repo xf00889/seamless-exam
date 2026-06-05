@@ -45,7 +45,7 @@ module.exports = {
         extend: {
             fontFamily: {
                 sans: [
-                    'Archivo',
+                    'Space Grotesk',
                     'ui-sans-serif',
                     'system-ui',
                     '-apple-system',
