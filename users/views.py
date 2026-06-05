@@ -1818,18 +1818,24 @@ class StudentAccountManagementView(View):
     def get(self, request):
         """Display student account management page with creation form and student list."""
         teacher = self.auth_service.get_current_teacher(request)
-        
+
         if not teacher:
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
-        
+
         # Import here to avoid circular imports
         from users.models import Student
         from users.forms import StudentCreationForm
-        
-        # Get all students ordered by last name
-        students = Student.objects.all().select_related('class_assigned').order_by('last_name', 'first_name')
-        
+
+        # Get students created by this teacher, ordered by last name.
+        # Students are private to the teacher who created them.
+        students = (
+            Student.objects
+            .filter(created_by=teacher)
+            .select_related('class_assigned')
+            .order_by('last_name', 'first_name')
+        )
+
         # Apply search filter if provided
         search_query = request.GET.get('search', '').strip()
         if search_query:
@@ -1838,49 +1844,49 @@ class StudentAccountManagementView(View):
                 models.Q(first_name__icontains=search_query) |
                 models.Q(last_name__icontains=search_query)
             )
-        
+
         # Pagination
         from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
         paginator = Paginator(students, 20)  # 20 students per page
         page = request.GET.get('page', 1)
-        
+
         try:
             students_page = paginator.page(page)
         except PageNotAnInteger:
             students_page = paginator.page(1)
         except EmptyPage:
             students_page = paginator.page(paginator.num_pages)
-        
+
         # Initialize form
         form = StudentCreationForm(teacher=teacher)
-        
+
         context = {
             'teacher': teacher,
             'form': form,
             'students': students_page,
             'search_query': search_query,
             'page_title': 'Student Account Management',
-            'total_students': Student.objects.count()
+            'total_students': students_page.paginator.count,
         }
-        
+
         return render(request, 'users/student_account_management.html', context)
-    
+
     def post(self, request):
         """Process student account creation."""
         teacher = self.auth_service.get_current_teacher(request)
-        
+
         if not teacher:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': 'Teacher profile not found'})
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
-        
+
         # Import here to avoid circular imports
         from users.models import Student
         from users.forms import StudentCreationForm
-        
+
         form = StudentCreationForm(request.POST, teacher=teacher)
-        
+
         if not form.is_valid():
             # Handle AJAX request
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1893,45 +1899,51 @@ class StudentAccountManagementView(View):
                     'error': 'Form validation failed',
                     'errors': errors
                 })
-            
+
             # Display field-specific error messages
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
-            
-            # Re-render page with form errors
-            students = Student.objects.all().select_related('class_assigned').order_by('last_name', 'first_name')
-            
+
+            # Re-render page with form errors (scoped to this teacher's students)
+            students = (
+                Student.objects
+                .filter(created_by=teacher)
+                .select_related('class_assigned')
+                .order_by('last_name', 'first_name')
+            )
+
             from django.core.paginator import Paginator
             paginator = Paginator(students, 20)
             students_page = paginator.page(1)
-            
+
             context = {
                 'teacher': teacher,
                 'form': form,
                 'students': students_page,
                 'search_query': '',
                 'page_title': 'Student Account Management',
-                'total_students': Student.objects.count()
+                'total_students': students.count(),
             }
             return render(request, 'users/student_account_management.html', context)
-        
+
         # Get form data
         school_id = form.cleaned_data['school_id']
         first_name = form.cleaned_data['first_name']
         last_name = form.cleaned_data['last_name']
         class_assigned = form.cleaned_data.get('class_assigned')
-        
+
         # Generate password
         generated_password = StudentCreationForm.generate_password(school_id, last_name)
-        
-        # Create student
+
+        # Create student (scoped to the current teacher as owner)
         try:
             student = Student(
                 school_id=school_id,
                 first_name=first_name,
                 last_name=last_name,
-                class_assigned=class_assigned
+                class_assigned=class_assigned,
+                created_by=teacher,
             )
             student.set_password(generated_password)
             student.save()
@@ -1970,7 +1982,12 @@ class StudentAccountManagementView(View):
             messages.error(request, f'Failed to create student account: {str(e)}')
 
             # Re-render page with form
-            students = Student.objects.all().select_related('class_assigned').order_by('last_name', 'first_name')
+            students = (
+                Student.objects
+                .filter(created_by=teacher)
+                .select_related('class_assigned')
+                .order_by('last_name', 'first_name')
+            )
 
             from django.core.paginator import Paginator
             paginator = Paginator(students, 20)
@@ -1982,7 +1999,7 @@ class StudentAccountManagementView(View):
                 'students': students_page,
                 'search_query': '',
                 'page_title': 'Student Account Management',
-                'total_students': Student.objects.count()
+                'total_students': students.count(),
             }
             return render(request, 'users/student_account_management.html', context)
 
@@ -2004,6 +2021,12 @@ class StudentDetailView(View):
         from users.forms import StudentCreationForm
 
         student = get_object_or_404(Student, pk=student_id)
+
+        # Ownership: only the teacher who created this student can view it.
+        if student.created_by_id != teacher.pk:
+            messages.error(request, 'You do not have permission to view this student.')
+            return redirect('student_account_management')
+
         default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
 
         context = {
@@ -2030,6 +2053,14 @@ class StudentResetPasswordView(View):
         from users.forms import StudentCreationForm
 
         student = get_object_or_404(Student, pk=student_id)
+
+        # Ownership: only the teacher who created this student can reset it.
+        if student.created_by_id != teacher.pk:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+            messages.error(request, 'You do not have permission to reset this student.')
+            return redirect('student_account_management')
+
         default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
         student.set_password(default_password)
         student.save()
@@ -2059,6 +2090,14 @@ class StudentDeleteView(View):
         from users.models import Student
 
         student = get_object_or_404(Student, pk=student_id)
+
+        # Ownership: only the teacher who created this student can delete it.
+        if student.created_by_id != teacher.pk:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
+            messages.error(request, 'You do not have permission to delete this student.')
+            return redirect('student_account_management')
+
         student_name = student.get_full_name()
         student_school_id = student.school_id
 

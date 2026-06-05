@@ -11,6 +11,25 @@
         (function(){var t=localStorage.getItem('sa-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
     </script>
     <style>
+        @font-face {
+            font-family: 'Archivo';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url("{% static 'fonts/archivo/archivo-latin-variable.woff2' %}") format('woff2-variations'),
+                 url("{% static 'fonts/archivo/archivo-latin-variable.woff2' %}") format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Archivo';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url("{% static 'fonts/archivo/archivo-latin-ext-variable.woff2' %}") format('woff2-variations'),
+                 url("{% static 'fonts/archivo/archivo-latin-ext-variable.woff2' %}") format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root, [data-theme="dark"] {
@@ -45,11 +64,11 @@
             --modal-overlay: rgba(0,0,0,0.3);
         }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-body); color: var(--text-primary); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        body { font-family: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-body); color: var(--text-primary); min-height: 100vh; transition: background 0.3s, color 0.3s; }
 
         .sa-layout { display: flex; min-height: 100vh; }
 
-        .sa-sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 1.5rem 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 50; transition: transform 0.3s, background 0.3s; }
+        .sa-sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 1.5rem 0; display: flex; flex-direction: column; position: fixed; top: 56px; left: 0; height: calc(100vh - 56px); z-index: 50; transition: transform 0.3s, background 0.3s; }
         .sa-sidebar-brand { padding: 0 1.5rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
         .sa-sidebar-brand img { height: 36px; width: auto; border-radius: 8px; }
         .sa-sidebar-brand h2 { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); }
@@ -87,7 +106,7 @@
         .sa-sidebar-footer form button { width: 100%; padding: 0.625rem 1rem; background: #dc2626; color: white; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.2s; }
         .sa-sidebar-footer form button:hover { background: #b91c1c; }
 
-        .sa-main { flex: 1; margin-left: 260px; padding: 2rem; transition: background 0.3s; }
+        .sa-main { flex: 1; margin-left: 260px; padding: 2rem; padding-top: calc(2rem + 56px); transition: background 0.3s; }
         .sa-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .sa-header h1 { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); }
         .sa-header p { color: var(--text-secondary); margin-top: 0.25rem; }
@@ -171,7 +190,9 @@
         .sa-pagination a:hover { background: var(--border-hover); }
         .sa-pagination .current { background: #2563eb; color: white; }
 
-        .sa-mobile-toggle { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 60; padding: 0.5rem; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); cursor: pointer; }
+        .sa-mobile-toggle { display: none; padding: 0.5rem; background: transparent; border: none; border-radius: 6px; color: var(--text-primary); cursor: pointer; }
+        .sa-mobile-toggle:hover { background: var(--hover-bg); }
+        .sa-mobile-toggle svg { width: 20px; height: 20px; display: block; }
         .sa-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
 
         @media (max-width: 768px) {
@@ -186,23 +207,345 @@
         @media (max-width: 480px) {
             .sa-stats { grid-template-columns: 1fr; }
         }
+
+        /* ----- Top bar ----- */
+        .sa-topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            gap: 1rem;
+            z-index: 60;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .sa-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+        }
+        .sa-topbar-brand img { width: 28px; height: 28px; border-radius: 7px; }
+        .sa-topbar-brand small {
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-left: 0.25rem;
+        }
+        .sa-topbar-spacer { flex: 1; }
+        .sa-topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+        .sa-topbar-icon {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sa-topbar-icon:hover { color: var(--text-primary); background: var(--hover-bg); border-color: var(--border); }
+        .sa-topbar-icon svg { width: 18px; height: 18px; }
+        .sa-topbar-icon .sa-topbar-dot {
+            position: absolute;
+            top: 6px; right: 6px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            background: #dc2626;
+            color: white;
+            font-size: 0.625rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .sa-topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.375rem 0.625rem 0.375rem 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+        }
+        .sa-topbar-user:hover { background: var(--hover-bg); }
+        .sa-topbar-user-caret { width: 14px; height: 14px; color: var(--text-muted); transition: transform 0.2s; }
+        .sa-dropdown.open .sa-topbar-user-caret { transform: rotate(180deg); }
+        .sa-topbar-user-name { font-size: 0.8125rem; color: var(--text-primary); font-weight: 500; }
+        .sa-topbar-user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* Dropdowns */
+        .sa-dropdown { position: relative; }
+        .sa-dropdown-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 320px;
+            max-width: 380px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.35);
+            z-index: 70;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-4px);
+            transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+        }
+        .sa-dropdown.open .sa-dropdown-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .sa-dropdown-header {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sa-dropdown-header h4 {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .sa-dropdown-body {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .sa-dropdown-footer {
+            padding: 0.625rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        .sa-dropdown-footer a {
+            color: var(--active-color);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+        .sa-dropdown-footer a:hover { text-decoration: underline; }
+
+        /* Notification items */
+        .sa-notif-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: background 0.15s;
+            position: relative;
+        }
+        .sa-notif-item:last-child { border-bottom: none; }
+        .sa-notif-item:hover { background: var(--hover-bg); }
+        .sa-notif-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 1rem;
+            left: 0.375rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #3b82f6;
+        }
+        .sa-notif-item-name {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.125rem;
+        }
+        .sa-notif-item-msg {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .sa-notif-item-time {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .sa-notif-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        .sa-notif-empty svg { width: 36px; height: 36px; opacity: 0.4; margin-bottom: 0.5rem; }
+
+        .sa-dropdown-panel-right { right: 0; left: auto; }
+        .sa-dropdown-body-padded { padding: 0.375rem; }
+        .sa-dropdown-header small { display: block; font-size: 0.6875rem; color: var(--text-muted); margin-top: 0.125rem; text-transform: none; letter-spacing: 0; font-weight: 400; }
+        .sa-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.5rem 0.625rem;
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            width: 100%;
+            background: transparent;
+            border: none;
+            text-align: left;
+            font-family: inherit;
+        }
+        .sa-menu-item:hover { background: var(--hover-bg); }
+        .sa-menu-item svg { width: 16px; height: 16px; color: var(--text-muted); flex-shrink: 0; }
+        .sa-menu-item-danger { color: #ef4444; }
+        .sa-menu-item-danger svg { color: #ef4444; }
+        .sa-menu-item-danger:hover { background: rgba(239, 68, 68, 0.08); }
+        .sa-dropdown-footer form { margin: 0; width: 100%; }
+
+        @media (max-width: 768px) {
+            .sa-topbar { padding: 0 0.75rem; }
+            .sa-mobile-toggle { display: block; }
+            .sa-topbar-brand img { display: none; }
+            .sa-topbar-brand span, .sa-topbar-brand small { display: none; }
+            .sa-topbar-user-name { display: none; }
+            .sa-dropdown-panel { min-width: 280px; right: -0.5rem; }
+        }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <button class="sa-mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
     <div class="sa-overlay" id="sa-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Top bar -->
+    <header class="sa-topbar">
+        <button class="sa-mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <a href="{% url 'superadmin_dashboard' %}" class="sa-topbar-brand">
+            <img src="{% static 'img/brand.png' %}" alt="Logo">
+            <span>ValuateAI</span>
+            <small>Super Admin</small>
+        </a>
+        <div class="sa-topbar-spacer"></div>
+        <div class="sa-topbar-actions">
+            <!-- Notifications -->
+            <div class="sa-dropdown" id="notifDropdown">
+                <button class="sa-topbar-icon" onclick="toggleDropdown('notifDropdown', event)" aria-label="Notifications" title="Notifications">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    {% if unread_notifications %}<span class="sa-topbar-dot">{{ unread_notifications }}</span>{% endif %}
+                </button>
+                <div class="sa-dropdown-panel" role="menu">
+                    <div class="sa-dropdown-header">
+                        <h4>Notifications</h4>
+                        {% if unread_notifications %}
+                        <form method="post" action="{% url 'superadmin_notifications' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="mark_all_read">
+                            <button type="submit" class="sa-btn sa-btn-sm sa-btn-ghost">Mark all read</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="sa-dropdown-body">
+                        {% for n in latest_notifications %}
+                        <a href="{% url 'superadmin_notifications' %}" class="sa-notif-item {% if not n.is_read %}unread{% endif %}">
+                            <div class="sa-notif-item-name">
+                                {{ n.name }}
+                                {% if not n.is_read %}<span class="sa-badge sa-badge-blue" style="font-size:0.625rem;">New</span>{% endif %}
+                            </div>
+                            <div class="sa-notif-item-msg">{{ n.message }}</div>
+                            <div class="sa-notif-item-time">{{ n.created_at|timesince }} ago</div>
+                        </a>
+                        {% empty %}
+                        <div class="sa-notif-empty">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            <div>You're all caught up</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="sa-dropdown-footer">
+                        <a href="{% url 'superadmin_notifications' %}">View all notifications →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme toggle -->
+            <button class="sa-topbar-icon" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark mode">
+                <svg id="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <svg id="theme-icon-moon" style="display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+
+            <!-- User menu -->
+            <div class="sa-dropdown" id="userDropdown">
+                <button class="sa-topbar-user" onclick="toggleDropdown('userDropdown', event)" title="Signed in as {{ request.user.username }}">
+                    <div class="sa-topbar-user-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+                    <div class="sa-topbar-user-name">{{ request.user.username }}</div>
+                    <svg class="sa-topbar-user-caret" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="sa-dropdown-panel sa-dropdown-panel-right" role="menu">
+                    <div class="sa-dropdown-header">
+                        <h4>{{ request.user.username }}</h4>
+                        <small>Super Administrator</small>
+                    </div>
+                    <div class="sa-dropdown-body sa-dropdown-body-padded">
+                        <a href="{% url 'superadmin_ai_settings' %}" class="sa-menu-item">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span>System Settings</span>
+                        </a>
+                    </div>
+                    <div class="sa-dropdown-footer">
+                        <form method="post" action="{% url 'superadmin_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="sa-menu-item sa-menu-item-danger">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
     <div class="sa-layout">
         <aside class="sa-sidebar" id="sa-sidebar">
-            <div class="sa-sidebar-brand">
-                <img src="{% static 'img/brand.png' %}" alt="Logo">
-                <div>
-                    <h2>ValuateAI</h2>
-                    <span>Super Admin</span>
-                </div>
-            </div>
             <nav class="sa-nav">
                 <div class="sa-nav-section">
                     <span class="sa-nav-section-label">Overview</span>
@@ -221,15 +564,6 @@
                     <a href="{% url 'superadmin_students' %}" class="{% if request.resolver_match.url_name == 'superadmin_students' %}active{% endif %}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                         Students
-                    </a>
-                </div>
-
-                <div class="sa-nav-section">
-                    <span class="sa-nav-section-label">Activity</span>
-                    <a href="{% url 'superadmin_notifications' %}" class="{% if request.resolver_match.url_name == 'superadmin_notifications' %}active{% endif %}">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                        Notifications
-                        {% if unread_notifications %}<span class="sa-nav-badge">{{ unread_notifications }}</span>{% endif %}
                     </a>
                 </div>
 
@@ -254,19 +588,6 @@
                     </a>
                 </div>
             </nav>
-            <div class="sa-sidebar-actions">
-                <button class="sa-theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark mode">
-                    <svg id="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    <svg id="theme-icon-moon" style="display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                </button>
-                <span style="font-size:0.75rem; color:var(--text-muted);">{{ request.user.username }}</span>
-            </div>
-            <div class="sa-sidebar-footer">
-                <form method="post" action="{% url 'superadmin_logout' %}">
-                    {% csrf_token %}
-                    <button type="submit">Logout</button>
-                </form>
-            </div>
         </aside>
 
         <main class="sa-main">
@@ -326,7 +647,83 @@
     }
 
     updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'dark');
+
+    function toggleDropdown(id, event) {
+        if (event) event.stopPropagation();
+        var dd = document.getElementById(id);
+        if (!dd) return;
+        var willOpen = !dd.classList.contains('open');
+        document.querySelectorAll('.sa-dropdown.open').forEach(function(other) {
+            if (other.id !== id) other.classList.remove('open');
+        });
+        if (willOpen) dd.classList.add('open');
+        else dd.classList.remove('open');
+    }
+
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.sa-dropdown.open').forEach(function(dd) {
+            if (!dd.contains(e.target)) dd.classList.remove('open');
+        });
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.sa-dropdown.open').forEach(function(dd) {
+                dd.classList.remove('open');
+            });
+        }
+    });
     </script>
     {% block extra_js %}{% endblock %}
+
+    <script>
+    function openResetModal(type, id, name) {
+        var t = document.getElementById('resetUserType');
+        var i = document.getElementById('resetUserId');
+        var n = document.getElementById('resetUserName');
+        var m = document.getElementById('resetModal');
+        if (t) t.value = type;
+        if (i) i.value = id;
+        if (n) n.textContent = name;
+        if (m) m.classList.add('active');
+    }
+
+    function openDeleteModal(type, id, name) {
+        var t = document.getElementById('deleteUserType');
+        var i = document.getElementById('deleteUserId');
+        var n = document.getElementById('deleteUserName');
+        var m = document.getElementById('deleteModal');
+        if (t) t.value = type;
+        if (i) i.value = id;
+        if (n) n.textContent = name;
+        if (m) m.classList.add('active');
+    }
+
+    function openEditTeacherModal(teacherId, firstName, lastName, email, department) {
+        var form = document.getElementById('editTeacherForm');
+        if (form) form.action = '/superadmin/teachers/' + teacherId + '/edit/';
+        var f = document.getElementById('editTeacherFirstName');
+        var l = document.getElementById('editTeacherLastName');
+        var e = document.getElementById('editTeacherEmail');
+        var d = document.getElementById('editTeacherDepartment');
+        var m = document.getElementById('editTeacherModal');
+        if (f) f.value = firstName || '';
+        if (l) l.value = lastName || '';
+        if (e) e.value = email || '';
+        if (d) d.value = department || '';
+        if (m) m.classList.add('active');
+    }
+
+    function closeModal(id) {
+        var m = document.getElementById(id);
+        if (m) m.classList.remove('active');
+    }
+
+    document.querySelectorAll('.sa-modal-overlay').forEach(function(overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
+    });
+    </script>
 </body>
 </html>

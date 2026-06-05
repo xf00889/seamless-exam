@@ -116,9 +116,6 @@ class SuperAdminDashboardView(View):
             daily_labels.append(day.strftime('%b %d'))
             daily_attempts.append(count)
 
-        # Unread notifications
-        unread_notifications = AdminNotification.objects.filter(is_read=False).count()
-
         context = {
             'total_teachers': total_teachers,
             'total_students': total_students,
@@ -132,7 +129,6 @@ class SuperAdminDashboardView(View):
             'recent_activity': recent_activity,
             'daily_labels': json.dumps(daily_labels),
             'daily_attempts': json.dumps(daily_attempts),
-            'unread_notifications': unread_notifications,
         }
         return render(request, 'superadmin/dashboard.html', context)
 
@@ -188,6 +184,138 @@ class SuperAdminEditTeacherView(View):
         return redirect('superadmin_teachers')
 
 
+class SuperAdminTeacherDetailView(View):
+    """
+    Detail view for a single teacher: profile, classes, exams, and the
+    student accounts they have created. Students are scoped to the teacher
+    who created them; this view is the superadmin's window into that
+    private scope.
+    """
+
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, teacher_id):
+        teacher = get_object_or_404(
+            Teacher.objects.select_related('user'),
+            user_id=teacher_id,
+        )
+
+        # Avatar: first letter of first name + first letter of last name.
+        # Falls back to first 2 chars of username, then "?".
+        first = (teacher.user.first_name or '').strip()
+        last = (teacher.user.last_name or '').strip()
+        if first or last:
+            initials = (first[:1] + last[:1]).upper() or '?'
+        else:
+            initials = (teacher.user.username[:2] or '?').upper()
+        # Pick a stable color class based on the first letter (a-h).
+        avatar_letter = (first[:1] or teacher.user.username[:1] or 'a').lower()
+        if avatar_letter not in 'abcdefgh':
+            avatar_letter = 'a'
+        avatar_class = f'td-avatar-{avatar_letter}'
+
+        search = request.GET.get('search', '').strip()
+        class_filter = request.GET.get('class', '').strip()
+        sort = request.GET.get('sort', 'created')
+        direction = request.GET.get('dir', 'desc')
+
+        # Classes owned by this teacher (for the class filter dropdown + summary card)
+        all_classes = list(
+            Class.objects
+            .filter(teacher=teacher)
+            .order_by('grade_level', 'strand', 'section')
+        )
+        classes_qs = (
+            Class.objects
+            .filter(teacher=teacher)
+            .annotate(student_count=Count('students', distinct=True))
+            .order_by('grade_level', 'strand', 'section')
+        )
+        class_total = classes_qs.count()
+
+        # Exams authored by this teacher
+        exams = (
+            Exam.objects
+            .filter(created_by=teacher)
+            .annotate(attempt_count=Count('attempts', distinct=True))
+            .order_by('-created_at')[:8]
+        )
+        exam_total = Exam.objects.filter(created_by=teacher).count()
+
+        # Students CREATED by this teacher (the private scope)
+        from django.db.models import Max
+        students_qs = (
+            Student.objects
+            .filter(created_by=teacher)
+            .select_related('class_assigned')
+            .annotate(
+                attempt_count=Count('attempts', distinct=True),
+                last_activity=Max('attempts__started_at'),
+            )
+        )
+
+        if search:
+            students_qs = students_qs.filter(
+                Q(school_id__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+
+        if class_filter:
+            if class_filter == 'unassigned':
+                students_qs = students_qs.filter(class_assigned__isnull=True)
+            elif class_filter.isdigit():
+                students_qs = students_qs.filter(class_assigned_id=int(class_filter))
+
+        # Sorting
+        sort_options = {
+            'name': ('last_name', 'first_name'),
+            'created': ('-created_at',),
+            'attempts': ('-attempt_count', '-created_at'),
+            'last_activity': ('-last_activity', '-created_at'),
+            'class': ('class_assigned__grade_level', 'class_assigned__strand', 'class_assigned__section'),
+        }
+        order_by = sort_options.get(sort, sort_options['created'])
+        if sort == 'name' and direction == 'desc':
+            order_by = ('-last_name', '-first_name')
+        elif sort == 'created' and direction == 'asc':
+            order_by = ('created_at',)
+        elif sort == 'attempts' and direction == 'asc':
+            order_by = ('attempt_count', '-created_at')
+        elif sort == 'last_activity' and direction == 'asc':
+            order_by = ('last_activity', '-created_at')
+        students_qs = students_qs.order_by(*order_by)
+
+        from django.core.paginator import Paginator
+        paginator = Paginator(students_qs, 20)
+        page = request.GET.get('page', 1)
+        students_page = paginator.get_page(page)
+
+        # Total attempts across this teacher's students (for the stats tile)
+        from attempts.models import Attempt
+        total_attempts = Attempt.objects.filter(student__created_by=teacher).count()
+
+        return render(request, 'superadmin/teacher_detail.html', {
+            'teacher': teacher,
+            'initials': initials,
+            'avatar_class': avatar_class,
+            'classes': classes_qs,
+            'all_classes': all_classes,
+            'exams': exams,
+            'students': students_page,
+            'search': search,
+            'class_filter': class_filter,
+            'sort': sort,
+            'direction': direction,
+            'student_total': paginator.count,
+            'class_total': class_total,
+            'exam_total': exam_total,
+            'total_attempts': total_attempts,
+        })
+
+
 class SuperAdminToggleTeacherActiveView(View):
     """Enable or disable a teacher account. Disabling also kills any active sessions."""
 
@@ -225,8 +353,10 @@ class SuperAdminStudentsView(View):
 
     def get(self, request):
         search = request.GET.get('search', '').strip()
-        students = Student.objects.select_related('class_assigned').annotate(
-            attempt_count=Count('attempts'),
+        students = (
+            Student.objects
+            .select_related('class_assigned', 'created_by__user')
+            .annotate(attempt_count=Count('attempts'))
         )
         if search:
             students = students.filter(

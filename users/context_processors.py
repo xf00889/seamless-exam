@@ -3,7 +3,7 @@ Context processors for providing global template context.
 Requirements: 1.3, 1.4
 """
 from services.auth_service import AuthenticationService
-from users.models import Teacher, SystemSettings
+from users.models import AdminNotification, Teacher, SystemSettings
 from django.urls import reverse
 
 
@@ -120,10 +120,22 @@ def system_settings_context(request):
     """
     Expose the SystemSettings singleton to all templates so superadmin pages
     can surface maintenance-mode status without an extra query per view.
+
+    Also expose the latest notifications + unread count so the top-bar bell
+    can render on every superadmin page without per-view boilerplate.
     """
     if not request.path.startswith('/superadmin/'):
         return {}
+    context = {}
     try:
-        return {'system_settings': SystemSettings.load()}
+        context['system_settings'] = SystemSettings.load()
     except Exception:
-        return {'system_settings': None}
+        context['system_settings'] = None
+    try:
+        notif_qs = AdminNotification.objects.all()
+        context['unread_notifications'] = notif_qs.filter(is_read=False).count()
+        context['latest_notifications'] = list(notif_qs.order_by('-created_at')[:5])
+    except Exception:
+        context['unread_notifications'] = 0
+        context['latest_notifications'] = []
+    return context

@@ -1,0 +1,754 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}{{ teacher.user.get_full_name|default:teacher.user.username }} - Teacher Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .td-hero {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1.5rem;
+        align-items: center;
+        padding: 1.5rem 1.75rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-bottom: 1.25rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .td-hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+    }
+    .td-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .td-avatar-a { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); }
+    .td-avatar-b { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); }
+    .td-avatar-c { background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%); }
+    .td-avatar-d { background: linear-gradient(135deg, #34d399 0%, #059669 100%); }
+    .td-avatar-e { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+    .td-avatar-f { background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%); }
+    .td-avatar-g { background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%); }
+    .td-avatar-h { background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%); }
+
+    .td-info { min-width: 0; }
+    .td-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        flex-wrap: wrap;
+    }
+    .td-username {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 0 0 0.625rem;
+    }
+    .td-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.5rem;
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+    }
+    .td-meta-item { display: flex; align-items: center; gap: 0.375rem; }
+    .td-meta-item strong { color: var(--text-secondary); font-weight: 500; }
+
+    .td-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+
+    .td-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    .td-stat {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        transition: all 0.2s;
+    }
+    .td-stat:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+    .td-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .td-stat-icon svg { width: 22px; height: 22px; }
+    .td-stat-icon-blue { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+    .td-stat-icon-purple { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+    .td-stat-icon-amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .td-stat-icon-green { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+    .td-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
+    .td-stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.125rem; }
+
+    .td-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .td-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.625rem;
+        align-items: center;
+        padding: 0.875rem 1.25rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+    }
+    .td-filters .sa-search-input {
+        flex: 1;
+        min-width: 180px;
+        padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 0.625rem center;
+        background-size: 16px 16px;
+    }
+    .td-filters .sa-search-input:focus {
+        outline: none;
+        border-color: var(--active-color);
+    }
+    .td-filters .sa-select {
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 14px 14px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .td-filters .sa-select:focus {
+        outline: none;
+        border-color: var(--active-color);
+    }
+    .td-filters-result {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+    .td-filters-result strong { color: var(--text-secondary); font-weight: 600; }
+
+    .td-table-wrap {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+    }
+
+    .td-table { width: 100%; border-collapse: collapse; }
+    .td-table thead th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .td-table thead th a {
+        color: inherit;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .td-table thead th a:hover { color: var(--text-primary); }
+    .td-table thead th .sort-asc::after { content: ' \25B2'; font-size: 0.625rem; }
+    .td-table thead th .sort-desc::after { content: ' \25BC'; font-size: 0.625rem; }
+    .td-table tbody td {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+    .td-table tbody tr:last-child td { border-bottom: none; }
+    .td-table tbody tr:hover td { background: var(--hover-bg); }
+
+    .td-student {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .td-student-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+    }
+    .td-student-name { font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+    .td-student-id { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.125rem; }
+
+    .td-class-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .td-class-grade {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .td-class-name {
+        font-size: 0.8125rem;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .td-attempts {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    .td-attempts.zero { color: var(--text-muted); font-weight: 400; }
+
+    .td-actions-cell { display: flex; gap: 0.375rem; }
+
+    .td-empty {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: var(--text-muted);
+    }
+    .td-empty-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 0.75rem;
+        border-radius: 14px;
+        background: var(--bg-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+    }
+    .td-empty-icon svg { width: 28px; height: 28px; }
+    .td-class-mini-icon svg { width: 16px; height: 16px; }
+    .td-empty h4 { font-size: 1rem; color: var(--text-secondary); margin: 0 0 0.25rem; font-weight: 600; }
+    .td-empty p { font-size: 0.875rem; margin: 0; }
+
+    .td-pagination-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+    }
+    .td-pagination-wrap.is-only-top { border-top: 1px solid var(--border); border-radius: 0 0 12px 12px; }
+
+    .td-class-mini {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .td-class-mini:last-child { border-bottom: none; }
+    .td-class-mini-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .td-class-mini-info { min-width: 0; }
+    .td-class-mini-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+    .td-class-mini-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+    .td-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    .td-breadcrumb a { color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .td-breadcrumb a:hover { color: var(--text-primary); }
+    .td-breadcrumb .sep { color: var(--border); }
+
+    @media (max-width: 900px) {
+        .td-hero { grid-template-columns: auto 1fr; }
+        .td-actions { grid-column: 1 / -1; justify-content: flex-end; }
+        .td-stats { grid-template-columns: repeat(2, 1fr); }
+        .td-section { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+        .td-hero { padding: 1.25rem; }
+        .td-avatar { width: 56px; height: 56px; font-size: 1.125rem; }
+        .td-name { font-size: 1.25rem; }
+        .td-table thead { display: none; }
+        .td-table tbody td { display: block; padding: 0.5rem 1rem; }
+        .td-table tbody tr { display: block; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .td-table tbody td::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            letter-spacing: 0.05em;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="td-breadcrumb">
+    <a href="{% url 'superadmin_teachers' %}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Teachers
+    </a>
+    <span class="sep">/</span>
+    <span>{{ teacher.user.get_full_name|default:teacher.user.username }}</span>
+</div>
+
+<div class="td-hero">
+    <div class="td-avatar {{ avatar_class }}">{{ initials }}</div>
+    <div class="td-info">
+        <h1 class="td-name">
+            {{ teacher.user.get_full_name|default:teacher.user.username }}
+            {% if teacher.user.is_active %}
+                <span class="sa-badge sa-badge-green">Active</span>
+            {% else %}
+                <span class="sa-badge sa-badge-red">Disabled</span>
+            {% endif %}
+        </h1>
+        <p class="td-username">@{{ teacher.user.username }}</p>
+        <div class="td-meta">
+            {% if teacher.department %}
+            <div class="td-meta-item">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span><strong>Department:</strong> {{ teacher.department }}</span>
+            </div>
+            {% endif %}
+            {% if teacher.user.email %}
+            <div class="td-meta-item">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>{{ teacher.user.email }}</span>
+            </div>
+            {% endif %}
+            <div class="td-meta-item">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span><strong>Joined:</strong> {{ teacher.created_at|date:"M d, Y" }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="td-actions">
+        <form method="post" action="{% url 'superadmin_toggle_teacher_active' teacher.user.pk %}" style="display:inline;" onsubmit="return confirm('{% if teacher.user.is_active %}Disable{% else %}Enable{% endif %} this teacher account?');">
+            {% csrf_token %}
+            {% if teacher.user.is_active %}
+                <button type="submit" class="sa-btn sa-btn-ghost">Disable</button>
+            {% else %}
+                <button type="submit" class="sa-btn sa-btn-ghost">Enable</button>
+            {% endif %}
+        </form>
+        <button class="sa-btn sa-btn-ghost"
+                onclick="openEditTeacherModal('{{ teacher.user.pk }}', '{{ teacher.user.first_name|escapejs }}', '{{ teacher.user.last_name|escapejs }}', '{{ teacher.user.email|escapejs }}', '{{ teacher.department|default_if_none:''|escapejs }}')">Edit Profile</button>
+        <button class="sa-btn sa-btn-blue" onclick="openResetModal('teacher', '{{ teacher.user.pk }}', '{{ teacher.user.get_full_name|escapejs }}')">Reset Password</button>
+    </div>
+</div>
+
+<div class="td-stats">
+    <div class="td-stat">
+        <div class="td-stat-icon td-stat-icon-blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <div>
+            <div class="td-stat-value">{{ class_total }}</div>
+            <div class="td-stat-label">Classes</div>
+        </div>
+    </div>
+    <div class="td-stat">
+        <div class="td-stat-icon td-stat-icon-purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div>
+            <div class="td-stat-value">{{ exam_total }}</div>
+            <div class="td-stat-label">Exams</div>
+        </div>
+    </div>
+    <div class="td-stat">
+        <div class="td-stat-icon td-stat-icon-amber">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </div>
+        <div>
+            <div class="td-stat-value">{{ student_total }}</div>
+            <div class="td-stat-label">Students</div>
+        </div>
+    </div>
+    <div class="td-stat">
+        <div class="td-stat-icon td-stat-icon-green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div>
+            <div class="td-stat-value">{{ total_attempts }}</div>
+            <div class="td-stat-label">Attempts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Section (the main private scope) -->
+<div style="margin-bottom:1.5rem;">
+    <div class="td-filters">
+        <form method="get" action="{% url 'superadmin_teacher_detail' teacher.user.pk %}" style="display:contents;">
+            <input type="text" name="search" value="{{ search }}" class="sa-search-input" placeholder="Search by name or school ID...">
+
+            <select name="class" class="sa-select" onchange="this.form.submit()">
+                <option value="">All classes</option>
+                <option value="unassigned" {% if class_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                {% for cls in all_classes %}
+                <option value="{{ cls.id }}" {% if class_filter == cls.id|stringformat:"s" %}selected{% endif %}>{{ cls.grade_level }} — {{ cls.strand }} ({{ cls.section }})</option>
+                {% endfor %}
+            </select>
+
+            <select name="sort" class="sa-select" onchange="this.form.submit()">
+                <option value="created"   {% if sort == 'created' %}selected{% endif %}>Sort: Newest first</option>
+                <option value="name"      {% if sort == 'name' %}selected{% endif %}>Sort: Name</option>
+                <option value="class"     {% if sort == 'class' %}selected{% endif %}>Sort: Class</option>
+                <option value="attempts"  {% if sort == 'attempts' %}selected{% endif %}>Sort: Most attempts</option>
+                <option value="last_activity" {% if sort == 'last_activity' %}selected{% endif %}>Sort: Last activity</option>
+            </select>
+
+            <select name="dir" class="sa-select" onchange="this.form.submit()">
+                <option value="desc" {% if direction == 'desc' %}selected{% endif %}>↓ Desc</option>
+                <option value="asc"  {% if direction == 'asc' %}selected{% endif %}>↑ Asc</option>
+            </select>
+
+            {% if search or class_filter %}
+            <a href="{% url 'superadmin_teacher_detail' teacher.user.pk %}" class="sa-btn sa-btn-ghost">Clear</a>
+            {% endif %}
+        </form>
+
+        <div class="td-filters-result">
+            <strong>{{ student_total }}</strong> student{{ student_total|pluralize }}
+            {% if search or class_filter %}matching filters{% endif %}
+        </div>
+    </div>
+
+    <div class="td-table-wrap">
+        <table class="td-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Class</th>
+                    <th>Attempts</th>
+                    <th>Last Activity</th>
+                    <th>Joined</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                {% with initial1=student.first_name|slice:":1" initial2=student.last_name|slice:":1" color_letter=student.first_name|slice:":1"|lower|default:"a" %}
+                <tr>
+                    <td data-label="Student">
+                        <div class="td-student">
+                            <div class="td-student-avatar td-avatar-{{ color_letter }}">{{ initial1|upper }}{{ initial2|upper }}</div>
+                            <div style="min-width:0;">
+                                <div class="td-student-name">{{ student.get_full_name }}</div>
+                                <div class="td-student-id"><span class="sa-badge sa-badge-purple">{{ student.school_id }}</span></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Class">
+                        {% if student.class_assigned %}
+                        <div class="td-class-cell">
+                            <div>
+                                <div class="td-class-name">{{ student.class_assigned.grade_level }} — {{ student.class_assigned.strand }}</div>
+                                <div class="td-class-grade">Section {{ student.class_assigned.section }}</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span style="color:var(--text-muted); font-style:italic;">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Attempts">
+                        <span class="td-attempts {% if student.attempt_count == 0 %}zero{% endif %}">
+                            {{ student.attempt_count }}
+                        </span>
+                    </td>
+                    <td data-label="Last Activity">
+                        {% if student.last_activity %}
+                            {{ student.last_activity|date:"M d, Y" }}
+                            <div style="font-size:0.75rem; color:var(--text-muted);">{{ student.last_activity|timesince }} ago</div>
+                        {% else %}
+                            <span style="color:var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Joined">
+                        {{ student.created_at|date:"M d, Y" }}
+                    </td>
+                    <td data-label="Actions" style="text-align:right;">
+                        <div class="td-actions-cell" style="justify-content:flex-end;">
+                            <button class="sa-btn sa-btn-sm sa-btn-blue" onclick="openResetModal('student', '{{ student.id }}', '{{ student.get_full_name|escapejs }}')" title="Reset password">Reset</button>
+                            <button class="sa-btn sa-btn-sm sa-btn-red" onclick="openDeleteModal('student', '{{ student.id }}', '{{ student.get_full_name|escapejs }}')" title="Delete">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="td-empty">
+                            <div class="td-empty-icon">
+                                {% if search or class_filter %}
+                                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                                {% else %}
+                                <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                {% endif %}
+                            </div>
+                            <h4>
+                                {% if search and class_filter %}
+                                No students match "{{ search }}" in this class
+                                {% elif search %}
+                                No students match "{{ search }}"
+                                {% elif class_filter == 'unassigned' %}
+                                No unassigned students yet
+                                {% else %}
+                                This teacher has not created any student accounts yet
+                                {% endif %}
+                            </h4>
+                            <p>
+                                {% if search or class_filter %}
+                                Try a different search term or clear the filters.
+                                {% else %}
+                                Student accounts created by {{ teacher.user.get_full_name|default:teacher.user.username }} will appear here.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if students.has_other_pages %}
+    <div class="td-pagination-wrap">
+        <div>Page {{ students.number }} of {{ students.paginator.num_pages }}</div>
+        <div class="sa-pagination" style="margin:0;">
+            {% if students.has_previous %}
+            <a href="?{% if search %}search={{ search }}&{% endif %}{% if class_filter %}class={{ class_filter }}&{% endif %}sort={{ sort }}&dir={{ direction }}&page={{ students.previous_page_number }}">Prev</a>
+            {% endif %}
+            {% for num in students.paginator.page_range %}
+                {% if students.number == num %}
+                <span class="current">{{ num }}</span>
+                {% elif num > students.number|add:"-2" and num < students.number|add:"2" %}
+                <a href="?{% if search %}search={{ search }}&{% endif %}{% if class_filter %}class={{ class_filter }}&{% endif %}sort={{ sort }}&dir={{ direction }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if students.has_next %}
+            <a href="?{% if search %}search={{ search }}&{% endif %}{% if class_filter %}class={{ class_filter }}&{% endif %}sort={{ sort }}&dir={{ direction }}&page={{ students.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="td-pagination-wrap is-only-top">
+        <div>Showing all {{ student_total }} student{{ student_total|pluralize }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Classes + Recent Exams as compact side-by-side cards -->
+<div class="td-section">
+    <div class="sa-card">
+        <div class="sa-card-header">
+            <h3>Classes ({{ class_total }})</h3>
+        </div>
+        <div style="padding: 0.5rem 1.25rem;">
+            {% for cls in classes %}
+            <div class="td-class-mini">
+                <div class="td-class-mini-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </div>
+                <div class="td-class-mini-info">
+                    <div class="td-class-mini-name">{{ cls.grade_level }} — {{ cls.strand }}</div>
+                    <div class="td-class-mini-meta">Section {{ cls.section }}</div>
+                </div>
+                <div class="sa-badge sa-badge-blue">{{ cls.student_count }} student{{ cls.student_count|pluralize }}</div>
+            </div>
+            {% empty %}
+            <div class="td-empty" style="padding:2rem 0;">
+                <p>No classes yet</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="sa-card">
+        <div class="sa-card-header">
+            <h3>Recent Exams ({{ exam_total }})</h3>
+        </div>
+        <div class="sa-table-wrap">
+            <table class="sa-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Attempts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in exams %}
+                    <tr>
+                        <td>{{ exam.title|truncatechars:32 }}</td>
+                        <td><span class="sa-badge sa-badge-purple">{{ exam.subject }}</span></td>
+                        <td>{{ exam.attempt_count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No exams yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Teacher Modal -->
+<div class="sa-modal-overlay" id="editTeacherModal">
+    <div class="sa-modal" style="max-width:520px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <div>
+                <h3 style="margin:0;">Edit Teacher</h3>
+                <p style="color:var(--text-secondary); font-size:0.8125rem; margin:0.25rem 0 0;">Username cannot be changed.</p>
+            </div>
+            <button type="button" onclick="closeModal('editTeacherModal')" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:0.25rem;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="post" id="editTeacherForm">
+            {% csrf_token %}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                <div class="sa-form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" id="editTeacherFirstName" class="sa-input" required>
+                </div>
+                <div class="sa-form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" id="editTeacherLastName" class="sa-input">
+                </div>
+            </div>
+            <div class="sa-form-group">
+                <label>Email</label>
+                <input type="email" name="email" id="editTeacherEmail" class="sa-input">
+            </div>
+            <div class="sa-form-group">
+                <label>Department</label>
+                <input type="text" name="department" id="editTeacherDepartment" class="sa-input">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('editTeacherModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="sa-modal-overlay" id="resetModal">
+    <div class="sa-modal">
+        <h3>Reset Password</h3>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-bottom:1rem;">Set a new password for <strong id="resetUserName" style="color:#e2e8f0;"></strong></p>
+        <form method="post" action="{% url 'superadmin_reset_password' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="resetUserType">
+            <input type="hidden" name="user_id" id="resetUserId">
+            <div class="sa-form-group">
+                <label>New Password</label>
+                <input type="password" name="new_password" class="sa-input" required minlength="8" placeholder="Minimum 8 characters">
+            </div>
+            <div class="sa-form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirm_password" class="sa-input" required minlength="8" placeholder="Re-enter password">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('resetModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Reset Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Student Modal -->
+<div class="sa-modal-overlay" id="deleteModal">
+    <div class="sa-modal">
+        <h3 style="color:#fca5a5;">Delete Student</h3>
+        <p style="color:#94a3b8; font-size:0.875rem; margin-bottom:1rem;">You are about to permanently delete <strong id="deleteUserName" style="color:#e2e8f0;"></strong>. All exam attempts and data will be lost.</p>
+        <form method="post" action="{% url 'superadmin_delete_user' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="deleteUserType">
+            <input type="hidden" name="user_id" id="deleteUserId">
+            <div class="sa-form-group">
+                <label>Enter your admin password to confirm</label>
+                <input type="password" name="admin_password" class="sa-input" required placeholder="Your admin password">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-red">Delete Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

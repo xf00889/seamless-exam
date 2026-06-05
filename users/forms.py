@@ -436,18 +436,25 @@ class StudentClassAssignmentForm(forms.Form):
     def __init__(self, *args, teacher=None, **kwargs):
         """
         Initialize form with teacher-specific class queryset.
-        
+
         Args:
-            teacher: Teacher instance to filter classes
+            teacher: Teacher instance to filter classes and own students
         """
         super().__init__(*args, **kwargs)
-        
+
         # Import here to avoid circular imports
         from users.models import Student, Class
-        
-        # Set student queryset (all students)
-        self.fields['student'].queryset = Student.objects.all().order_by('last_name', 'first_name')
-        
+
+        # Set student queryset (only students created by this teacher)
+        if teacher:
+            self.fields['student'].queryset = (
+                Student.objects
+                .filter(created_by=teacher)
+                .order_by('last_name', 'first_name')
+            )
+        else:
+            self.fields['student'].queryset = Student.objects.none()
+
         # Set class queryset (only classes belonging to the teacher)
         if teacher:
             self.fields['class_assigned'].queryset = Class.objects.filter(
@@ -490,22 +497,30 @@ class BulkStudentAssignmentForm(forms.Form):
     def __init__(self, *args, teacher=None, initial_class_id=None, **kwargs):
         """
         Initialize form with teacher-specific class queryset.
-        
+
         Args:
             teacher: Teacher instance to filter classes
             initial_class_id: Optional class ID to pre-select
         """
         super().__init__(*args, **kwargs)
-        
+
         # Import here to avoid circular imports
         from users.models import Student, Class
 
-        # Set students queryset - exclude students already in the target class
-        students_qs = Student.objects.all().order_by('last_name', 'first_name')
+        # Set students queryset - only students created by this teacher,
+        # optionally excluding students already in the target class.
+        if teacher:
+            students_qs = (
+                Student.objects
+                .filter(created_by=teacher)
+                .order_by('last_name', 'first_name')
+            )
+        else:
+            students_qs = Student.objects.none()
         if initial_class_id:
             students_qs = students_qs.exclude(class_assigned_id=initial_class_id)
         self.fields['students'].queryset = students_qs
-        
+
         # Set class queryset (only classes belonging to the teacher)
         if teacher:
             self.fields['class_assigned'].queryset = Class.objects.filter(

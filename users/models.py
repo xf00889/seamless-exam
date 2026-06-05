@@ -97,7 +97,20 @@ class Student(models.Model):
         help_text="Hashed password using Django's password hashing"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
+    # Ownership: each student account is owned by the teacher who created it.
+    # Teachers only see and manage students they own. Superadmins see all.
+    created_by = models.ForeignKey(
+        Teacher,
+        on_delete=models.SET_NULL,
+        related_name='created_students',
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Teacher who created this student account. "
+                  "Used to scope account visibility to the owning teacher."
+    )
+
     # Class assignment (Requirements 2.1, 2.2)
     class_assigned = models.ForeignKey(
         Class,
