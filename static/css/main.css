@@ -1730,18 +1730,10 @@ html {
         grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 }
-    
-    aside.w-full.lg\\:w-64 {
-        width: 100%;
-        order: 1;
-    }
-    
-    #question-sidebar {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-}
 
-@media (max-width: 640px) {
+/* Collapse navbar links into the hamburger menu on tablets and smaller so the
+   profile button and nav items don't overlap (Available Exams + avatar). */
+@media (max-width: 767px) {
     .desktop-nav-links {
         display: none;
     }
@@ -1750,7 +1742,9 @@ html {
         display: flex;
         align-items: center;
     }
+}
 
+@media (max-width: 640px) {
     #question-sidebar {
         grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 0.5rem;
