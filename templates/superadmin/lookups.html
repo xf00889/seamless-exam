@@ -1,0 +1,123 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Lookup Data{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Lookup Data</h1>
+        <p>Manage grade levels, strands, sections, subjects, and quarters used across the system</p>
+    </div>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-body" style="padding-top:0.5rem;">
+        <div class="sa-lookup-tabs" id="lookupTabs">
+            {% for group in groups %}
+            <button type="button" class="sa-lookup-tab {% if forloop.first %}active{% endif %}" data-target="lookup-{{ group.key }}">{{ group.label }}</button>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% for group in groups %}
+<div class="sa-lookup-panel {% if not forloop.first %}hidden{% endif %}" id="lookup-{{ group.key }}">
+    <div class="sa-card">
+        <div class="sa-card-header">
+            <h3>Add {{ group.label|slice:":-1" }}</h3>
+        </div>
+        <div class="sa-card-body">
+            <form method="post" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">
+                {% csrf_token %}
+                <input type="hidden" name="kind" value="{{ group.key }}">
+                <input type="hidden" name="action" value="create">
+                <div class="sa-form-group" style="flex:1; min-width:220px; margin:0;">
+                    <label>Name</label>
+                    <input type="text" name="name" class="sa-input" required maxlength="100" placeholder="e.g. Grade 11">
+                </div>
+                {% if group.has_order %}
+                <div class="sa-form-group" style="width:120px; margin:0;">
+                    <label>Order</label>
+                    <input type="number" name="order" class="sa-input" value="0">
+                </div>
+                {% endif %}
+                <button type="submit" class="sa-btn sa-btn-blue">Add</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="sa-card">
+        <div class="sa-card-header">
+            <h3>{{ group.label }} ({{ group.items|length }})</h3>
+        </div>
+        <div class="sa-table-wrap">
+            <table class="sa-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        {% if group.has_order %}<th style="width:100px;">Order</th>{% endif %}
+                        <th style="width:240px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in group.items %}
+                    <tr>
+                        <td>
+                            <form method="post" class="sa-inline-edit" style="display:flex; gap:0.5rem; align-items:center;">
+                                {% csrf_token %}
+                                <input type="hidden" name="kind" value="{{ group.key }}">
+                                <input type="hidden" name="action" value="edit">
+                                <input type="hidden" name="item_id" value="{{ item.pk }}">
+                                <input type="text" name="name" value="{{ item.name }}" class="sa-input" required maxlength="100" style="max-width:280px;">
+                                {% if group.has_order %}
+                                <input type="number" name="order" value="{{ item.order }}" class="sa-input" style="max-width:90px;">
+                                {% endif %}
+                                <button type="submit" class="sa-btn sa-btn-sm sa-btn-blue">Save</button>
+                            </form>
+                        </td>
+                        {% if group.has_order %}<td>{{ item.order }}</td>{% endif %}
+                        <td>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Delete &quot;{{ item.name|escapejs }}&quot;?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="kind" value="{{ group.key }}">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="item_id" value="{{ item.pk }}">
+                                <button type="submit" class="sa-btn sa-btn-sm sa-btn-red">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{% if group.has_order %}3{% else %}2{% endif %}" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No entries yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .sa-lookup-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; padding:0.75rem 0; }
+    .sa-lookup-tab { padding:0.5rem 1rem; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-secondary); font-size:0.8125rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+    .sa-lookup-tab:hover { color:var(--text-primary); background:var(--hover-bg); }
+    .sa-lookup-tab.active { background:var(--active-bg); border-color:var(--active-color); color:var(--active-color); }
+    .sa-lookup-panel.hidden { display:none; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var tabs = document.querySelectorAll('.sa-lookup-tab');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+            document.querySelectorAll('.sa-lookup-panel').forEach(function(p) { p.classList.add('hidden'); });
+            var target = document.getElementById(tab.dataset.target);
+            if (target) target.classList.remove('hidden');
+        });
+    });
+})();
+</script>
+{% endblock %}

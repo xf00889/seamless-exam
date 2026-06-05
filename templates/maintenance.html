@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance - ValuateAI</title>
+    <link rel="icon" type="image/png" href="{% static 'img/brand.png' %}">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background: #f6f7fb;
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            color: #0f172a;
+        }
+
+        /* Match login page backdrop: soft purple/indigo mesh */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 10%, rgba(167, 139, 250, 0.20), transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 20%, rgba(99, 102, 241, 0.18), transparent 60%),
+                radial-gradient(ellipse 70% 50% at 50% 100%, rgba(196, 181, 253, 0.22), transparent 60%),
+                linear-gradient(180deg, #fafaff 0%, #f1f3fb 100%);
+            pointer-events: none;
+        }
+
+        /* Subtle grid pattern with radial mask */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            background-position: -1px -1px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 80%);
+            pointer-events: none;
+        }
+
+        /* Floating decorative vectors (matches login) */
+        .m-vectors {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .m-vectors .vec-dot {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(0.3px);
+            animation: m-float 12s ease-in-out infinite;
+        }
+        .m-vectors .vec-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid;
+            background: transparent;
+            animation: m-float 14s ease-in-out infinite reverse;
+        }
+        .m-vectors .vec-cross {
+            position: absolute;
+            animation: m-float 16s ease-in-out infinite;
+            opacity: 0.6;
+        }
+        .m-vectors .vec-cross::before,
+        .m-vectors .vec-cross::after {
+            content: '';
+            position: absolute;
+            background: currentColor;
+            border-radius: 1.5px;
+        }
+        .m-vectors .vec-cross::before { width: 2px; height: 14px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .m-vectors .vec-cross::after { width: 14px; height: 2px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        @keyframes m-float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(8px, -10px) scale(1.04); }
+            66% { transform: translate(-6px, 8px) scale(0.98); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .m-vectors .vec-dot,
+            .m-vectors .vec-ring,
+            .m-vectors .vec-cross { animation: none; }
+        }
+
+        /* Meteor shower (preserved from prior design, tuned for purple background) */
+        .m-meteor-field { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+        .m-meteor {
+            position: absolute;
+            top: -2rem;
+            left: var(--x, 50%);
+            width: var(--length, 50px);
+            height: 1.5px;
+            background: linear-gradient(to right, var(--meteor-color, rgba(255, 255, 255, 0.85)), transparent);
+            border-radius: 9999px;
+            transform: rotate(215deg);
+            animation: m-meteor-fall var(--duration, 5s) linear var(--delay, 0s) infinite;
+            opacity: 0;
+        }
+        @keyframes m-meteor-fall {
+            0%   { transform: rotate(215deg) translateX(0); opacity: 1; }
+            70%  { opacity: 1; }
+            100% { transform: rotate(215deg) translateX(-500px); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .m-meteor { animation: none; opacity: 0; }
+        }
+
+        /* Layout */
+        .m-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1rem;
+            position: relative;
+            z-index: 1;
+            animation: m-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes m-rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Brand logo with glow halo (matches login) */
+        .m-brand { text-align: center; margin-bottom: 1.25rem; }
+        .m-brand-link {
+            display: inline-flex;
+            text-decoration: none;
+            position: relative;
+        }
+        .m-brand-link::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -55%);
+            width: 96px;
+            height: 96px;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.28), transparent 65%);
+            filter: blur(8px);
+            z-index: -1;
+            border-radius: 50%;
+            opacity: 0.9;
+        }
+        .m-brand-logo {
+            height: 56px;
+            width: auto;
+            filter: drop-shadow(0 4px 12px rgba(67, 56, 202, 0.22));
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .m-brand-link:hover .m-brand-logo { transform: scale(1.04) translateY(-1px); }
+
+        /* Maintenance status badge (warning-themed variant of trust-badge) */
+        .m-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.3rem 0.75rem;
+            margin: 0 auto 0.95rem;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(217, 119, 6, 0.10));
+            border: 1px solid rgba(245, 158, 11, 0.30);
+            border-radius: 999px;
+            color: #b45309;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .m-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+            animation: m-pulse 2.2s ease-out infinite;
+        }
+        @keyframes m-pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            70%  { box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* Card */
+        .m-card {
+            width: 100%;
+            max-width: 480px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.7);
+            border-radius: 16px;
+            padding: 2.25rem 2rem;
+            box-shadow:
+                0 1px 2px rgba(15, 23, 42, 0.04),
+                0 8px 24px -6px rgba(99, 102, 241, 0.10),
+                0 24px 48px -12px rgba(99, 102, 241, 0.08);
+        }
+
+        .m-card-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1.25rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.12));
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d97706;
+        }
+        .m-card-icon svg { width: 28px; height: 28px; }
+
+        .m-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 0.4rem;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            text-align: center;
+        }
+        .m-card p.m-message {
+            font-size: 0.9375rem;
+            color: #475569;
+            line-height: 1.6;
+            margin: 0 0 1.5rem;
+            text-align: center;
+        }
+
+        .m-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(226, 232, 240, 0.9), transparent);
+            margin: 1.25rem 0;
+        }
+
+        .m-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+        .m-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+            animation: m-pulse-green 2.2s ease-out infinite;
+        }
+        @keyframes m-pulse-green {
+            0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+            70%  { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .m-footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .m-footer a { color: #7c3aed; text-decoration: none; font-weight: 600; }
+        .m-footer a:hover { color: #6d28d9; text-decoration: underline; text-underline-offset: 2px; }
+
+        @media (max-width: 640px) {
+            .m-page { padding: 1.5rem 0.75rem; }
+            .m-card { padding: 1.75rem 1.25rem; border-radius: 14px; }
+            .m-brand-logo { height: 48px; }
+            .m-card h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="m-vectors" id="mVectors" aria-hidden="true"></div>
+
+    <div class="m-meteor-field" aria-hidden="true">
+        <span class="m-meteor" style="--x: 5%;  --length: 60px;  --duration: 5s;  --delay: 0.4s; --meteor-color: rgba(255, 255, 255, 0.9);"></span>
+        <span class="m-meteor" style="--x: 22%; --length: 90px;  --duration: 6.5s; --delay: 2.1s; --meteor-color: rgba(196, 181, 253, 0.85);"></span>
+        <span class="m-meteor" style="--x: 38%; --length: 70px;  --duration: 5s;  --delay: 3.5s; --meteor-color: rgba(255, 255, 255, 0.8);"></span>
+        <span class="m-meteor" style="--x: 55%; --length: 110px; --duration: 6s;  --delay: 1.0s; --meteor-color: rgba(167, 139, 250, 0.9);"></span>
+        <span class="m-meteor" style="--x: 70%; --length: 80px;  --duration: 7s;  --delay: 2.8s; --meteor-color: rgba(255, 255, 255, 0.85);"></span>
+        <span class="m-meteor" style="--x: 85%; --length: 100px; --duration: 5.5s; --delay: 4.2s; --meteor-color: rgba(196, 181, 253, 0.8);"></span>
+    </div>
+
+    <div class="m-page">
+        <div class="m-brand">
+            <a href="{% url 'home' %}" class="m-brand-link" aria-label="ValuateAI">
+                <img src="{% static 'img/brand.png' %}" alt="ValuateAI" class="m-brand-logo">
+            </a>
+        </div>
+
+        <div style="display:flex; justify-content:center;">
+            <span class="m-badge">
+                <span class="m-badge-dot"></span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>Under Maintenance</span>
+            </span>
+        </div>
+
+        <div class="m-card">
+            <div class="m-card-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h1>We'll be right back</h1>
+            <p class="m-message">{{ message }}</p>
+            <div class="m-divider"></div>
+            <div class="m-status">
+                <span class="m-status-dot"></span>
+                <span>Our team is working on it</span>
+            </div>
+        </div>
+
+        <p class="m-footer">
+            Need help? Contact your administrator or visit <a href="{% url 'home' %}">ValuateAI</a>
+        </p>
+    </div>
+
+    <script>
+    (function() {
+        var container = document.getElementById('mVectors');
+        if (!container) return;
+        var types = ['vec-dot', 'vec-dot', 'vec-ring', 'vec-cross'];
+        var colors = ['#e0e7ff', '#ddd6fe', '#c7d2fe', '#bfdbfe', '#e0e7ff'];
+        var sizes = [8, 12, 16, 24, 32];
+        for (var i = 0; i < 12; i++) {
+            var el = document.createElement('div');
+            var type = types[Math.floor(Math.random() * types.length)];
+            var size = sizes[Math.floor(Math.random() * sizes.length)];
+            el.className = type;
+            el.style.cssText = [
+                'left:' + (3 + Math.random() * 90) + '%',
+                'top:' + (3 + Math.random() * 90) + '%',
+                'width:' + size + 'px',
+                'height:' + size + 'px',
+                'opacity:' + (0.4 + Math.random() * 0.4).toFixed(2)
+            ].join(';');
+            var color = colors[Math.floor(Math.random() * colors.length)];
+            if (type === 'vec-dot') {
+                el.style.background = color;
+            } else if (type === 'vec-ring') {
+                el.style.borderColor = color;
+            } else {
+                el.style.color = color;
+            }
+            container.appendChild(el);
+        }
+    })();
+    </script>
+</body>
+</html>

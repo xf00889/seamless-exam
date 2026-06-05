@@ -1,0 +1,70 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Active Sessions{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Active Sessions</h1>
+        <p>Teachers, students, and admins currently signed in ({{ total }} total)</p>
+    </div>
+    {% if total > 1 %}
+    <form method="post" onsubmit="return confirm('End all other active sessions? Your own session will be kept.');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="kick_all">
+        <button type="submit" class="sa-btn sa-btn-red">End All Others</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="sa-card">
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Identifier</th>
+                    <th>Expires</th>
+                    <th>Session</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        {% if row.kind == 'Teacher' %}<span class="sa-badge sa-badge-blue">Teacher</span>
+                        {% elif row.kind == 'Student' %}<span class="sa-badge sa-badge-green">Student</span>
+                        {% elif row.kind == 'Superadmin' %}<span class="sa-badge sa-badge-purple">Superadmin</span>
+                        {% else %}<span class="sa-badge sa-badge-red">{{ row.kind }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ row.name }}
+                        {% if row.is_self %}<span style="color:var(--text-muted); font-size:0.75rem;"> (you)</span>{% endif %}
+                    </td>
+                    <td>{{ row.detail|default:"-" }}</td>
+                    <td>{{ row.expires|date:"M d, Y H:i" }}</td>
+                    <td><code style="font-size:0.75rem; color:var(--text-muted);">{{ row.session_key|slice:":8" }}…</code></td>
+                    <td>
+                        {% if row.is_self %}
+                            <span style="color:var(--text-muted); font-size:0.8125rem;">Current session</span>
+                        {% else %}
+                            <form method="post" style="display:inline;" onsubmit="return confirm('End this session for {{ row.name|escapejs }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="kick">
+                                <input type="hidden" name="session_key" value="{{ row.session_key }}">
+                                <button type="submit" class="sa-btn sa-btn-sm sa-btn-red">Force Logout</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem;">No active sessions</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

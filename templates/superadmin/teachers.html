@@ -18,6 +18,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Username</th>
+                    <th>Status</th>
                     <th>Department</th>
                     <th>Classes</th>
                     <th>Exams</th>
@@ -27,25 +28,82 @@
             </thead>
             <tbody>
                 {% for teacher in teachers %}
-                <tr>
-                    <td>{{ teacher.user.get_full_name }}</td>
+                <tr {% if not teacher.user.is_active %}style="opacity:0.55;"{% endif %}>
+                    <td>{{ teacher.user.get_full_name|default:teacher.user.username }}</td>
                     <td><span class="sa-badge sa-badge-blue">{{ teacher.user.username }}</span></td>
+                    <td>
+                        {% if teacher.user.is_active %}
+                            <span class="sa-badge sa-badge-green">Active</span>
+                        {% else %}
+                            <span class="sa-badge sa-badge-red">Disabled</span>
+                        {% endif %}
+                    </td>
                     <td>{{ teacher.department|default:"-" }}</td>
                     <td>{{ teacher.class_count }}</td>
                     <td>{{ teacher.exam_count }}</td>
                     <td>{{ teacher.created_at|date:"M d, Y" }}</td>
                     <td>
                         <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="sa-btn sa-btn-sm sa-btn-ghost"
+                                    onclick="openEditTeacherModal('{{ teacher.user.pk }}', '{{ teacher.user.first_name|escapejs }}', '{{ teacher.user.last_name|escapejs }}', '{{ teacher.user.email|escapejs }}', '{{ teacher.department|default_if_none:''|escapejs }}')">Edit</button>
                             <button class="sa-btn sa-btn-sm sa-btn-blue" onclick="openResetModal('teacher', '{{ teacher.user.pk }}', '{{ teacher.user.get_full_name|escapejs }}')">Reset Password</button>
+                            <form method="post" action="{% url 'superadmin_toggle_teacher_active' teacher.user.pk %}" style="display:inline;" onsubmit="return confirm('{% if teacher.user.is_active %}Disable{% else %}Enable{% endif %} this teacher account?');">
+                                {% csrf_token %}
+                                {% if teacher.user.is_active %}
+                                    <button type="submit" class="sa-btn sa-btn-sm sa-btn-ghost">Disable</button>
+                                {% else %}
+                                    <button type="submit" class="sa-btn sa-btn-sm sa-btn-blue">Enable</button>
+                                {% endif %}
+                            </form>
                             <button class="sa-btn sa-btn-sm sa-btn-red" onclick="openDeleteModal('teacher', '{{ teacher.user.pk }}', '{{ teacher.user.get_full_name|escapejs }}')">Delete</button>
                         </div>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center; color:#64748b; padding:2rem;">No teachers found</td></tr>
+                <tr><td colspan="8" style="text-align:center; color:#64748b; padding:2rem;">No teachers found</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Edit Teacher Modal -->
+<div class="sa-modal-overlay" id="editTeacherModal">
+    <div class="sa-modal" style="max-width:520px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <div>
+                <h3 style="margin:0;">Edit Teacher</h3>
+                <p style="color:var(--text-secondary); font-size:0.8125rem; margin:0.25rem 0 0;">Username cannot be changed.</p>
+            </div>
+            <button type="button" onclick="closeModal('editTeacherModal')" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:0.25rem;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="post" id="editTeacherForm">
+            {% csrf_token %}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                <div class="sa-form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" id="editTeacherFirstName" class="sa-input" required>
+                </div>
+                <div class="sa-form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" id="editTeacherLastName" class="sa-input">
+                </div>
+            </div>
+            <div class="sa-form-group">
+                <label>Email</label>
+                <input type="email" name="email" id="editTeacherEmail" class="sa-input">
+            </div>
+            <div class="sa-form-group">
+                <label>Department</label>
+                <input type="text" name="department" id="editTeacherDepartment" class="sa-input">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('editTeacherModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -159,6 +217,16 @@ function openResetModal(type, id, name) {
 
 function openCreateTeacherModal() {
     document.getElementById('createTeacherModal').classList.add('active');
+}
+
+function openEditTeacherModal(teacherId, firstName, lastName, email, department) {
+    var form = document.getElementById('editTeacherForm');
+    form.action = '/superadmin/teachers/' + teacherId + '/edit/';
+    document.getElementById('editTeacherFirstName').value = firstName || '';
+    document.getElementById('editTeacherLastName').value = lastName || '';
+    document.getElementById('editTeacherEmail').value = email || '';
+    document.getElementById('editTeacherDepartment').value = department || '';
+    document.getElementById('editTeacherModal').classList.add('active');
 }
 
 function openDeleteModal(type, id, name) {

@@ -90,6 +90,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',  # Debug toolbar
     'exam_system.middleware.FirstTimeSetupMiddleware',  # First-time setup redirect
+    'exam_system.middleware.MaintenanceModeMiddleware',  # Maintenance mode gate
     'exam_system.middleware.FileSizeValidationMiddleware',  # File upload validation (Requirements 4.3, 13.1)
 ]
 
@@ -107,6 +108,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'users.context_processors.navbar_context',  # Navbar context (Requirements 1.3, 1.4)
+                'users.context_processors.system_settings_context',  # System settings (maintenance banner)
                 'exam_system.context_processors.static_version',  # Cache-busting version for static assets
             ],
         },

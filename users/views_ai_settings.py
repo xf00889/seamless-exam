@@ -19,8 +19,10 @@ def ai_settings_view(request):
         settings_obj.ai_api_key = request.POST.get('ai_api_key', '').strip()
         settings_obj.ai_base_url = request.POST.get('ai_base_url', '').strip() or 'https://openrouter.ai/api/v1'
         settings_obj.ai_model = request.POST.get('ai_model', '').strip() or 'deepseek/deepseek-r1-0528:free'
+        settings_obj.maintenance_mode = request.POST.get('maintenance_mode') == 'on'
+        settings_obj.maintenance_message = request.POST.get('maintenance_message', '').strip()
         settings_obj.save()
-        messages.success(request, 'AI settings updated successfully.')
+        messages.success(request, 'Settings updated successfully.')
         return redirect('superadmin_ai_settings')
 
     context = {

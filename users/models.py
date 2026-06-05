@@ -177,6 +177,15 @@ class SystemSettings(models.Model):
     ai_api_key = models.CharField(max_length=500, blank=True, default='')
     ai_base_url = models.CharField(max_length=255, blank=True, default='https://openrouter.ai/api/v1')
     ai_model = models.CharField(max_length=255, blank=True, default='meta-llama/llama-3.1-8b-instruct:free')
+    maintenance_mode = models.BooleanField(
+        default=False,
+        help_text='When enabled, non-superadmin users see the maintenance page instead of the app.'
+    )
+    maintenance_message = models.TextField(
+        blank=True,
+        default="We're performing scheduled maintenance. The system will be back online shortly. Thank you for your patience.",
+        help_text='Custom message shown on the maintenance page.'
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

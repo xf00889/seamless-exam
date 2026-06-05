@@ -7,8 +7,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
 from django.contrib import messages
 from django.http import JsonResponse
+from django.db import IntegrityError
 from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -17,7 +19,10 @@ from functools import wraps
 from django.utils.decorators import method_decorator
 import json
 
-from .models import Teacher, Student, Class, AdminNotification
+from .models import (
+    Teacher, Student, Class, AdminNotification,
+    GradeLevel, Strand, Section, Subject, Quarter,
+)
 from exams.models import Exam
 from attempts.models import Attempt
 
@@ -143,6 +148,74 @@ class SuperAdminTeachersView(View):
             exam_count=Count('exams', distinct=True),
         ).order_by('-created_at')
         return render(request, 'superadmin/teachers.html', {'teachers': teachers})
+
+
+class SuperAdminEditTeacherView(View):
+    """Edit a teacher's profile fields (name, email, department). Username is immutable."""
+
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, teacher_id):
+        teacher = get_object_or_404(Teacher.objects.select_related('user'), user_id=teacher_id)
+
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        department = request.POST.get('department', '').strip()
+
+        errors = []
+        if not first_name:
+            errors.append('First name is required.')
+        if email and User.objects.filter(email=email).exclude(pk=teacher.user_id).exists():
+            errors.append('Another user already uses this email.')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect('superadmin_teachers')
+
+        teacher.user.first_name = first_name
+        teacher.user.last_name = last_name
+        teacher.user.email = email
+        teacher.user.save(update_fields=['first_name', 'last_name', 'email'])
+
+        teacher.department = department or None
+        teacher.save(update_fields=['department', 'updated_at'])
+
+        messages.success(request, f'Teacher "{teacher.user.get_full_name() or teacher.user.username}" updated.')
+        return redirect('superadmin_teachers')
+
+
+class SuperAdminToggleTeacherActiveView(View):
+    """Enable or disable a teacher account. Disabling also kills any active sessions."""
+
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, teacher_id):
+        teacher = get_object_or_404(Teacher.objects.select_related('user'), user_id=teacher_id)
+
+        if teacher.user_id == request.user.id:
+            messages.error(request, 'You cannot disable your own account.')
+            return redirect('superadmin_teachers')
+
+        teacher.user.is_active = not teacher.user.is_active
+        teacher.user.save(update_fields=['is_active'])
+
+        kicked = 0
+        if not teacher.user.is_active:
+            kicked = _kill_user_sessions(teacher.user_id)
+
+        state = 'enabled' if teacher.user.is_active else 'disabled'
+        suffix = f' ({kicked} active session{"s" if kicked != 1 else ""} ended)' if kicked else ''
+        messages.success(
+            request,
+            f'Teacher "{teacher.user.get_full_name() or teacher.user.username}" {state}{suffix}.'
+        )
+        return redirect('superadmin_teachers')
 
 
 class SuperAdminStudentsView(View):
@@ -374,3 +447,315 @@ class SuperAdminCreateTeacherView(View):
 
         messages.success(request, f'Teacher account created for {first_name} {last_name} ({username}).')
         return redirect('superadmin_notifications')
+
+
+# ---------------------------------------------------------------------------
+# Active sessions
+# ---------------------------------------------------------------------------
+
+def _decode_session(session):
+    """Return the decoded session dict or {} if it cannot be decoded."""
+    try:
+        return session.get_decoded()
+    except Exception:
+        return {}
+
+
+def _kill_user_sessions(user_id):
+    """Delete all active Django auth sessions for a given user id. Returns count."""
+    now = timezone.now()
+    killed = 0
+    for session in Session.objects.filter(expire_date__gt=now):
+        data = _decode_session(session)
+        if str(data.get('_auth_user_id') or '') == str(user_id):
+            session.delete()
+            killed += 1
+    return killed
+
+
+def _kill_student_sessions(student_id):
+    """Delete all active sessions for a given student id. Returns count."""
+    now = timezone.now()
+    killed = 0
+    for session in Session.objects.filter(expire_date__gt=now):
+        data = _decode_session(session)
+        if str(data.get('student_id') or '') == str(student_id):
+            session.delete()
+            killed += 1
+    return killed
+
+
+class SuperAdminSessionsView(View):
+    """List active sessions across teachers, students, and the superadmin, with force-logout."""
+
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        now = timezone.now()
+        raw_sessions = Session.objects.filter(expire_date__gt=now).order_by('-expire_date')
+
+        # Pre-fetch users and students referenced by sessions in batches to avoid N+1.
+        decoded_rows = []
+        user_ids = set()
+        student_ids = set()
+        for session in raw_sessions:
+            data = _decode_session(session)
+            decoded_rows.append((session, data))
+            if data.get('_auth_user_id'):
+                try:
+                    user_ids.add(int(data['_auth_user_id']))
+                except (TypeError, ValueError):
+                    pass
+            if data.get('student_id'):
+                try:
+                    student_ids.add(int(data['student_id']))
+                except (TypeError, ValueError):
+                    pass
+
+        users_by_id = {u.id: u for u in User.objects.filter(id__in=user_ids).select_related('teacher_profile')}
+        students_by_id = {s.id: s for s in Student.objects.filter(id__in=student_ids)}
+
+        rows = []
+        for session, data in decoded_rows:
+            row = {
+                'session_key': session.session_key,
+                'expires': session.expire_date,
+                'is_self': False,
+                'kind': 'Unknown',
+                'name': '(unidentified session)',
+                'detail': '',
+            }
+
+            user_id = data.get('_auth_user_id')
+            student_id = data.get('student_id')
+
+            if user_id:
+                try:
+                    user_id_int = int(user_id)
+                except (TypeError, ValueError):
+                    user_id_int = None
+                user = users_by_id.get(user_id_int) if user_id_int is not None else None
+                if user is not None:
+                    if user.is_superuser and not hasattr(user, 'teacher_profile'):
+                        row['kind'] = 'Superadmin'
+                    elif hasattr(user, 'teacher_profile'):
+                        row['kind'] = 'Teacher'
+                    else:
+                        row['kind'] = 'Staff'
+                    row['name'] = user.get_full_name() or user.username
+                    row['detail'] = user.username
+                    row['is_self'] = (user.id == request.user.id)
+            elif student_id:
+                try:
+                    student_id_int = int(student_id)
+                except (TypeError, ValueError):
+                    student_id_int = None
+                student = students_by_id.get(student_id_int) if student_id_int is not None else None
+                if student is not None:
+                    row['kind'] = 'Student'
+                    row['name'] = student.get_full_name()
+                    row['detail'] = student.school_id
+
+            rows.append(row)
+
+        return render(request, 'superadmin/sessions.html', {
+            'rows': rows,
+            'total': len(rows),
+        })
+
+    def post(self, request):
+        action = request.POST.get('action')
+
+        if action == 'kick':
+            session_key = request.POST.get('session_key', '').strip()
+            if not session_key:
+                messages.error(request, 'Missing session identifier.')
+                return redirect('superadmin_sessions')
+
+            try:
+                session = Session.objects.get(pk=session_key)
+            except Session.DoesNotExist:
+                messages.error(request, 'Session already expired or not found.')
+                return redirect('superadmin_sessions')
+
+            data = _decode_session(session)
+            try:
+                user_id_in_session = int(data.get('_auth_user_id') or 0)
+            except (TypeError, ValueError):
+                user_id_in_session = 0
+
+            if user_id_in_session == request.user.id:
+                messages.error(request, 'You cannot end your own session here. Use Logout instead.')
+                return redirect('superadmin_sessions')
+
+            session.delete()
+            messages.success(request, 'Session ended.')
+            return redirect('superadmin_sessions')
+
+        if action == 'kick_all':
+            now = timezone.now()
+            killed = 0
+            for session in Session.objects.filter(expire_date__gt=now):
+                data = _decode_session(session)
+                try:
+                    user_id_in_session = int(data.get('_auth_user_id') or 0)
+                except (TypeError, ValueError):
+                    user_id_in_session = 0
+                if user_id_in_session == request.user.id:
+                    continue
+                session.delete()
+                killed += 1
+            messages.success(request, f'Ended {killed} session{"s" if killed != 1 else ""}.')
+            return redirect('superadmin_sessions')
+
+        messages.error(request, 'Unknown action.')
+        return redirect('superadmin_sessions')
+
+
+# ---------------------------------------------------------------------------
+# Lookup data CRUD (Grade Levels, Strands, Sections, Subjects, Quarters)
+# ---------------------------------------------------------------------------
+
+LOOKUP_MODELS = {
+    'grade_level': {
+        'model': GradeLevel,
+        'label': 'Grade Levels',
+        'has_order': True,
+        'usage': lambda name: Class.objects.filter(grade_level=name).count(),
+        'usage_label': 'classes',
+    },
+    'strand': {
+        'model': Strand,
+        'label': 'Strands',
+        'has_order': False,
+        'usage': lambda name: Class.objects.filter(strand=name).count(),
+        'usage_label': 'classes',
+    },
+    'section': {
+        'model': Section,
+        'label': 'Sections',
+        'has_order': False,
+        'usage': lambda name: Class.objects.filter(section=name).count(),
+        'usage_label': 'classes',
+    },
+    'subject': {
+        'model': Subject,
+        'label': 'Subjects',
+        'has_order': False,
+        'usage': lambda name: Exam.objects.filter(subject=name).count(),
+        'usage_label': 'exams',
+    },
+    'quarter': {
+        'model': Quarter,
+        'label': 'Quarters',
+        'has_order': True,
+        'usage': lambda name: Exam.objects.filter(quarter__name=name).count(),
+        'usage_label': 'exams',
+    },
+}
+
+
+class SuperAdminLookupsView(View):
+    """Create, rename, and delete entries in lookup tables used across the system."""
+
+    @method_decorator(superadmin_required)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        groups = []
+        for key, meta in LOOKUP_MODELS.items():
+            items = list(meta['model'].objects.all())
+            groups.append({
+                'key': key,
+                'label': meta['label'],
+                'has_order': meta['has_order'],
+                'items': items,
+            })
+        return render(request, 'superadmin/lookups.html', {'groups': groups})
+
+    def post(self, request):
+        kind = request.POST.get('kind', '').strip()
+        action = request.POST.get('action', '').strip()
+        meta = LOOKUP_MODELS.get(kind)
+        if not meta:
+            messages.error(request, 'Unknown lookup type.')
+            return redirect('superadmin_lookups')
+
+        Model = meta['model']
+
+        if action == 'create':
+            name = request.POST.get('name', '').strip()
+            order_raw = request.POST.get('order', '').strip()
+            if not name:
+                messages.error(request, 'Name is required.')
+                return redirect('superadmin_lookups')
+
+            fields = {'name': name}
+            if meta['has_order']:
+                try:
+                    fields['order'] = int(order_raw) if order_raw else 0
+                except ValueError:
+                    fields['order'] = 0
+
+            try:
+                Model.objects.create(**fields)
+                messages.success(request, f'{meta["label"][:-1]} "{name}" added.')
+            except IntegrityError:
+                messages.error(request, f'"{name}" already exists.')
+            return redirect('superadmin_lookups')
+
+        if action == 'edit':
+            item_id = request.POST.get('item_id')
+            name = request.POST.get('name', '').strip()
+            order_raw = request.POST.get('order', '').strip()
+            if not name:
+                messages.error(request, 'Name is required.')
+                return redirect('superadmin_lookups')
+
+            item = get_object_or_404(Model, pk=item_id)
+            old_name = item.name
+            item.name = name
+            update_fields = ['name']
+            if meta['has_order']:
+                try:
+                    item.order = int(order_raw) if order_raw else 0
+                    update_fields.append('order')
+                except ValueError:
+                    pass
+
+            try:
+                item.save(update_fields=update_fields)
+            except IntegrityError:
+                messages.error(request, f'"{name}" already exists.')
+                return redirect('superadmin_lookups')
+
+            # If the name changed and this lookup is referenced by string in other
+            # tables, propagate the rename so existing data stays consistent.
+            if old_name != name and kind in ('grade_level', 'strand', 'section'):
+                Class.objects.filter(**{kind: old_name}).update(**{kind: name})
+            elif old_name != name and kind == 'subject':
+                Exam.objects.filter(subject=old_name).update(subject=name)
+
+            messages.success(request, f'{meta["label"][:-1]} renamed to "{name}".')
+            return redirect('superadmin_lookups')
+
+        if action == 'delete':
+            item_id = request.POST.get('item_id')
+            item = get_object_or_404(Model, pk=item_id)
+            usage_count = meta['usage'](item.name)
+            if usage_count > 0:
+                messages.error(
+                    request,
+                    f'Cannot delete "{item.name}": still used by {usage_count} {meta["usage_label"]}.'
+                )
+                return redirect('superadmin_lookups')
+
+            item.delete()
+            messages.success(request, f'{meta["label"][:-1]} "{item.name}" deleted.')
+            return redirect('superadmin_lookups')
+
+        messages.error(request, 'Unknown action.')
+        return redirect('superadmin_lookups')

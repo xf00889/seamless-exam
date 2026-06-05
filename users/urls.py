@@ -28,16 +28,7 @@ from .views import (
 )
 from .views_setup import FirstTimeSetupView
 from .views_request import RequestAccessView
-from .views_lookup import (
-    LookupManagementView,
-    create_grade_level_view,
-    create_strand_view,
-    create_section_view,
-    create_subject_view,
-    create_quarter_view,
-    update_quarter_view,
-    delete_lookup_view,
-)
+
 
 urlpatterns = [
     # First-time setup route
@@ -84,14 +75,4 @@ urlpatterns = [
     path('teacher/accounts/<int:student_id>/', StudentDetailView.as_view(), name='student_detail'),
     path('teacher/accounts/<int:student_id>/reset-password/', StudentResetPasswordView.as_view(), name='student_reset_password'),
     path('teacher/accounts/<int:student_id>/delete/', StudentDeleteView.as_view(), name='student_delete'),
-
-    # Lookup table management
-    path('teacher/options/', LookupManagementView.as_view(), name='lookup_management'),
-    path('teacher/options/grade-level/create/', create_grade_level_view, name='create_grade_level'),
-    path('teacher/options/strand/create/', create_strand_view, name='create_strand'),
-    path('teacher/options/section/create/', create_section_view, name='create_section'),
-    path('teacher/options/subject/create/', create_subject_view, name='create_subject'),
-    path('teacher/options/quarter/create/', create_quarter_view, name='create_quarter'),
-    path('teacher/options/quarter/update/', update_quarter_view, name='update_quarter'),
-    path('teacher/options/delete/', delete_lookup_view, name='delete_lookup'),
 ]

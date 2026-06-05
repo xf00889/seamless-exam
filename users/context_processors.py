@@ -3,7 +3,7 @@ Context processors for providing global template context.
 Requirements: 1.3, 1.4
 """
 from services.auth_service import AuthenticationService
-from users.models import Teacher
+from users.models import Teacher, SystemSettings
 from django.urls import reverse
 
 
@@ -68,11 +68,6 @@ def navbar_context(request):
                 'url': reverse('student_account_management'),
                 'active': current_path.startswith('/users/teacher/accounts/')
             },
-            {
-                'label': 'Options',
-                'url': reverse('lookup_management'),
-                'active': current_path.startswith('/users/teacher/options/')
-            },
         ]
 
     if auth_service.require_student(request):
@@ -117,5 +112,18 @@ def navbar_context(request):
         teacher = Teacher.objects.filter(user=request.user).first()
         if teacher:
             set_teacher_context(teacher)
-    
+
     return context
+
+
+def system_settings_context(request):
+    """
+    Expose the SystemSettings singleton to all templates so superadmin pages
+    can surface maintenance-mode status without an extra query per view.
+    """
+    if not request.path.startswith('/superadmin/'):
+        return {}
+    try:
+        return {'system_settings': SystemSettings.load()}
+    except Exception:
+        return {'system_settings': None}

@@ -164,9 +164,6 @@
                     </label>
                     <div>
                         {{ form.quarter }}
-                        <p class="mt-1 text-xs text-gray-500">
-                            <a href="{% url 'lookup_management' %}" class="text-teal-600 hover:underline">Manage quarters</a>
-                        </p>
                     </div>
                 </div>
                 
@@ -621,33 +618,4 @@
 
 {% block extra_js %}
 <script src="{% static 'js/exam-creation.js' %}?v={{ static_version }}"></script>
-<script>
-function quickAddSubject() {
-    const name = prompt('Enter new Subject:');
-    if (!name || !name.trim()) return;
-
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-    fetch('{% url "create_subject" %}', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ name: name.trim() })
-    })
-    .then(r => r.json().then(data => ({ ok: r.ok, data })))
-    .then(({ ok, data }) => {
-        if (!ok) {
-            alert(data.error || 'Failed to add');
-            return;
-        }
-        const select = document.getElementById('subject');
-        const option = new Option(data.name, data.name, true, true);
-        select.add(option);
-    })
-    .catch(() => alert('Network error. Please try again.'));
-}
-</script>
 {% endblock %}

@@ -91,7 +91,6 @@
                         <option value="{{ value }}" {% if form.grade_level.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <button type="button" onclick="quickAdd('Grade Level', '{% url 'create_grade_level' %}', 'id_grade_level')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap" title="Add new grade level">+ New</button>
                 </div>
                 {% if form.grade_level.errors %}
                 <p class="mt-1 text-sm text-red-600">{{ form.grade_level.errors.0 }}</p>
@@ -114,7 +113,6 @@
                         <option value="{{ value }}" {% if form.strand.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <button type="button" onclick="quickAdd('Strand', '{% url 'create_strand' %}', 'id_strand')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap" title="Add new strand">+ New</button>
                 </div>
                 {% if form.strand.errors %}
                 <p class="mt-1 text-sm text-red-600">{{ form.strand.errors.0 }}</p>
@@ -137,7 +135,6 @@
                         <option value="{{ value }}" {% if form.section.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <button type="button" onclick="quickAdd('Section', '{% url 'create_section' %}', 'id_section')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap" title="Add new section">+ New</button>
                 </div>
                 {% if form.section.errors %}
                 <p class="mt-1 text-sm text-red-600">{{ form.section.errors.0 }}</p>
@@ -191,34 +188,5 @@
 
 {% block extra_js %}
 <script src="{% static 'js/pages/class-management.js' %}"></script>
-<script>
-function quickAdd(label, url, selectId) {
-    const name = prompt('Enter new ' + label + ':');
-    if (!name || !name.trim()) return;
-
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ name: name.trim() })
-    })
-    .then(r => r.json().then(data => ({ ok: r.ok, data })))
-    .then(({ ok, data }) => {
-        if (!ok) {
-            alert(data.error || 'Failed to add');
-            return;
-        }
-        const select = document.getElementById(selectId);
-        const option = new Option(data.name, data.name, true, true);
-        select.add(option);
-    })
-    .catch(() => alert('Network error. Please try again.'));
-}
-</script>
 {% endblock %}
 

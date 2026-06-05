@@ -1387,13 +1387,21 @@ def teacher_dashboard_view(request):
     Display teacher dashboard with all student attempts and analytics.
     Shows all attempts with filtering by exam, student, and class.
     Displays class statistics (average, highest, lowest scores).
+    All analytics are scoped to data owned by the logged-in teacher: their own
+    exams, the classes they teach, and the students assigned to those classes.
     Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 5.1, 5.2, 5.3, 3.4
     """
     # Check if user is authenticated as teacher
     if not request.user.is_authenticated:
         messages.error(request, 'Please log in as a teacher to access the dashboard')
         return redirect('teacher_login')
-    
+
+    # Resolve the teacher profile so the dashboard only shows their own data.
+    teacher = getattr(request.user, 'teacher_profile', None)
+    if teacher is None:
+        messages.error(request, 'Teacher profile not found. Please log in as a teacher.')
+        return redirect('teacher_login')
+
     from repositories.attempt_repository import AttemptRepository
     from users.models import Student, Class
     from django.db.models import Avg, Max, Min, Count
@@ -1409,11 +1417,12 @@ def teacher_dashboard_view(request):
     status_filter = request.GET.get('status', '')
     class_filter = request.GET.get('class', '')  # New class filter (Requirement 5.1)
     
-    # Get all submitted and graded attempts with optimized queries (Requirement 9.5)
+    # Get submitted and graded attempts on exams created by THIS teacher only.
     # Use select_related to fetch related student and exam in a single query
-    # Use prefetch_related to efficiently fetch exam questions
+    # Use prefetch_related to efficiently fetch exam questions (Requirement 9.5)
     attempts = Attempt.objects.filter(
-        status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED]
+        status__in=[AttemptStatus.SUBMITTED, AttemptStatus.GRADED],
+        exam__created_by=teacher,
     ).select_related('student', 'student__class_assigned', 'exam').prefetch_related('exam__questions').order_by('-submitted_at')
     
     # Apply filters
@@ -1495,28 +1504,32 @@ def teacher_dashboard_view(request):
         }
     
     # Get class-grouped statistics (Requirement 5.3)
+    # Only include classes that belong to this teacher.
     class_statistics = {}
+    teacher_classes = Class.objects.filter(teacher=teacher)
     if class_filter:
-        # If filtering by class, get statistics for that class
+        # If filtering by class, get statistics for that class (must belong to teacher)
         try:
             class_id = int(class_filter)
-            class_stats_result = dashboard_service.get_statistics_by_class(class_id)
-            if class_stats_result.is_success():
-                class_statistics = {class_id: class_stats_result.value}
+            if teacher_classes.filter(id=class_id).exists():
+                class_stats_result = dashboard_service.get_statistics_by_class(class_id)
+                if class_stats_result.is_success():
+                    class_statistics = {class_id: class_stats_result.value}
         except ValueError:
             pass
     else:
-        # Get statistics for all classes
-        all_classes = Class.objects.all()
-        for cls in all_classes:
+        # Get statistics for all of the teacher's classes
+        for cls in teacher_classes:
             class_stats_result = dashboard_service.get_statistics_by_class(cls.id)
             if class_stats_result.is_success():
                 class_statistics[cls.id] = class_stats_result.value
     
-    # Get all exams, students, and classes for filter dropdowns
-    exams = exam_service.get_all_exams()
-    students = Student.objects.all().order_by('last_name', 'first_name')
-    classes = Class.objects.all().order_by('grade_level', 'strand', 'section')  # New class dropdown (Requirement 5.1)
+    # Get this teacher's exams, students, and classes for filter dropdowns and counts.
+    exams = exam_service.get_exams_by_teacher(teacher.pk)
+    students = Student.objects.filter(
+        class_assigned__teacher=teacher
+    ).distinct().order_by('last_name', 'first_name')
+    classes = teacher_classes.order_by('grade_level', 'strand', 'section')  # Filter dropdown (Requirement 5.1)
     
     # Calculate chart data for visualizations
     # 1. Total counts
@@ -1540,17 +1553,11 @@ def teacher_dashboard_view(request):
     total_passers = sum(1 for data in attempts_data if data['percentage'] >= 60)
     total_failers = len(attempts_data) - total_passers
     
-    # Get passing rate by subject per section
+    # Get passing rate by subject per section (scoped to this teacher's classes)
     try:
-        # Check if teacher profile exists
-        if hasattr(request.user, 'teacher_profile'):
-            teacher = request.user.teacher_profile
-            # Pass the teacher's primary key (not user_id)
-            passing_rate_result = dashboard_service.get_passing_rate_by_subject_per_section(teacher.pk)
-            if passing_rate_result.is_success():
-                passing_rate_data = passing_rate_result.value
-            else:
-                passing_rate_data = {'sections': [], 'subjects': [], 'data': {}}
+        passing_rate_result = dashboard_service.get_passing_rate_by_subject_per_section(teacher.pk)
+        if passing_rate_result.is_success():
+            passing_rate_data = passing_rate_result.value
         else:
             passing_rate_data = {'sections': [], 'subjects': [], 'data': {}}
     except Exception as e:

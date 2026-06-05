@@ -4,7 +4,9 @@ Custom middleware for the exam system.
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from users.models import Teacher
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from users.models import Teacher, SystemSettings
 from pathlib import Path
 import json
 
@@ -70,7 +72,7 @@ class FirstTimeSetupMiddleware:
             # Table doesn't exist yet (migrations not run)
             # Setup is definitely needed
             return True
-        
+
         # Check if setup flag file exists and is marked complete
         try:
             setup_file = Path(__file__).resolve().parent.parent / '.setup_complete'
@@ -81,5 +83,67 @@ class FirstTimeSetupMiddleware:
                         return False
         except:
             pass
-        
+
         return True
+
+
+class MaintenanceModeMiddleware:
+    """
+    Middleware that returns a maintenance page to all non-superadmin users
+    when SystemSettings.maintenance_mode is enabled. Superadmins and exempt
+    paths (static, media, superadmin, etc.) are always allowed through.
+    """
+
+    EXEMPT_PATH_PREFIXES = [
+        '/superadmin/',
+        '/static/',
+        '/media/',
+        '/admin/',
+        '/__debug__/',
+        '/health/',
+    ]
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if self._is_exempt_path(request.path):
+            return self.get_response(request)
+
+        if self._is_superadmin(request):
+            return self.get_response(request)
+
+        if not self._is_maintenance_on():
+            return self.get_response(request)
+
+        message = self._get_maintenance_message()
+        html = render_to_string(
+            'maintenance.html',
+            {'message': message, 'request': request},
+            request=request,
+        )
+        return HttpResponse(html, status=503)
+
+    @staticmethod
+    def _is_exempt_path(path):
+        return any(path.startswith(prefix) for prefix in MaintenanceModeMiddleware.EXEMPT_PATH_PREFIXES)
+
+    @staticmethod
+    def _is_superadmin(request):
+        user = getattr(request, 'user', None)
+        return bool(user and user.is_authenticated and user.is_superuser)
+
+    @staticmethod
+    def _is_maintenance_on():
+        try:
+            return SystemSettings.load().maintenance_mode
+        except Exception:
+            return False
+
+    @staticmethod
+    def _get_maintenance_message():
+        try:
+            msg = SystemSettings.load().maintenance_message
+            return msg.strip() or "We're performing scheduled maintenance. Please check back soon."
+        except Exception:
+            return "We're performing scheduled maintenance. Please check back soon."
