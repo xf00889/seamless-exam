@@ -34,9 +34,6 @@ def superadmin_required(view_func):
             return redirect('superadmin_login')
         if not request.user.is_superuser:
             return redirect('superadmin_login')
-        if Teacher.objects.filter(user=request.user).exists():
-            messages.error(request, 'Teachers cannot access the superadmin panel.')
-            return redirect('teacher_dashboard')
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -44,8 +41,7 @@ def superadmin_required(view_func):
 class SuperAdminLoginView(View):
     def get(self, request):
         if request.user.is_authenticated and request.user.is_superuser:
-            if not Teacher.objects.filter(user=request.user).exists():
-                return redirect('superadmin_dashboard')
+            return redirect('superadmin_dashboard')
         return render(request, 'superadmin/login.html')
 
     def post(self, request):
@@ -54,9 +50,6 @@ class SuperAdminLoginView(View):
 
         user = authenticate(request, username=username, password=password)
         if user and user.is_superuser:
-            if Teacher.objects.filter(user=user).exists():
-                messages.error(request, 'Teachers cannot access the superadmin panel.')
-                return render(request, 'superadmin/login.html')
             login(request, user)
             return redirect('superadmin_dashboard')
 
@@ -450,21 +443,13 @@ class SuperAdminCreateView(View):
     """Create a superadmin account. Only accessible when no superadmin exists."""
 
     def get(self, request):
-        has_superadmin = User.objects.filter(
-            is_superuser=True
-        ).exclude(
-            teacher_profile__isnull=False
-        ).exists()
+        has_superadmin = User.objects.filter(is_superuser=True).exists()
         if has_superadmin:
             return redirect('superadmin_login')
         return render(request, 'superadmin/create.html')
 
     def post(self, request):
-        has_superadmin = User.objects.filter(
-            is_superuser=True
-        ).exclude(
-            teacher_profile__isnull=False
-        ).exists()
+        has_superadmin = User.objects.filter(is_superuser=True).exists()
         if has_superadmin:
             messages.error(request, 'A superadmin account already exists.')
             return redirect('superadmin_login')
