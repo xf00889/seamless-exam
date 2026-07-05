@@ -2,7 +2,7 @@ import os
 import dj_database_url
 from .settings import *
 
-DEBUG = False
+DEBUG = True
 
 SECRET_KEY = os.environ['SECRET_KEY']
 
