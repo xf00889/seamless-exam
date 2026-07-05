@@ -96,7 +96,7 @@
                         <div class="px-4 py-3 border-b border-gray-100">
                             <p class="text-sm font-medium text-gray-900">{{ navbar_student_name }}</p>
                             {% if navbar_student %}
-                                <p class="text-xs text-gray-500 mt-1">Student ID: {{ navbar_student.school_id }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Student ID: {{ navbar_student.student_id }}</p>
                             {% elif navbar_teacher %}
                                 <p class="text-xs text-gray-500 mt-1">{{ navbar_teacher.user.email|default:"Teacher Account" }}</p>
                                 {% if navbar_teacher.department %}
@@ -272,7 +272,7 @@
                 <div class="mobile-profile-info">
                     <p class="mobile-profile-name">{{ navbar_student_name }}</p>
                     {% if navbar_student %}
-                        <p class="mobile-profile-detail">{{ navbar_student.school_id }}</p>
+                        <p class="mobile-profile-detail">{{ navbar_student.student_id }}</p>
                     {% elif navbar_teacher %}
                         <p class="mobile-profile-detail">{{ navbar_teacher.user.email|default:"Teacher" }}</p>
                     {% endif %}

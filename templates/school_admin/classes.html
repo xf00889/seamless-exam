@@ -1,0 +1,54 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Classes{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Classes</h1>
+        <p>{{ classes|length }} class{{ classes|length|pluralize }}</p>
+    </div>
+    <a href="{% url 'school_admin_create_class' %}" class="sa-btn sa-btn-blue">+ Add Class</a>
+</div>
+
+<div class="sa-card">
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Grade Level</th>
+                    <th>Strand</th>
+                    <th>Section</th>
+                    <th>Teachers</th>
+                    <th>Students</th>
+                    <th style="width:140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in classes %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>{{ c.grade_level.name|default:"—" }}</td>
+                    <td>{{ c.strand.name|default:"—" }}</td>
+                    <td>{{ c.section.name|default:"—" }}</td>
+                    <td>{{ c.teacher_count }}</td>
+                    <td>{{ c.student_count }}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="{% url 'school_admin_class_detail' c.id %}" class="sa-btn sa-btn-ghost sa-btn-sm">View</a>
+                        <form method="post" action="{% url 'school_admin_delete_class' c.id %}" style="display:inline;" onsubmit="return confirm('Delete class {{ c.name|escapejs }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="sa-btn sa-btn-red sa-btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; color:var(--text-muted); padding:2rem;">No classes yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

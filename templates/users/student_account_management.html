@@ -1,11 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Student Account Management - ValuateAI{% endblock %}
+{% block title %}Student Roster - ValuateAI{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/main.css' %}">
-<link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -18,25 +17,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900">Student Account Management</h1>
+            <h1 class="text-3xl font-bold text-gray-900">Student Roster</h1>
         </div>
-        <p class="text-gray-600 ml-13">Create and manage your student accounts</p>
-    </div>
-
-    <!-- Privacy Notice -->
-    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-amber-800">
-                    <strong>Private to you.</strong> Student accounts you create are visible only to you and the superadmin. Other teachers cannot see or manage your students.
-                </p>
-            </div>
-        </div>
+        <p class="text-gray-600 ml-13">View students in your classes</p>
     </div>
 
     <!-- Statistics Card -->
@@ -50,88 +33,6 @@
                 <svg class="h-16 w-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Student Account Form -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Create New Student Account</h2>
-        <p class="text-sm text-gray-600 mb-6">
-            Password will be auto-generated: <strong>First 4 digits of ID + First 4 letters of Last Name (uppercase)</strong>
-        </p>
-        
-        <form method="post" id="create-student-form" class="space-y-4" data-validate>
-            {% csrf_token %}
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="id_school_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Student ID Number <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.school_id }}
-                    <p class="mt-1 text-xs text-gray-500">Example: 2024-0001</p>
-                </div>
-                
-                <div>
-                    <label for="id_first_name" class="block text-sm font-medium text-gray-700 mb-2">
-                        First Name <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.first_name }}
-                </div>
-                
-                <div>
-                    <label for="id_last_name" class="block text-sm font-medium text-gray-700 mb-2">
-                        Last Name <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.last_name }}
-                </div>
-                
-                <div>
-                    <label for="id_class_assigned" class="block text-sm font-medium text-gray-700 mb-2">
-                        Assign to Class (Optional)
-                    </label>
-                    {{ form.class_assigned }}
-                </div>
-            </div>
-            
-            <!-- Password Preview -->
-            <div id="password-preview" class="hidden password-display">
-                <p class="text-sm font-medium text-gray-700 mb-2">Generated Password Preview:</p>
-                <p class="password-value" id="preview-password">----XXXX</p>
-                <p class="text-xs text-gray-600 mt-2">This password will be assigned to the student account</p>
-            </div>
-            
-            <div class="flex items-center justify-end pt-4">
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                    Create Student Account
-                </button>
-            </div>
-        </form>
-        
-        <!-- Success Message Display -->
-        <div id="success-message" class="hidden success-message">
-            <div class="success-message-header">
-                <svg class="success-message-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div class="success-message-content">
-                    <h3 class="success-message-title">Student Account Created Successfully!</h3>
-                    <div class="success-message-details">
-                        <p><strong>Student ID:</strong> <span id="created-id"></span></p>
-                        <p><strong>Name:</strong> <span id="created-name"></span></p>
-                        <p><strong>Generated Password:</strong> <span class="success-message-password" id="created-password"></span></p>
-                        <p><strong>Class:</strong> <span id="created-class"></span></p>
-                    </div>
-                    <p class="success-message-warning">
-                        ⚠️ Please save this password and provide it to the student. It cannot be retrieved later.
-                    </p>
-                </div>
-                <button id="close-success-message" type="button" class="ml-auto flex-shrink-0 text-gray-400 hover:text-gray-600 focus:outline-none" title="Close">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
         </div>
     </div>
@@ -177,7 +78,7 @@
                     {% for student in students %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ student.school_id }}</div>
+                            <div class="text-sm font-medium text-gray-900">{{ student.student_id }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ student.get_full_name }}</div>
@@ -196,15 +97,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">
                             <a href="{% url 'student_detail' student.id %}"
-                               class="text-sm font-medium text-blue-600 hover:text-blue-800 mr-3">
+                               class="text-sm font-medium text-blue-600 hover:text-blue-800">
                                 View Details
                             </a>
-                            <button type="button"
-                                    class="text-sm font-medium text-red-600 hover:text-red-800 delete-student-btn"
-                                    data-student-id="{{ student.id }}"
-                                    data-student-name="{{ student.get_full_name }}">
-                                Delete
-                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -233,30 +128,4 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/components/base.js' %}"></script>
-<script src="{% static 'js/utils/csrf-helper.js' %}"></script>
-<script src="{% static 'js/components/form-validator.js' %}"></script>
-<script src="{% static 'js/pages/student-account-management.js' %}?v={{ static_version }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.delete-student-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var studentId = this.dataset.studentId;
-            var studentName = this.dataset.studentName;
-            if (confirm('Are you sure you want to permanently delete "' + studentName + '"? All exam attempts and history will be lost. This cannot be undone.')) {
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/users/teacher/accounts/' + studentId + '/delete/';
-                var csrf = document.createElement('input');
-                csrf.type = 'hidden';
-                csrf.name = 'csrfmiddlewaretoken';
-                csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                form.appendChild(csrf);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        });
-    });
-});
-</script>
 {% endblock %}

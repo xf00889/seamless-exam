@@ -21,7 +21,7 @@
                     <h1 id="profile-heading" class="text-xl font-semibold text-white">
                         {{ student.first_name }} {{ student.last_name }}
                     </h1>
-                    <p class="text-blue-100 text-sm mt-0.5">School ID: {{ student.school_id }}</p>
+                    <p class="text-blue-100 text-sm mt-0.5">School ID: {{ student.student_id }}</p>
                     {% if class_info %}
                     <p class="text-blue-200 text-xs mt-1">{{ class_info.full_name }}</p>
                     {% endif %}
@@ -61,7 +61,7 @@
                 </div>
                 <div>
                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">School ID</dt>
-                    <dd class="text-sm text-gray-900 font-medium">{{ student.school_id }}</dd>
+                    <dd class="text-sm text-gray-900 font-medium">{{ student.student_id }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Member Since</dt>

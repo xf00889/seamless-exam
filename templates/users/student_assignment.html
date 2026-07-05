@@ -87,7 +87,7 @@
                 >
                     {% for student in form.fields.students.queryset %}
                     <option value="{{ student.id }}" {% if student.id in form.students.value %}selected{% endif %}>
-                        {{ student.school_id }} - {{ student.first_name }} {{ student.last_name }}
+                        {{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}
                         {% if student.class_assigned %}
                         (Currently in: {{ student.class_assigned.grade_level }} - {{ student.class_assigned.strand }})
                         {% else %}
@@ -121,7 +121,7 @@
                     <option value="">Select a student...</option>
                     {% for student in form.fields.student.queryset %}
                     <option value="{{ student.id }}" {% if form.student.value == student.id|stringformat:"s" %}selected{% endif %}>
-                        {{ student.school_id }} - {{ student.first_name }} {{ student.last_name }}
+                        {{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}
                         {% if student.class_assigned %}
                         (Currently in: {{ student.class_assigned.grade_level }} - {{ student.class_assigned.strand }})
                         {% else %}
@@ -200,7 +200,7 @@
                 <div class="mt-2 text-sm text-green-700">
                     <ul class="list-disc pl-5 space-y-1">
                         {% for student in assignment_results.successful_students %}
-                        <li>{{ student.school_id }} - {{ student.first_name }} {{ student.last_name }}</li>
+                        <li>{{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -226,7 +226,7 @@
                 <div class="mt-2 text-sm text-red-700">
                     <ul class="list-disc pl-5 space-y-1">
                         {% for failure in assignment_results.failed_students %}
-                        <li>{{ failure.student.school_id }} - {{ failure.student.first_name }} {{ failure.student.last_name }}: {{ failure.error }}</li>
+                        <li>{{ failure.student.student_id }} - {{ failure.student.first_name }} {{ failure.student.last_name }}: {{ failure.error }}</li>
                         {% endfor %}
                     </ul>
                 </div>

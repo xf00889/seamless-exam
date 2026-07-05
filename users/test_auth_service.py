@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.test import RequestFactory, TestCase
 
 from services.auth_service import AuthenticationService
-from users.models import Student, Teacher
+from users.models import School, Student, Teacher
 
 
 class AuthenticationServiceTests(TestCase):
@@ -12,6 +12,7 @@ class AuthenticationServiceTests(TestCase):
         self.factory = RequestFactory()
         self.auth_service = AuthenticationService()
         cache.clear()
+        self.school = School.objects.create(name='Test School')
 
     def _build_request(self, path: str):
         request = self.factory.post(path)
@@ -28,7 +29,7 @@ class AuthenticationServiceTests(TestCase):
             first_name='Teacher',
             last_name='One',
         )
-        Teacher.objects.create(user=user, department='Science')
+        Teacher.objects.create(user=user, school=self.school, department='Science')
 
         request = self._build_request('/users/teacher/login/')
         result = self.auth_service.authenticate_teacher(
@@ -41,12 +42,13 @@ class AuthenticationServiceTests(TestCase):
         self.assertEqual(result.user.user_id, user.id)
         self.assertEqual(request.session.get('user_type'), 'teacher')
 
-    def test_staff_user_without_teacher_profile_can_login(self):
+    def test_teacher_with_staff_flag_can_login(self):
         staff_user = User.objects.create_user(
             username='schooladmin',
             password='SecretPass123',
             is_staff=True,
         )
+        Teacher.objects.create(user=staff_user, school=self.school, department='Admin')
 
         request = self._build_request('/users/teacher/login/')
         result = self.auth_service.authenticate_teacher(
@@ -56,12 +58,29 @@ class AuthenticationServiceTests(TestCase):
         )
 
         self.assertTrue(result.success)
-        self.assertTrue(Teacher.objects.filter(user=staff_user).exists())
         self.assertEqual(request.session.get('user_type'), 'teacher')
+
+    def test_user_without_teacher_profile_cannot_login(self):
+        staff_user = User.objects.create_user(
+            username='noprofile',
+            password='SecretPass123',
+            is_staff=True,
+        )
+
+        request = self._build_request('/users/teacher/login/')
+        result = self.auth_service.authenticate_teacher(
+            request=request,
+            username='noprofile',
+            password='SecretPass123',
+        )
+
+        self.assertFalse(result.success)
+        self.assertIn('not registered as a teacher', result.error)
 
     def test_student_login_is_case_insensitive(self):
         student = Student.objects.create(
-            school_id='STU001',
+            school=self.school,
+            student_id='STU001',
             first_name='Alice',
             last_name='Smith',
         )
@@ -71,7 +90,7 @@ class AuthenticationServiceTests(TestCase):
         request = self._build_request('/users/student/login/')
         result = self.auth_service.authenticate_student(
             request=request,
-            school_id='stu001',
+            student_id='stu001',
             password='StudentPass123',
         )
 
@@ -81,7 +100,8 @@ class AuthenticationServiceTests(TestCase):
 
     def test_student_legacy_plaintext_password_is_migrated(self):
         student = Student.objects.create(
-            school_id='LEG001',
+            school=self.school,
+            student_id='LEG001',
             first_name='Legacy',
             last_name='Student',
             password_hash='legacyPass123',
@@ -90,7 +110,7 @@ class AuthenticationServiceTests(TestCase):
         request = self._build_request('/users/student/login/')
         result = self.auth_service.authenticate_student(
             request=request,
-            school_id='LEG001',
+            student_id='LEG001',
             password='legacyPass123',
         )
         student.refresh_from_db()
@@ -106,7 +126,7 @@ class AuthenticationServiceTests(TestCase):
             first_name='Rate',
             last_name='Limited',
         )
-        Teacher.objects.create(user=user, department='Science')
+        Teacher.objects.create(user=user, school=self.school, department='Science')
 
         for _ in range(self.auth_service.rate_limiter.LOGIN_ATTEMPT_LIMIT):
             request = self._build_request('/users/teacher/login/')
@@ -130,7 +150,8 @@ class AuthenticationServiceTests(TestCase):
 
     def test_student_login_resets_rate_limit_after_success(self):
         student = Student.objects.create(
-            school_id='RESET001',
+            school=self.school,
+            student_id='RESET001',
             first_name='Reset',
             last_name='Student',
         )
@@ -141,7 +162,7 @@ class AuthenticationServiceTests(TestCase):
             request = self._build_request('/users/student/login/')
             result = self.auth_service.authenticate_student(
                 request=request,
-                school_id='RESET001',
+                student_id='RESET001',
                 password='wrong-password',
             )
 
@@ -150,7 +171,7 @@ class AuthenticationServiceTests(TestCase):
         success_request = self._build_request('/users/student/login/')
         success_result = self.auth_service.authenticate_student(
             request=success_request,
-            school_id='RESET001',
+            student_id='RESET001',
             password='StudentPass123',
         )
 
@@ -159,7 +180,7 @@ class AuthenticationServiceTests(TestCase):
         followup_request = self._build_request('/users/student/login/')
         followup_result = self.auth_service.authenticate_student(
             request=followup_request,
-            school_id='RESET001',
+            student_id='RESET001',
             password='wrong-password',
         )
 

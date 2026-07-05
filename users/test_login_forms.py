@@ -14,7 +14,7 @@ class LoginFormsTests(SimpleTestCase):
 
     def test_student_login_allows_short_password_and_flexible_school_id(self):
         form = StudentLoginForm(data={
-            'school_id': '2026.001/A',
+            'student_id': '2026.001/A',
             'password': '1234',
         })
 

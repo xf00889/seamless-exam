@@ -121,7 +121,7 @@ def exam_create_view(request):
                     messages.error(request, error)
             
             # Get teacher's classes for the template
-            classes = Class.objects.filter(teacher=teacher).order_by('grade_level', 'strand', 'section')
+            classes = Class.objects.filter(teachers=teacher).order_by('grade_level', 'strand', 'section')
             
             # Build breadcrumbs
             breadcrumbs = build_breadcrumbs(
@@ -156,7 +156,7 @@ def exam_create_view(request):
             messages.error(request, 'Failed to create exam')
             
             # Get teacher's classes for the template
-            classes = Class.objects.filter(teacher=teacher).order_by('grade_level', 'strand', 'section')
+            classes = Class.objects.filter(teachers=teacher).order_by('grade_level', 'strand', 'section')
             
             # Build breadcrumbs
             breadcrumbs = build_breadcrumbs(
@@ -270,7 +270,7 @@ def exam_create_view(request):
     form = ExamForm(teacher=teacher)
     
     # Get teacher's classes for the template
-    classes = Class.objects.filter(teacher=teacher).order_by('grade_level', 'strand', 'section')
+    classes = Class.objects.filter(teachers=teacher).order_by('grade_level', 'strand', 'section')
     
     # Build breadcrumbs
     breadcrumbs = build_breadcrumbs(
@@ -373,7 +373,7 @@ def exam_create_test_view(request):
     
     # Get teacher's classes for the template
     from users.models import Class
-    classes = Class.objects.filter(teacher=teacher).order_by('grade_level', 'strand', 'section')
+    classes = Class.objects.filter(teachers=teacher).order_by('grade_level', 'strand', 'section')
     
     return render(request, 'exams/exam_form_simple.html', {
         'classes': classes
@@ -499,7 +499,7 @@ def exam_edit_view(request, exam_id):
     ).order_by('grade_level', 'strand', 'section')
     
     # Get all teacher's classes for the form
-    classes = Class.objects.filter(teacher=teacher).order_by('grade_level', 'strand', 'section')
+    classes = Class.objects.filter(teachers=teacher).order_by('grade_level', 'strand', 'section')
     
     # Build breadcrumbs
     breadcrumbs = build_breadcrumbs(
@@ -1264,7 +1264,7 @@ def get_exam_students_view(request, exam_id):
     for student in students:
         students_data.append({
             'id': student.id,
-            'school_id': student.school_id,
+            'school_id': student.student_id,
             'full_name': student.get_full_name(),
             'class_name': str(student.class_assigned) if student.class_assigned else 'No Class'
         })

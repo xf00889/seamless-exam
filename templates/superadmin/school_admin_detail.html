@@ -1,0 +1,82 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}School Admin Details{% endblock %}
+
+{% block content %}
+<nav style="margin-bottom:1.5rem;">
+    <a href="{% url 'superadmin_manage' %}" style="color:var(--text-muted); text-decoration:none; font-size:0.875rem;">
+        &larr; Back to Management
+    </a>
+</nav>
+
+<div class="sa-header">
+    <div>
+        <h1>{{ sa.user.get_full_name|default:sa.user.username }}</h1>
+        <p>School administrator &middot; {{ sa.school.name }}</p>
+    </div>
+    <a href="{% url 'superadmin_manage' %}" class="sa-btn sa-btn-blue">Manage</a>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Teachers</div>
+        <div style="font-size:1.75rem; font-weight:700;">{{ school.teacher_count }}</div>
+    </div>
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Students</div>
+        <div style="font-size:1.75rem; font-weight:700;">{{ school.student_count }}</div>
+    </div>
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Classes</div>
+        <div style="font-size:1.75rem; font-weight:700;">{{ school.class_count }}</div>
+    </div>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h2>Account Information</h2>
+    </div>
+    <div class="sa-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1.25rem;">
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Username</div>
+            <div>{{ sa.user.username }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Email</div>
+            <div>{{ sa.user.email|default:"—" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Full Name</div>
+            <div>{{ sa.user.get_full_name|default:"—" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Last Login</div>
+            <div>{{ sa.user.last_login|date:"M d, Y H:i"|default:"Never" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Date Joined</div>
+            <div>{{ sa.user.date_joined|date:"M d, Y H:i" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">School Admin Since</div>
+            <div>{{ sa.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h2>School Details</h2>
+    </div>
+    <div class="sa-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1.25rem;">
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">School Name</div>
+            <div>{{ school.name }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Address</div>
+            <div>{{ school.address|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

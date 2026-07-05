@@ -1,0 +1,189 @@
+{% extends 'base_login.html' %}
+{% load static %}
+
+{% block title %}Sign In - ValuateAI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/login.css' %}?v={{ static_version }}">
+{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-vectors" id="loginVectors"></div>
+    <div class="login-wrapper">
+        <div class="login-brand">
+            <a href="{% url 'home' %}" class="brand-link">
+                <img src="{% static 'img/brand.png' %}" alt="School Logo" class="brand-logo">
+            </a>
+        </div>
+
+        <div style="display:flex; justify-content:center;">
+            <span class="trust-badge">
+                <span class="pulse-dot"></span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Secure Login</span>
+            </span>
+        </div>
+
+        <div class="login-header">
+            <h1 class="login-title">Sign In</h1>
+            <p class="login-subtitle">Enter your credentials to continue</p>
+        </div>
+
+        <form class="login-form" method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div class="alert alert-error">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>Login failed. Please check your username and password.</span>
+                </div>
+            {% endif %}
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="Enter your username"
+                        value="{{ form.username.value|default:'' }}"
+                        required
+                        autocomplete="username"
+                        maxlength="150"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                    <button type="button" class="password-toggle" aria-label="Toggle password visibility" tabindex="-1">
+                        <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="remember" class="checkbox-input">
+                    <span class="checkbox-text">Remember me for 30 days</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <span class="btn-text">Sign In</span>
+                <div class="btn-loader">
+                    <div class="spinner"></div>
+                    <span>Signing in...</span>
+                </div>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p class="footer-text">
+                Teacher?
+                <a href="{% url 'teacher_login' %}" class="footer-link">Teacher login</a>
+            </p>
+            <p class="footer-text">
+                Student?
+                <a href="{% url 'student_login' %}" class="footer-link">Student login</a>
+            </p>
+            <p class="footer-text">
+                No account yet?
+                <a href="{% url 'request_access' %}" class="footer-link">Request access</a>
+            </p>
+            <a href="{% url 'home' %}" class="back-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var vecContainer = document.getElementById('loginVectors');
+    if (vecContainer) {
+        var types = ['vec-dot', 'vec-dot', 'vec-ring', 'vec-cross'];
+        var colors = ['#e0e7ff', '#ddd6fe', '#c7d2fe', '#bfdbfe', '#e0e7ff'];
+        var sizes = [8, 12, 16, 24, 32];
+        for (var i = 0; i < 12; i++) {
+            var el = document.createElement('div');
+            var type = types[Math.floor(Math.random() * types.length)];
+            var size = sizes[Math.floor(Math.random() * sizes.length)];
+            el.className = type;
+            el.style.cssText = [
+                'left:' + (3 + Math.random() * 90) + '%',
+                'top:' + (3 + Math.random() * 90) + '%',
+                'width:' + size + 'px',
+                'height:' + size + 'px',
+                'opacity:' + (0.4 + Math.random() * 0.4).toFixed(2)
+            ].join(';');
+            var color = colors[Math.floor(Math.random() * colors.length)];
+            if (type === 'vec-dot') {
+                el.style.background = color;
+            } else if (type === 'vec-ring') {
+                el.style.borderColor = color;
+            } else {
+                el.style.color = color;
+            }
+            vecContainer.appendChild(el);
+        }
+    }
+
+    document.querySelectorAll('.password-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var wrapper = this.closest('.input-wrapper');
+            var input = wrapper.querySelector('.form-input');
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            wrapper.querySelector('.eye-open').style.display = isPassword ? 'none' : '';
+            wrapper.querySelector('.eye-closed').style.display = isPassword ? '' : 'none';
+        });
+    });
+
+    document.querySelectorAll('.login-form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            var btn = this.querySelector('.btn-submit');
+            if (btn) btn.classList.add('loading');
+        });
+    });
+})();
+</script>
+{% endblock %}

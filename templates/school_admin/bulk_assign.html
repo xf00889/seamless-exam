@@ -1,0 +1,39 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Bulk Assign Students{% endblock %}
+
+{% block content %}
+<nav style="margin-bottom:1.5rem;">
+    <a href="{% url 'school_admin_classes' %}" style="color:var(--text-muted); text-decoration:none; font-size:0.875rem;">
+        &larr; Back to Classes
+    </a>
+</nav>
+
+<div class="sa-header">
+    <div>
+        <h1>Bulk Assign Students</h1>
+    </div>
+</div>
+
+<div class="sa-card" style="max-width:560px;">
+    <div class="sa-card-body">
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+            <div class="sa-form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div style="color:#fca5a5; font-size:0.8125rem; margin-top:0.25rem;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <div style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+                <button type="submit" class="sa-btn sa-btn-blue">Assign All</button>
+                <a href="{% url 'school_admin_classes' %}" class="sa-btn sa-btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

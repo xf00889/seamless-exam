@@ -1,0 +1,19 @@
+<div class="sa-modal-overlay" id="deleteModal">
+    <div class="sa-modal">
+        <h3>Delete User</h3>
+        <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;">Delete <strong id="deleteUserName"></strong>? This cannot be undone.</p>
+        <form method="post" action="{% url 'school_admin_delete_student' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="deleteUserType">
+            <input type="hidden" name="user_id" id="deleteUserId">
+            <div class="sa-form-group">
+                <label>Your Admin Password</label>
+                <input type="password" name="admin_password" required>
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-red">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>

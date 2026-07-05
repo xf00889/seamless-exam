@@ -23,7 +23,6 @@ from users.forms import (
     ClassForm,
     StudentClassAssignmentForm,
     BulkStudentAssignmentForm,
-    StudentCreationForm
 )
 
 
@@ -196,6 +195,69 @@ class LogoutView(View):
             return redirect('student_login')
         else:
             return redirect('home')
+
+
+class LoginView(View):
+    """Unified login — routes to the correct dashboard based on user role.
+    Order: superadmin → school_admin → teacher.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.auth_service = AuthenticationService()
+
+    def get(self, request):
+        """Display unified login form or redirect to dashboard if already authenticated."""
+        if self.auth_service.is_authenticated(request):
+            from users.models import SchoolAdmin
+            user = request.user
+            if user.is_superuser:
+                return redirect('superadmin_dashboard')
+            if SchoolAdmin.objects.filter(user=user).exists():
+                return redirect('school_admin_dashboard')
+            if hasattr(user, 'teacher_profile'):
+                return redirect('teacher_dashboard')
+            messages.error(request, 'User profile not found')
+            return redirect('logout')
+
+        form = TeacherLoginForm()
+        return render(request, 'users/login.html', {'form': form})
+
+    def post(self, request):
+        """Process unified login with role detection."""
+        _clear_stale_messages(request)
+        form = TeacherLoginForm(request.POST)
+
+        if not form.is_valid():
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+            return render(request, 'users/login.html', {'form': form})
+
+        username = form.cleaned_data['username']
+        password = form.cleaned_data['password']
+
+        result = self.auth_service.authenticate_unified(request, username, password)
+
+        if result.success:
+            _clear_stale_messages(request)
+            from users.models import SchoolAdmin
+            user = request.user
+            messages.success(request, f'Welcome, {user.get_full_name() or username}!')
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            if user.is_superuser:
+                return redirect('superadmin_dashboard')
+            if SchoolAdmin.objects.filter(user=user).exists():
+                return redirect('school_admin_dashboard')
+            if hasattr(user, 'teacher_profile'):
+                return redirect('teacher_dashboard')
+            return redirect('superadmin_dashboard')
+        else:
+            messages.error(request, result.error)
+            form.add_error(None, result.error)
+            return render(request, 'users/login.html', {'form': form})
 
 
 @method_decorator(student_required, name='dispatch')
@@ -1070,10 +1132,10 @@ class ClassListView(View):
         strand_filter = request.GET.get('strand', '').strip()
         
         if grade_filter:
-            classes_queryset = classes_queryset.filter(grade_level__icontains=grade_filter)
+            classes_queryset = classes_queryset.filter(grade_level__name__icontains=grade_filter)
         
         if strand_filter:
-            classes_queryset = classes_queryset.filter(strand__icontains=strand_filter)
+            classes_queryset = classes_queryset.filter(strand__name__icontains=strand_filter)
         
         # Implement pagination (20 items per page)
         paginator = Paginator(classes_queryset, 20)
@@ -1120,26 +1182,26 @@ class ClassCreateView(View):
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
         
-        form = ClassForm(teacher=teacher)
-        
+        form = ClassForm(school_id=teacher.school_id)
+
         context = {
             'teacher': teacher,
             'form': form,
             'page_title': 'Create Class',
             'form_action': 'create'
         }
-        
+
         return render(request, 'users/class_form.html', context)
-    
+
     def post(self, request):
         """Process class creation with validation."""
         teacher = self.auth_service.get_current_teacher(request)
-        
+
         if not teacher:
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
-        
-        form = ClassForm(request.POST, teacher=teacher)
+
+        form = ClassForm(request.POST, school_id=teacher.school_id)
         
         if not form.is_valid():
             # Display field-specific error messages
@@ -1157,10 +1219,11 @@ class ClassCreateView(View):
         
         # Create class using service
         result = self.class_service.create_class(
-            teacher_id=teacher.pk,
-            grade_level=form.cleaned_data['grade_level'],
-            strand=form.cleaned_data['strand'],
-            section=form.cleaned_data['section']
+            school_id=teacher.school_id,
+            grade_level_id=form.cleaned_data['grade_level'],
+            strand_id=form.cleaned_data['strand'],
+            section_id=form.cleaned_data['section'],
+            teacher_ids=[teacher.pk],
         )
         
         if result.is_success():
@@ -1209,19 +1272,19 @@ class ClassUpdateView(View):
             messages.error(request, 'Class not found')
             return redirect('class_list')
         
-        # Verify teacher owns the class
-        if class_obj.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_obj.teachers.all():
             messages.error(request, 'You do not have permission to edit this class')
             return redirect('class_list')
-        
+
         # Pre-fill form with current values
         form = ClassForm(
             initial={
-                'grade_level': class_obj.grade_level,
-                'strand': class_obj.strand,
-                'section': class_obj.section
+                'grade_level': class_obj.grade_level_id,
+                'strand': class_obj.strand_id,
+                'section': class_obj.section_id
             },
-            teacher=teacher,
+            school_id=teacher.school_id,
             class_id=class_id
         )
         
@@ -1252,12 +1315,12 @@ class ClassUpdateView(View):
             messages.error(request, 'Class not found')
             return redirect('class_list')
         
-        # Verify teacher owns the class
-        if class_obj.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_obj.teachers.all():
             messages.error(request, 'You do not have permission to edit this class')
             return redirect('class_list')
-        
-        form = ClassForm(request.POST, teacher=teacher, class_id=class_id)
+
+        form = ClassForm(request.POST, school_id=teacher.school_id, class_id=class_id)
         
         if not form.is_valid():
             # Display field-specific error messages
@@ -1277,9 +1340,9 @@ class ClassUpdateView(View):
         # Update class using service
         result = self.class_service.update_class(
             class_id=class_id,
-            grade_level=form.cleaned_data['grade_level'],
-            strand=form.cleaned_data['strand'],
-            section=form.cleaned_data['section']
+            grade_level_id=form.cleaned_data['grade_level'],
+            strand_id=form.cleaned_data['strand'],
+            section_id=form.cleaned_data['section'],
         )
         
         if result.is_success():
@@ -1334,8 +1397,8 @@ class ClassDeleteView(View):
             messages.error(request, 'Class not found')
             return redirect('class_list')
         
-        # Verify teacher owns the class
-        if class_obj.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_obj.teachers.all():
             messages.error(request, 'You do not have permission to delete this class')
             return redirect('class_list')
         
@@ -1358,7 +1421,7 @@ class ClassDeleteView(View):
             return redirect('class_list')
         
         # Password verified - proceed with deletion
-        class_name = f"{class_obj.grade_level} - {class_obj.strand} {class_obj.section}"
+        class_name = f"{class_obj.grade_level.name} - {class_obj.strand.name} {class_obj.section.name}"
         student_count = class_obj.students.count()
         
         # Delete class using service
@@ -1407,8 +1470,8 @@ class ClassDetailView(View):
             messages.error(request, 'Class not found')
             return redirect('class_list')
         
-        # Verify teacher owns the class
-        if class_obj.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_obj.teachers.all():
             messages.error(request, 'You do not have permission to view this class')
             return redirect('class_list')
         
@@ -1434,7 +1497,7 @@ class ClassDetailView(View):
             'students': students,
             'exams': exams,
             'statistics': statistics,
-            'page_title': f'{class_obj.grade_level} - {class_obj.strand} - {class_obj.section}'
+            'page_title': f'{class_obj.grade_level.name} - {class_obj.strand.name} - {class_obj.section.name}'
         }
         
         return render(request, 'users/class_detail.html', context)
@@ -1462,25 +1525,25 @@ class StudentAssignView(View):
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
         
-        form = StudentClassAssignmentForm(teacher=teacher)
-        
+        form = StudentClassAssignmentForm(school_id=teacher.school_id)
+
         context = {
             'teacher': teacher,
             'form': form,
             'page_title': 'Assign Student to Class'
         }
-        
+
         return render(request, 'users/student_assignment.html', context)
-    
+
     def post(self, request):
         """Process student assignment with validation."""
         teacher = self.auth_service.get_current_teacher(request)
-        
+
         if not teacher:
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
-        
-        form = StudentClassAssignmentForm(request.POST, teacher=teacher)
+
+        form = StudentClassAssignmentForm(request.POST, school_id=teacher.school_id)
         
         if not form.is_valid():
             # Display field-specific error messages
@@ -1499,8 +1562,8 @@ class StudentAssignView(View):
         student = form.cleaned_data['student']
         class_assigned = form.cleaned_data['class_assigned']
         
-        # Verify teacher owns the class
-        if class_assigned.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_assigned.teachers.all():
             messages.error(request, 'You do not have permission to assign students to this class')
             context = {
                 'teacher': teacher,
@@ -1568,11 +1631,11 @@ class StudentRemoveView(View):
             messages.warning(request, f'{student.get_full_name()} is not assigned to any class')
             return redirect('class_list')
         
-        # Verify teacher owns the class
-        if student.class_assigned.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in student.class_assigned.teachers.all():
             messages.error(request, 'You do not have permission to remove this student from their class')
             return redirect('class_list')
-        
+
         # Get attempt count for display
         from attempts.models import Attempt
         attempt_count = Attempt.objects.filter(student_id=student_id).count()
@@ -1609,9 +1672,9 @@ class StudentRemoveView(View):
             messages.warning(request, f'{student.get_full_name()} is not assigned to any class')
             return redirect('class_list')
         
-        # Verify teacher owns the class
+        # Verify teacher is assigned to the class
         class_id = student.class_assigned.pk
-        if student.class_assigned.teacher_id != teacher.pk:
+        if teacher not in student.class_assigned.teachers.all():
             messages.error(request, 'You do not have permission to remove this student from their class')
             return redirect('class_list')
         
@@ -1655,18 +1718,18 @@ class BulkStudentAssignView(View):
         # Get class_id from query parameters for auto-detection
         class_id = request.GET.get('class_id')
         
-        form = BulkStudentAssignmentForm(teacher=teacher, initial_class_id=class_id)
-        
+        form = BulkStudentAssignmentForm(school_id=teacher.school_id, initial_class_id=class_id)
+
         # Get class name and object for display if class_id is provided
         selected_class_name = None
         selected_class_obj = None
         class_preselected = False
-        
+
         if class_id:
             try:
                 from users.models import Class
-                selected_class_obj = Class.objects.get(id=class_id, teacher=teacher)
-                selected_class_name = f"{selected_class_obj.grade_level} - {selected_class_obj.strand} ({selected_class_obj.section})"
+                selected_class_obj = Class.objects.get(id=class_id, teachers=teacher)
+                selected_class_name = f"{selected_class_obj.grade_level.name} - {selected_class_obj.strand.name} ({selected_class_obj.section.name})"
                 class_preselected = True
             except Class.DoesNotExist:
                 pass
@@ -1696,7 +1759,7 @@ class BulkStudentAssignView(View):
         # Get class_id from query parameters for form initialization
         class_id = request.GET.get('class_id')
         
-        form = BulkStudentAssignmentForm(request.POST, teacher=teacher, initial_class_id=class_id)
+        form = BulkStudentAssignmentForm(request.POST, school_id=teacher.school_id, initial_class_id=class_id)
         
         if not form.is_valid():
             # Handle AJAX request
@@ -1727,14 +1790,14 @@ class BulkStudentAssignView(View):
         students = form.cleaned_data['students']
         class_assigned = form.cleaned_data['class_assigned']
         
-        # Verify teacher owns the class
-        if class_assigned.teacher_id != teacher.pk:
+        # Verify teacher is assigned to the class
+        if teacher not in class_assigned.teachers.all():
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
                     'error': 'You do not have permission to assign students to this class'
                 })
-            
+
             messages.error(request, 'You do not have permission to assign students to this class')
             context = {
                 'teacher': teacher,
@@ -1807,32 +1870,30 @@ class BulkStudentAssignView(View):
 @method_decorator(csrf_protect, name='dispatch')
 class StudentAccountManagementView(View):
     """
-    View for managing student accounts.
-    Allows teachers to manually create student accounts with auto-generated passwords.
+    View for teachers to browse students in their classes (read-only).
+    Student creation is handled by School Admin.
     """
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.auth_service = AuthenticationService()
-    
+
     def get(self, request):
-        """Display student account management page with creation form and student list."""
+        """Display read-only student roster for classes the teacher teaches."""
         teacher = self.auth_service.get_current_teacher(request)
 
         if not teacher:
             messages.error(request, 'Teacher profile not found')
             return redirect('teacher_login')
 
-        # Import here to avoid circular imports
         from users.models import Student
-        from users.forms import StudentCreationForm
 
-        # Get students created by this teacher, ordered by last name.
-        # Students are private to the teacher who created them.
+        # Students in classes this teacher teaches
+        class_ids = teacher.classes.values_list('id', flat=True)
         students = (
             Student.objects
-            .filter(created_by=teacher)
-            .select_related('class_assigned')
+            .filter(class_assigned_id__in=class_ids)
+            .select_related('class_assigned__grade_level', 'class_assigned__strand', 'class_assigned__section')
             .order_by('last_name', 'first_name')
         )
 
@@ -1840,14 +1901,14 @@ class StudentAccountManagementView(View):
         search_query = request.GET.get('search', '').strip()
         if search_query:
             students = students.filter(
-                models.Q(school_id__icontains=search_query) |
+                models.Q(student_id__icontains=search_query) |
                 models.Q(first_name__icontains=search_query) |
                 models.Q(last_name__icontains=search_query)
             )
 
         # Pagination
         from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-        paginator = Paginator(students, 20)  # 20 students per page
+        paginator = Paginator(students, 20)
         page = request.GET.get('page', 1)
 
         try:
@@ -1857,155 +1918,24 @@ class StudentAccountManagementView(View):
         except EmptyPage:
             students_page = paginator.page(paginator.num_pages)
 
-        # Initialize form
-        form = StudentCreationForm(teacher=teacher)
-
         context = {
             'teacher': teacher,
-            'form': form,
             'students': students_page,
             'search_query': search_query,
-            'page_title': 'Student Account Management',
+            'page_title': 'Student Roster',
             'total_students': students_page.paginator.count,
         }
 
         return render(request, 'users/student_account_management.html', context)
 
     def post(self, request):
-        """Process student account creation."""
-        teacher = self.auth_service.get_current_teacher(request)
-
-        if not teacher:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'error': 'Teacher profile not found'})
-            messages.error(request, 'Teacher profile not found')
-            return redirect('teacher_login')
-
-        # Import here to avoid circular imports
-        from users.models import Student
-        from users.forms import StudentCreationForm
-
-        form = StudentCreationForm(request.POST, teacher=teacher)
-
-        if not form.is_valid():
-            # Handle AJAX request
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                errors = []
-                for field, field_errors in form.errors.items():
-                    for error in field_errors:
-                        errors.append(str(error))
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Form validation failed',
-                    'errors': errors
-                })
-
-            # Display field-specific error messages
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, error)
-
-            # Re-render page with form errors (scoped to this teacher's students)
-            students = (
-                Student.objects
-                .filter(created_by=teacher)
-                .select_related('class_assigned')
-                .order_by('last_name', 'first_name')
-            )
-
-            from django.core.paginator import Paginator
-            paginator = Paginator(students, 20)
-            students_page = paginator.page(1)
-
-            context = {
-                'teacher': teacher,
-                'form': form,
-                'students': students_page,
-                'search_query': '',
-                'page_title': 'Student Account Management',
-                'total_students': students.count(),
-            }
-            return render(request, 'users/student_account_management.html', context)
-
-        # Get form data
-        school_id = form.cleaned_data['school_id']
-        first_name = form.cleaned_data['first_name']
-        last_name = form.cleaned_data['last_name']
-        class_assigned = form.cleaned_data.get('class_assigned')
-
-        # Generate password
-        generated_password = StudentCreationForm.generate_password(school_id, last_name)
-
-        # Create student (scoped to the current teacher as owner)
-        try:
-            student = Student(
-                school_id=school_id,
-                first_name=first_name,
-                last_name=last_name,
-                class_assigned=class_assigned,
-                created_by=teacher,
-            )
-            student.set_password(generated_password)
-            student.save()
-            
-            # Handle AJAX request
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': True,
-                    'message': f'Student account created successfully',
-                    'student': {
-                        'id': student.id,
-                        'school_id': student.school_id,
-                        'name': student.get_full_name(),
-                        'password': generated_password,
-                        'class': str(student.class_assigned) if student.class_assigned else 'Not assigned'
-                    }
-                })
-            
-            # Display success message with generated password
-            messages.success(
-                request,
-                f'Student account created successfully! '
-                f'Student ID: {school_id}, Generated Password: {generated_password}'
-            )
-            
-            return redirect('student_account_management')
-            
-        except Exception as e:
-            # Handle AJAX request
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Failed to create student account: {str(e)}'
-                })
-            
-            messages.error(request, f'Failed to create student account: {str(e)}')
-
-            # Re-render page with form
-            students = (
-                Student.objects
-                .filter(created_by=teacher)
-                .select_related('class_assigned')
-                .order_by('last_name', 'first_name')
-            )
-
-            from django.core.paginator import Paginator
-            paginator = Paginator(students, 20)
-            students_page = paginator.page(1)
-
-            context = {
-                'teacher': teacher,
-                'form': form,
-                'students': students_page,
-                'search_query': '',
-                'page_title': 'Student Account Management',
-                'total_students': students.count(),
-            }
-            return render(request, 'users/student_account_management.html', context)
+        """POST is not supported — teachers cannot create students."""
+        messages.error(request, 'Student creation is handled by the School Admin.')
+        return redirect('student_account_management')
 
 
 class StudentDetailView(View):
-    """View student account details including default password."""
+    """View student account details (read-only for teachers)."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2018,27 +1948,23 @@ class StudentDetailView(View):
             return redirect('teacher_login')
 
         from users.models import Student
-        from users.forms import StudentCreationForm
 
         student = get_object_or_404(Student, pk=student_id)
 
-        # Ownership: only the teacher who created this student can view it.
-        if student.created_by_id != teacher.pk:
+        # Teachers can only view students in classes they teach
+        if not student.class_assigned or teacher not in student.class_assigned.teachers.all():
             messages.error(request, 'You do not have permission to view this student.')
             return redirect('student_account_management')
-
-        default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
 
         context = {
             'teacher': teacher,
             'student': student,
-            'default_password': default_password,
         }
         return render(request, 'users/student_detail.html', context)
 
 
 class StudentResetPasswordView(View):
-    """Reset a student's password to the default."""
+    """Reset a student's password — only available to School Admin."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2046,34 +1972,14 @@ class StudentResetPasswordView(View):
 
     def post(self, request, student_id):
         teacher = self.auth_service.get_current_teacher(request)
-        if not teacher:
-            return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
-
-        from users.models import Student
-        from users.forms import StudentCreationForm
-
-        student = get_object_or_404(Student, pk=student_id)
-
-        # Ownership: only the teacher who created this student can reset it.
-        if student.created_by_id != teacher.pk:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
-            messages.error(request, 'You do not have permission to reset this student.')
+        if teacher:
+            messages.error(request, 'Password reset is handled by the School Admin.')
             return redirect('student_account_management')
-
-        default_password = StudentCreationForm.generate_password(student.school_id, student.last_name)
-        student.set_password(default_password)
-        student.save()
-
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Password reset to default successfully'})
-
-        messages.success(request, f'Password for {student.get_full_name()} has been reset to default.')
-        return redirect('student_detail', student_id=student_id)
+        return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
 
 
 class StudentDeleteView(View):
-    """Permanently delete a student account and all associated data."""
+    """Permanently delete a student account — only available to School Admin."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2081,36 +1987,10 @@ class StudentDeleteView(View):
 
     def post(self, request, student_id):
         teacher = self.auth_service.get_current_teacher(request)
-        if not teacher:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
-            messages.error(request, 'Teacher profile not found')
-            return redirect('teacher_login')
-
-        from users.models import Student
-
-        student = get_object_or_404(Student, pk=student_id)
-
-        # Ownership: only the teacher who created this student can delete it.
-        if student.created_by_id != teacher.pk:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
-            messages.error(request, 'You do not have permission to delete this student.')
+        if teacher:
+            messages.error(request, 'Student deletion is handled by the School Admin.')
             return redirect('student_account_management')
-
-        student_name = student.get_full_name()
-        student_school_id = student.school_id
-
-        student.delete()
-
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'message': f'Student "{student_name}" ({student_school_id}) has been permanently deleted.'
-            })
-
-        messages.success(request, f'Student "{student_name}" ({student_school_id}) has been permanently deleted.')
-        return redirect('student_account_management')
+        return JsonResponse({'success': False, 'error': 'Not authorized'}, status=403)
 
 
 @method_decorator(student_required, name='dispatch')

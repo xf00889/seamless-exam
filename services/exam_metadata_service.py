@@ -29,5 +29,5 @@ def get_exam_basic_info(exam: Exam) -> Dict[str, Any]:
         'created_at': exam.created_at,
         'updated_at': exam.updated_at,
         'is_active': exam.is_active,
-        'teacher': exam.teacher.username if exam.teacher else None,
+        'teacher': exam.created_by.user.username if exam.created_by else None,
     }

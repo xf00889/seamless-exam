@@ -1,0 +1,137 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Lookups{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Lookups</h1>
+        <p>Manage grade levels, strands, sections, subjects, and quarters</p>
+    </div>
+</div>
+
+{% for group in groups %}
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>{{ group.label }} ({{ group.items|length }})</h3>
+        <button type="button" class="sa-btn sa-btn-blue sa-btn-sm"
+                onclick="openCreateModal('{{ group.key }}', '{{ group.label }}'{% if group.has_order %}, true{% endif %})">+ Add</button>
+    </div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    {% if group.has_order %}<th>Order</th>{% endif %}
+                    <th style="width:140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in group.items %}
+                <tr>
+                    <td><strong>{{ item.name }}</strong></td>
+                    {% if group.has_order %}<td>{{ item.order|default:0 }}</td>{% endif %}
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm"
+                                onclick="openEditModal('{{ group.key }}', {{ item.id }}, '{{ item.name|escapejs }}'{% if group.has_order %}, '{{ item.order }}'{% endif %})">Edit</button>
+                        <form method="post" action="{% url 'school_admin_lookups' %}" style="display:inline;" onsubmit="return confirm('Delete {{ item.name|escapejs }}?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="kind" value="{{ group.key }}">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <button type="submit" class="sa-btn sa-btn-red sa-btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if group.has_order %}3{% else %}2{% endif %}" style="text-align:center; color:var(--text-muted); padding:2rem;">No items yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Create Modal -->
+<div class="sa-modal-overlay" id="createModal">
+    <div class="sa-modal">
+        <h3 id="createModalTitle">Add</h3>
+        <form method="post" action="{% url 'school_admin_lookups' %}">
+            {% csrf_token %}
+            <input type="hidden" name="kind" id="createKind">
+            <input type="hidden" name="action" value="create">
+            <div class="sa-form-group">
+                <label>Name</label>
+                <input type="text" name="name" id="createName" required>
+            </div>
+            <div class="sa-form-group" id="createOrderGroup" style="display:none;">
+                <label>Order</label>
+                <input type="number" name="order" id="createOrder" value="0">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="sa-modal-overlay" id="editModal">
+    <div class="sa-modal">
+        <h3>Edit</h3>
+        <form method="post" action="{% url 'school_admin_lookups' %}">
+            {% csrf_token %}
+            <input type="hidden" name="kind" id="editKind">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="item_id" id="editItemId">
+            <div class="sa-form-group">
+                <label>Name</label>
+                <input type="text" name="name" id="editName" required>
+            </div>
+            <div class="sa-form-group" id="editOrderGroup" style="display:none;">
+                <label>Order</label>
+                <input type="number" name="order" id="editOrder" value="0">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openCreateModal(kind, label, hasOrder) {
+    document.getElementById('createKind').value = kind;
+    document.getElementById('createModalTitle').textContent = 'Add ' + label.slice(0, -1);
+    document.getElementById('createName').value = '';
+    document.getElementById('createOrder').value = '0';
+    document.getElementById('createOrderGroup').style.display = hasOrder ? '' : 'none';
+    document.getElementById('createModal').classList.add('active');
+}
+
+function openEditModal(kind, id, name, order) {
+    document.getElementById('editKind').value = kind;
+    document.getElementById('editItemId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editOrder').value = order || '0';
+    document.getElementById('editOrderGroup').style.display = arguments.length > 3 ? '' : 'none';
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+document.querySelectorAll('.sa-modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+    });
+});
+</script>
+{% endblock %}

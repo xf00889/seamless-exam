@@ -1,0 +1,187 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Manage{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Manage</h1>
+        <p>Schools and school administrators</p>
+    </div>
+</div>
+
+{% with total_schools=schools|length total_admins=school_admins|length %}
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Schools</div>
+        <div style="font-size:1.5rem; font-weight:700;">{{ total_schools }}</div>
+    </div>
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">School Admins</div>
+        <div style="font-size:1.5rem; font-weight:700;">{{ total_admins }}</div>
+    </div>
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Total Classes</div>
+        <div style="font-size:1.5rem; font-weight:700;">{{ total_classes|default:"—" }}</div>
+    </div>
+    <div class="sa-card" style="padding:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Total Students</div>
+        <div style="font-size:1.5rem; font-weight:700;">{{ total_students|default:"—" }}</div>
+    </div>
+</div>
+{% endwith %}
+
+<!-- Schools Table -->
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>Schools ({{ schools|length }})</h3>
+        <a href="{% url 'superadmin_create_school' %}" class="sa-btn sa-btn-blue sa-btn-sm">+ New School</a>
+    </div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Address</th>
+                    <th>Classes</th>
+                    <th>Teachers</th>
+                    <th>Students</th>
+                    <th style="width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools %}
+                <tr>
+                    <td><strong>{{ school.name }}</strong></td>
+                    <td style="color:var(--text-secondary); font-size:0.8125rem;">{{ school.address|default:"—" }}</td>
+                    <td>{{ school.class_count }}</td>
+                    <td>{{ school.teacher_count }}</td>
+                    <td>{{ school.student_count }}</td>
+                    <td>
+                        <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm" title="Edit"
+                                onclick="editSchool({{ school.id }}, '{{ school.name|escapejs }}', '{{ school.address|escapejs }}')">Edit</button>
+                        <button type="button" class="sa-btn sa-btn-red sa-btn-sm" title="Delete"
+                                onclick="confirmDeleteSchool({{ school.id }}, '{{ school.name|escapejs }}')">Delete</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem;">No schools yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- School Admins Table -->
+<div class="sa-card">
+    <div class="sa-card-header">
+        <h3>School Admins ({{ school_admins|length }})</h3>
+        <a href="{% url 'superadmin_create_school_admin' %}" class="sa-btn sa-btn-blue sa-btn-sm">+ New Admin</a>
+    </div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>School</th>
+                    <th>Created</th>
+                    <th style="width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sa in school_admins %}
+                <tr>
+                    <td><strong>{{ sa.user.username }}</strong></td>
+                    <td>{{ sa.user.get_full_name|default:"—" }}</td>
+                    <td style="color:var(--text-secondary); font-size:0.8125rem;">{{ sa.user.email|default:"—" }}</td>
+                    <td><span class="sa-badge sa-badge-blue">{{ sa.school.name }}</span></td>
+                    <td style="font-size:0.8125rem; color:var(--text-muted);">{{ sa.created_at|date:"M d, Y" }}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="{% url 'superadmin_school_admin_detail' sa.pk %}" class="sa-btn sa-btn-ghost sa-btn-sm">View</a>
+                        <button type="button" class="sa-btn sa-btn-red sa-btn-sm" title="Delete"
+                                onclick="confirmDeleteSchoolAdmin({{ sa.pk }}, '{{ sa.user.username|escapejs }}')">Delete</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem;">No school admins yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editSchool(id, currentName, currentAddress) {
+    var name = prompt('School name:', currentName);
+    if (!name) return;
+    var address = prompt('School address:', currentAddress || '');
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/superadmin/schools/' + id + '/edit/';
+    var csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrfmiddlewaretoken';
+    csrf.value = '{{ csrf_token }}';
+    form.appendChild(csrf);
+    var n = document.createElement('input');
+    n.type = 'hidden'; n.name = 'name'; n.value = name;
+    form.appendChild(n);
+    var a = document.createElement('input');
+    a.type = 'hidden'; a.name = 'address'; a.value = address;
+    form.appendChild(a);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function confirmDeleteSchoolAdmin(id, username) {
+    var password = prompt('Enter your admin password to delete school admin "' + username + '":');
+    if (password) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/superadmin/manage/school-admin/' + id + '/delete/';
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        var pw = document.createElement('input');
+        pw.type = 'hidden';
+        pw.name = 'admin_password';
+        pw.value = password;
+        form.appendChild(pw);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function confirmDeleteSchool(id, name) {
+    var password = prompt('Enter your admin password to delete "' + name + '":');
+    if (password) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/superadmin/schools/' + id + '/delete/';
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        var pw = document.createElement('input');
+        pw.type = 'hidden';
+        pw.name = 'admin_password';
+        pw.value = password;
+        form.appendChild(pw);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

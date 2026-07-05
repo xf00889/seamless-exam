@@ -323,7 +323,7 @@
                     <option value="">All Students</option>
                     {% for student in students %}
                     <option value="{{ student.id }}" {% if student_filter == student.id|stringformat:"s" %}selected{% endif %}>
-                        {{ student.get_full_name }} ({{ student.school_id }})
+                        {{ student.get_full_name }} ({{ student.student_id }})
                     </option>
                     {% endfor %}
                 </select>
@@ -410,7 +410,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-500">{{ data.student.school_id }}</div>
+                                <div class="text-sm text-gray-500">{{ data.student.student_id }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="exam-title-cell text-sm text-gray-900" title="{{ data.exam.title }}">{{ data.exam.title }}</div>

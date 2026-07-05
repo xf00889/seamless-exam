@@ -1,0 +1,37 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Create School{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Create School</h1>
+        <p>Add a new school to the system</p>
+    </div>
+    <a href="{% url 'superadmin_dashboard' %}" class="sa-btn sa-btn-ghost">&larr; Back to Dashboard</a>
+</div>
+
+<div class="sa-card" style="max-width: 600px;">
+    <div class="sa-card-header">
+        <h3>School Details</h3>
+    </div>
+    <div class="sa-card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="sa-form-group">
+                <label>School Name</label>
+                <input type="text" name="name" required maxlength="200" placeholder="e.g. MLDNHS">
+            </div>
+            <div class="sa-form-group">
+                <label>Address <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                <textarea name="address" rows="3" placeholder="School address..." style="width:100%;padding:0.625rem 0.875rem;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.875rem;resize:vertical;font-family:inherit;"></textarea>
+            </div>
+            <div style="display:flex;gap:0.75rem;padding-top:0.5rem;">
+                <button type="submit" class="sa-btn sa-btn-blue">Create School</button>
+                <a href="{% url 'superadmin_dashboard' %}" class="sa-btn sa-btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

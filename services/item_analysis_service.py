@@ -283,7 +283,7 @@ class ItemAnalysisService:
             student_percent = round((student_total_correct / len(flattened_items)) * 100, 1) if flattened_items else 0
             students.append({
                 'name': f"{student.last_name}, {student.first_name}",
-                'school_id': student.school_id,
+                'school_id': student.student_id,
                 'class_name': str(student.class_assigned) if student.class_assigned else 'N/A',
                 'responses': responses,
                 'total_correct': student_total_correct,
@@ -688,7 +688,7 @@ class ItemAnalysisService:
 
             students.append({
                 'name': f"{student.last_name}, {student.first_name}",
-                'school_id': student.school_id,
+                'school_id': student.student_id,
                 'class_name': str(student.class_assigned) if student.class_assigned else 'N/A',
                 'responses': responses,
                 'total_correct': student_total,

@@ -1,0 +1,66 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Create Class{% endblock %}
+
+{% block content %}
+<nav style="margin-bottom:1.5rem;">
+    <a href="{% url 'school_admin_classes' %}" style="color:var(--text-muted); text-decoration:none; font-size:0.875rem;">
+        &larr; Back to Classes
+    </a>
+</nav>
+
+<div class="sa-header">
+    <div>
+        <h1>Create Class</h1>
+        <p>Add a new class</p>
+    </div>
+</div>
+
+<div class="sa-card" style="max-width:560px;">
+    <div class="sa-card-body">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="sa-form-group">
+                <label for="grade_level">Grade Level</label>
+                <select id="grade_level" name="grade_level" required>
+                    <option value="">— Select —</option>
+                    {% for gl in grade_levels %}
+                    <option value="{{ gl.id }}">{{ gl.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="sa-form-group">
+                <label for="strand">Strand</label>
+                <select id="strand" name="strand" required>
+                    <option value="">— Select —</option>
+                    {% for s in strands %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="sa-form-group">
+                <label for="section">Section</label>
+                <select id="section" name="section" required>
+                    <option value="">— Select —</option>
+                    {% for s in sections %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="sa-form-group">
+                <label for="teachers">Teachers</label>
+                <select id="teachers" name="teachers" multiple style="height:120px;">
+                    {% for t in teachers %}
+                    <option value="{{ t.user_id }}">{{ t.user.get_full_name|default:t.user.username }}</option>
+                    {% endfor %}
+                </select>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">Hold Ctrl/Cmd to select multiple</div>
+            </div>
+            <div style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+                <button type="submit" class="sa-btn sa-btn-blue">Create Class</button>
+                <a href="{% url 'school_admin_classes' %}" class="sa-btn sa-btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

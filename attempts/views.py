@@ -1506,7 +1506,7 @@ def teacher_dashboard_view(request):
     # Get class-grouped statistics (Requirement 5.3)
     # Only include classes that belong to this teacher.
     class_statistics = {}
-    teacher_classes = Class.objects.filter(teacher=teacher)
+    teacher_classes = Class.objects.filter(class_teachers__teacher=teacher)
     if class_filter:
         # If filtering by class, get statistics for that class (must belong to teacher)
         try:
@@ -1527,7 +1527,7 @@ def teacher_dashboard_view(request):
     # Get this teacher's exams, students, and classes for filter dropdowns and counts.
     exams = exam_service.get_exams_by_teacher(teacher.pk)
     students = Student.objects.filter(
-        class_assigned__teacher=teacher
+        class_assigned__class_teachers__teacher=teacher
     ).distinct().order_by('last_name', 'first_name')
     classes = teacher_classes.order_by('grade_level', 'strand', 'section')  # Filter dropdown (Requirement 5.1)
     
@@ -2157,7 +2157,7 @@ def export_scores_excel_view(request):
             row_data = [
                 idx,
                 f'{student.last_name}, {student.first_name}',
-                student.school_id,
+                student.student_id,
                 class_name,
                 score,
                 round(percentage, 1),
@@ -2218,7 +2218,7 @@ def export_accounts_excel_view(request):
     from openpyxl.drawing.image import Image as XlImage
     from users.models import Student, Class
 
-    classes = Class.objects.filter(teacher=request.user.teacher_profile).prefetch_related('students').order_by('grade_level', 'strand', 'section')
+    classes = Class.objects.filter(teachers=request.user.teacher_profile).prefetch_related('students').order_by('grade_level', 'strand', 'section')
 
     if not classes.exists():
         messages.warning(request, 'No classes found to export')
@@ -2289,7 +2289,7 @@ def export_accounts_excel_view(request):
                 idx,
                 student.first_name,
                 student.last_name,
-                student.school_id,
+                student.student_id,
                 password
             ]
 

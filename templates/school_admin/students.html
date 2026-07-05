@@ -1,0 +1,118 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+<div class="sa-header">
+    <div>
+        <h1>Students</h1>
+        <p>{{ students.paginator.count }} student{{ students.paginator.count|pluralize }}</p>
+    </div>
+</div>
+
+{% if students.paginator.count > 0 %}
+<div class="sa-search">
+    <form method="GET" style="display:flex; gap:0.75rem; width:100%;">
+        <input type="text" name="search" placeholder="Search by ID, first name, or last name..." value="{{ request.GET.search }}" style="flex:1; padding:0.625rem 0.875rem; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:0.875rem;">
+        <button type="submit" class="sa-btn sa-btn-blue">Search</button>
+        {% if request.GET.search %}
+        <a href="{% url 'school_admin_students' %}" class="sa-btn sa-btn-ghost">Clear</a>
+        {% endif %}
+    </form>
+</div>
+{% endif %}
+
+<div class="sa-card">
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Attempts</th>
+                    <th>Created</th>
+                    <th style="width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><strong>{{ student.student_id }}</strong></td>
+                    <td>{{ student.get_full_name }}</td>
+                    <td>{{ student.class_assigned|default:"—" }}</td>
+                    <td>{{ student.attempt_count }}</td>
+                    <td style="font-size:0.8125rem; color:var(--text-muted);">{{ student.created_at|date:"M d, Y" }}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="{% url 'school_admin_student_detail' student.id %}" class="sa-btn sa-btn-ghost sa-btn-sm">View</a>
+                        <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm"
+                                onclick="openResetModal('student', {{ student.id }}, '{{ student.get_full_name|escapejs }}')">Reset</button>
+                        <button type="button" class="sa-btn sa-btn-red sa-btn-sm"
+                                onclick="openDeleteModal('student', {{ student.id }}, '{{ student.get_full_name|escapejs }}')">Delete</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem;">No students yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if students.paginator.num_pages > 1 %}
+<div class="sa-pagination">
+    {% if students.has_previous %}
+    <a href="?page={{ students.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
+    {% endif %}
+    {% for p in students.paginator.page_range %}
+        {% if p == students.number %}
+        <span class="current">{{ p }}</span>
+        {% else %}
+        <a href="?page={{ p }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if students.has_next %}
+    <a href="?page={{ students.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% include 'school_admin/_reset_modal.html' %}
+{% include 'school_admin/_delete_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openResetModal(type, id, name) {
+    var t = document.getElementById('resetUserType');
+    var i = document.getElementById('resetUserId');
+    var n = document.getElementById('resetUserName');
+    var m = document.getElementById('resetModal');
+    if (t) t.value = type;
+    if (i) i.value = id;
+    if (n) n.textContent = name;
+    if (m) m.classList.add('active');
+}
+function openDeleteModal(type, id, name) {
+    var t = document.getElementById('deleteUserType');
+    var i = document.getElementById('deleteUserId');
+    var n = document.getElementById('deleteUserName');
+    var m = document.getElementById('deleteModal');
+    if (t) t.value = type;
+    if (i) i.value = id;
+    if (n) n.textContent = name;
+    if (m) m.classList.add('active');
+}
+function closeModal(id) {
+    var m = document.getElementById(id);
+    if (m) m.classList.remove('active');
+}
+document.querySelectorAll('.sa-modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+    });
+});
+</script>
+{% endblock %}

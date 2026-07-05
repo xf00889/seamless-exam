@@ -667,7 +667,7 @@ class DashboardService:
             
             # Verify class exists
             try:
-                cls = Class.objects.select_related('teacher').get(id=class_id)
+                cls = Class.objects.get(id=class_id)
             except Class.DoesNotExist:
                 logger.warning(f"Class not found for statistics: {class_id}")
                 return Result.failure(NotFoundError(
@@ -784,7 +784,7 @@ class DashboardService:
             # Get classes (optionally filtered by teacher)
             classes_query = Class.objects.all().order_by('grade_level', 'strand', 'section')
             if teacher_id:
-                classes_query = classes_query.filter(teacher_id=teacher_id)
+                classes_query = classes_query.filter(teachers__id=teacher_id)
             
             classes = list(classes_query)
             

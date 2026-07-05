@@ -1,0 +1,122 @@
+{% extends 'school_admin/base.html' %}
+
+{% block title %}Student Details{% endblock %}
+
+{% block content %}
+<nav style="margin-bottom:1.5rem;">
+    <a href="{% url 'school_admin_students' %}" style="color:var(--text-muted); text-decoration:none; font-size:0.875rem;">
+        &larr; Back to Students
+    </a>
+</nav>
+
+<div class="sa-header">
+    <div>
+        <h1>{{ student.get_full_name }}</h1>
+        <p>Student ID: {{ student.student_id }}</p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="sa-btn sa-btn-ghost"
+                onclick="openResetModal('student', {{ student.id }}, '{{ student.get_full_name|escapejs }}')">Reset Password</button>
+        <button type="button" class="sa-btn sa-btn-red"
+                onclick="openDeleteModal('student', {{ student.id }}, '{{ student.get_full_name|escapejs }}')">Delete</button>
+    </div>
+</div>
+
+<div class="sa-card">
+    <div class="sa-card-header"><h3>Student Info</h3></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1.25rem;">
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Student ID</div>
+            <div>{{ student.student_id }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Full Name</div>
+            <div>{{ student.get_full_name }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Class</div>
+            <div>{{ student.class_assigned|default:"Not assigned" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Created By</div>
+            <div>{{ student.created_by.get_full_name|default:student.created_by.username|default:"—" }}</div>
+        </div>
+        <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem;">Created At</div>
+            <div>{{ student.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+{% if attempts %}
+<div class="sa-card">
+    <div class="sa-card-header"><h3>Recent Attempts ({{ attempts|length }})</h3></div>
+    <div class="sa-table-wrap">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Score</th>
+                    <th>Started</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attempts %}
+                <tr>
+                    <td>{{ a.exam.title }}</td>
+                    <td>{{ a.score|floatformat:1|default:"—" }}</td>
+                    <td style="font-size:0.8125rem; color:var(--text-muted);">{{ a.started_at|date:"M d, Y H:i" }}</td>
+                    <td style="font-size:0.8125rem; color:var(--text-muted);">{{ a.submitted_at|date:"M d, Y H:i"|default:"—" }}</td>
+                    <td>
+                        {% if a.status == 'submitted' %}<span class="sa-badge sa-badge-green">Submitted</span>
+                        {% elif a.status == 'graded' %}<span class="sa-badge sa-badge-blue">Graded</span>
+                        {% else %}<span class="sa-badge sa-badge-yellow">{{ a.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% include 'school_admin/_reset_modal.html' %}
+{% include 'school_admin/_delete_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openResetModal(type, id, name) {
+    var t = document.getElementById('resetUserType');
+    var i = document.getElementById('resetUserId');
+    var n = document.getElementById('resetUserName');
+    var m = document.getElementById('resetModal');
+    if (t) t.value = type;
+    if (i) i.value = id;
+    if (n) n.textContent = name;
+    if (m) m.classList.add('active');
+}
+function openDeleteModal(type, id, name) {
+    var t = document.getElementById('deleteUserType');
+    var i = document.getElementById('deleteUserId');
+    var n = document.getElementById('deleteUserName');
+    var m = document.getElementById('deleteModal');
+    if (t) t.value = type;
+    if (i) i.value = id;
+    if (n) n.textContent = name;
+    if (m) m.classList.add('active');
+}
+function closeModal(id) {
+    var m = document.getElementById(id);
+    if (m) m.classList.remove('active');
+}
+document.querySelectorAll('.sa-modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+    });
+});
+</script>
+{% endblock %}

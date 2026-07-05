@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    LoginView,
     TeacherLoginView,
     StudentLoginView,
     LogoutView,
@@ -38,6 +39,7 @@ urlpatterns = [
     path('request-access/', RequestAccessView.as_view(), name='request_access'),
     
     # Authentication routes
+    path('login/', LoginView.as_view(), name='login'),
     path('teacher/login/', TeacherLoginView.as_view(), name='teacher_login'),
     path('student/login/', StudentLoginView.as_view(), name='student_login'),
     path('logout/', LogoutView.as_view(), name='logout'),

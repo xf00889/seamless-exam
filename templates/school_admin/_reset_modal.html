@@ -1,0 +1,23 @@
+<div class="sa-modal-overlay" id="resetModal">
+    <div class="sa-modal">
+        <h3>Reset Password</h3>
+        <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;">Reset password for <strong id="resetUserName"></strong></p>
+        <form method="post" action="{% url 'school_admin_reset_password' %}">
+            {% csrf_token %}
+            <input type="hidden" name="user_type" id="resetUserType">
+            <input type="hidden" name="user_id" id="resetUserId">
+            <div class="sa-form-group">
+                <label>New Password</label>
+                <input type="password" name="new_password" required minlength="8">
+            </div>
+            <div class="sa-form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirm_password" required minlength="8">
+            </div>
+            <div class="sa-modal-actions">
+                <button type="button" class="sa-btn sa-btn-ghost" onclick="closeModal('resetModal')">Cancel</button>
+                <button type="submit" class="sa-btn sa-btn-blue">Reset Password</button>
+            </div>
+        </form>
+    </div>
+</div>

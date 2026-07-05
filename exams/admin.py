@@ -15,7 +15,7 @@ class ExamClassAssignmentAdmin(admin.ModelAdmin):
         'class_assigned__grade_level',
         'class_assigned__strand',
         'class_assigned__section',
-        'class_assigned__teacher__user__username'
+        'class_assigned__class_teachers__teacher__user__username'
     )
     readonly_fields = ('assigned_at',)
     ordering = ('-assigned_at',)
@@ -37,13 +37,14 @@ class ExamClassAssignmentAdmin(admin.ModelAdmin):
     
     def get_teacher(self, obj):
         """Display the teacher who owns the class."""
-        return obj.class_assigned.teacher.user.get_full_name() or obj.class_assigned.teacher.user.username
+        teacher = obj.class_assigned.teachers.first()
+        return f"{teacher.user.get_full_name()} - {teacher.user.username}" if teacher else "No teacher assigned"
     get_teacher.short_description = 'Teacher'
     
     def get_queryset(self, request):
         """Optimize queryset with select_related for related objects."""
         queryset = super().get_queryset(request)
-        return queryset.select_related('exam', 'class_assigned__teacher__user')
+        return queryset.select_related('exam').prefetch_related('class_assigned__teachers')
 
 
 @admin.register(Exam)

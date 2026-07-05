@@ -151,7 +151,7 @@ class ExamForm(forms.ModelForm):
         # Set queryset for assigned_classes based on teacher
         if teacher:
             self.fields['assigned_classes'].queryset = Class.objects.filter(
-                teacher=teacher
+                teachers=teacher
             ).order_by('grade_level', 'strand', 'section')
     
     class Meta:

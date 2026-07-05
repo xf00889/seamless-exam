@@ -17,7 +17,7 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from users.models import Teacher
+from users.models import School, Teacher
 
 
 class Command(BaseCommand):
@@ -78,6 +78,12 @@ class Command(BaseCommand):
             action="store_true",
             help="Create seeded users as staff in single-account mode",
         )
+        parser.add_argument(
+            "--school-id",
+            type=int,
+            default=None,
+            help="ID of the school to associate teachers with (required if multiple schools exist)",
+        )
 
     def handle(self, *args, **options) -> None:
         teachers_payload = self._build_payload(options)
@@ -85,6 +91,20 @@ class Command(BaseCommand):
         created_count = 0
         updated_count = 0
         skipped_count = 0
+
+        school_id = options.get("school_id")
+        school = None
+        if school_id:
+            try:
+                school = School.objects.get(id=school_id)
+            except School.DoesNotExist:
+                raise CommandError(f"School with id={school_id} does not exist.")
+        else:
+            school = School.objects.first()
+            if not school:
+                raise CommandError(
+                    "No schools exist. Create a school first or specify --school-id."
+                )
 
         for teacher_data in teachers_payload:
             username = teacher_data["username"]
@@ -107,6 +127,7 @@ class Command(BaseCommand):
                     user.save()
 
                     teacher, _ = Teacher.objects.get_or_create(user=user)
+                    teacher.school = school
                     teacher.department = teacher_data.get("department") or ""
                     teacher.save()
                     updated_count += 1
@@ -124,6 +145,7 @@ class Command(BaseCommand):
                 )
                 Teacher.objects.create(
                     user=user,
+                    school=school,
                     department=teacher_data.get("department") or "",
                 )
                 created_count += 1
