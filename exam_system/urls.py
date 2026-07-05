@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.shortcuts import render
 from users.views_setup import FirstTimeSetupView
-from users.models import Teacher, Student
+from users.models import Teacher, Student, SchoolAdmin
 
 from .views import cron_backup
 
@@ -33,9 +33,12 @@ def health_check(request):
 def home_view(request):
     context = {'force_public_layout': True}
     if request.user.is_authenticated:
-        if request.user.is_superuser and not Teacher.objects.filter(user=request.user).exists():
+        if request.user.is_superuser:
             context['dashboard_url'] = '/superadmin/dashboard/'
             context['dashboard_label'] = 'Go to Admin Panel'
+        elif SchoolAdmin.objects.filter(user=request.user).exists():
+            context['dashboard_url'] = '/school-admin/dashboard/'
+            context['dashboard_label'] = 'Go to School Admin'
         elif Teacher.objects.filter(user=request.user).exists():
             context['dashboard_url'] = '/exams/'
             context['dashboard_label'] = 'Go to Dashboard'
@@ -57,6 +60,7 @@ urlpatterns = [
     path('cron/backup/', cron_backup, name='cron_backup'),
     path('users/', include('users.urls')),
     path('superadmin/', include('users.urls_superadmin')),
+    path('school-admin/', include('users.urls_school_admin')),
     path('exams/', include('exams.urls')),
     path('attempts/', include('attempts.urls')),
 ]
@@ -66,6 +70,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     
     # Django Debug Toolbar
-    urlpatterns += [
-        path('__debug__/', include('debug_toolbar.urls')),
-    ]
+    if 'debug_toolbar' in settings.INSTALLED_APPS:
+        urlpatterns += [
+            path('__debug__/', include('debug_toolbar.urls')),
+        ]
