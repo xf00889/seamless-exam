@@ -1,0 +1,31 @@
+name: Auto Create PR from develop
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          base: master
+          title: "Auto PR: ${{ github.ref_name }} → master"
+          body: |
+            Automated pull request from `${{ github.ref_name }}` to `master`.
+            CI will run on this PR.
+          draft: false
+          allow-update: true
+          commit-message: "chore: auto-create/update pull request from develop"
