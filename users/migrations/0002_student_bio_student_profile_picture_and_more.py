@@ -8,13 +8,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('users', '0001_initial'),
     ]
-
-    operations = [
-        migrations.AddField(
-            model_name='student',
-            name='bio',
-            field=models.TextField(blank=True, help_text='Optional student bio', max_length=500, null=True),
-        ),
         migrations.AddField(
             model_name='student',
             name='profile_picture',
