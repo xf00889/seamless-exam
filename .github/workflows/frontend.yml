@@ -1,0 +1,35 @@
+name: frontend
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm ci --prefix theme/static_src
+
+      - name: Build Tailwind CSS assets
+        run: npm --prefix theme/static_src run build
+
+  # backend-test job removed; backend tests now run via paths-filtered workflow
